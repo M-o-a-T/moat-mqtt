@@ -18,14 +18,15 @@ The following example shows how to start a broker using the default configuratio
 
     async def broker_coro():
         broker = Broker()
-        await broker.start()
+        async with Broker() as broker:
+            while True:
+                await asyncio.sleep(99999)
 
 
     if __name__ == '__main__':
         formatter = "[%(asctime)s] :: %(levelname)s :: %(name)s :: %(message)s"
         logging.basicConfig(level=logging.INFO, format=formatter)
-        asyncio.get_event_loop().run_until_complete(broker_coro())
-        asyncio.get_event_loop().run_forever()
+        asyncio.run(broker_coro())
 
 When executed, this script gets the default event loop and asks it to run the ``broker_coro`` until it completes.
 ``broker_coro`` creates :class:`~hbmqtt.broker.Broker` instance and then :meth:`~hbmqtt.broker.Broker.start` the broker for serving.

@@ -115,6 +115,13 @@ class MQTTClient:
         self.plugins_manager = PluginManager('hbmqtt.client.plugins', context)
         self.client_tasks = deque()
 
+    async def _aenter__(self):
+        await self._connect()
+        return self
+    
+    async def __aexit__(self, *tb):
+        await self.disconnect()
+
     async def connect(self,
                 uri=None,
                 cleansession=None,
@@ -138,11 +145,21 @@ class MQTTClient:
             :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
             :raise: :class:`hbmqtt.client.ConnectException` if connection fails
         """
+        self.broker(uri, cleansession, cafile, capath, cadata, extra_headers)
+        return await self._connect()
 
+    def broker(self,
+                uri=None,
+                cleansession=None,
+                cafile=None,
+                capath=None,
+                cadata=None,
+                extra_headers={}):
         self.session = self._initsession(uri, cleansession, cafile, capath, cadata)
         self.extra_headers = extra_headers;
         self.logger.debug("Connect to: %s" % uri)
 
+    async def _connect(self):
         try:
             return await self._do_connect()
         except BaseException as be:

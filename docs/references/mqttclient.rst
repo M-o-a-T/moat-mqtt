@@ -44,7 +44,7 @@ The example below shows how to write a simple MQTT client which subscribes a top
     if __name__ == '__main__':
         formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
         logging.basicConfig(level=logging.DEBUG, format=formatter)
-        asyncio.get_event_loop().run_until_complete(uptime_coro())
+        asyncio.run(uptime_coro())
 
 When executed, this script gets the default event loop and asks it to run the ``uptime_coro`` until it completes.
 ``uptime_coro`` starts by initializing a :class:`~hbmqtt.client.MQTTClient` instance.
@@ -86,13 +86,12 @@ This example also shows to method for publishing message asynchronously.
     async def test_coro2():
         try:
             C = MQTTClient()
-            ret = await C.connect('mqtt://test.mosquitto.org:1883/')
-            message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=QOS_0)
-            message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
-            message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
-            #print(message)
-            logger.info("messages published")
-            await C.disconnect()
+            async with C.broker('mqtt://test.mosquitto.org:1883/'):
+               message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=QOS_0)
+               message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
+               message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
+               #print(message)
+               logger.info("messages published")
         except ConnectException as ce:
             logger.error("Connection failed: %s" % ce)
             asyncio.get_event_loop().stop()
@@ -101,8 +100,8 @@ This example also shows to method for publishing message asynchronously.
     if __name__ == '__main__':
         formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
         logging.basicConfig(level=logging.DEBUG, format=formatter)
-        asyncio.get_event_loop().run_until_complete(test_coro())
-        asyncio.get_event_loop().run_until_complete(test_coro2())
+        asyncio.run(test_coro())
+        asyncio.run(test_coro2())
 
 As usual, the script runs the publish code through the async loop. ``test_coro()`` and ``test_coro()`` are ran in sequence.
 Both do the same job. ``test_coro()`` publish 3 messages in sequence. ``test_coro2()`` publishes the same message asynchronously.

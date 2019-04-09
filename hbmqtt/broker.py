@@ -198,6 +198,13 @@ class Broker:
         self.transitions.add_transition(trigger='stopping_failure', source='stopping', dest='not_stopped')
         self.transitions.add_transition(trigger='start', source='stopped', dest='starting')
 
+    async def __aenter__(self):
+        await self.start()
+        return self
+    
+    async def __aexit__(self, *tb):
+        await self.shutdown()
+
     async def start(self):
         """
             Start the broker to serve with the given configuration
