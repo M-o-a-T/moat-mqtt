@@ -161,7 +161,7 @@ class MQTTClient:
     async def _connect(self):
         try:
             return await self._do_connect()
-        except BaseException as be:
+        except Exception as be:
             self.logger.warning("Connection failed: %r" % be)
             auto_reconnect = self.config.get('auto_reconnect', False)
             if not auto_reconnect:
@@ -217,7 +217,7 @@ class MQTTClient:
             try:
                 self.logger.debug("Reconnect attempt %d ..." % nb_attempt)
                 return await self._do_connect()
-            except BaseException as e:
+            except Exception as e:
                 self.logger.warning("Reconnection attempt failed: %r" % e)
                 if reconnect_retries >= 0 and nb_attempt > reconnect_retries:
                     self.logger.error("Maximum number of connection attempts reached. Reconnection aborted")

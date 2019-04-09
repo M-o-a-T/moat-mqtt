@@ -38,7 +38,7 @@ EVENT_MQTT_PACKET_SENT = 'mqtt_packet_sent'
 EVENT_MQTT_PACKET_RECEIVED = 'mqtt_packet_received'
 
 
-class ProtocolHandlerException(BaseException):
+class ProtocolHandlerException(Exception):
     pass
 
 

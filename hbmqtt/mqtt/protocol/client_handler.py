@@ -38,7 +38,7 @@ class ClientProtocolHandler(ProtocolHandler):
             try:
                 self.logger.debug("Cancel ping task")
                 self._ping_task.cancel()
-            except BaseException:
+            except Exception:
                 pass
         if not self._disconnect_waiter.done():
             self._disconnect_waiter.cancel()
@@ -87,7 +87,7 @@ class ClientProtocolHandler(ProtocolHandler):
             if not self._ping_task:
                 self.logger.debug("Scheduling Ping")
                 self._ping_task = asyncio.ensure_future(self.mqtt_ping())
-        except BaseException as be:
+        except Exception as be:
             self.logger.debug("Exception ignored in ping task: %r" % be)
 
     def handle_read_timeout(self):
