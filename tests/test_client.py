@@ -53,14 +53,10 @@ class MQTTClientTest(unittest.TestCase):
                 await client.connect('mqtt://test.mosquitto.org/')
                 self.assertIsNotNone(client.session)
                 await client.disconnect()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_connect_tcp_secure(self):
         async def test_coro():
@@ -70,14 +66,10 @@ class MQTTClientTest(unittest.TestCase):
                 await client.connect('mqtts://test.mosquitto.org/', cafile=ca)
                 self.assertIsNotNone(client.session)
                 await client.disconnect()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_connect_tcp_failure(self):
         async def test_coro():
@@ -86,12 +78,11 @@ class MQTTClientTest(unittest.TestCase):
                 client = MQTTClient(config=config)
                 await client.connect('mqtt://127.0.0.1/')
             except ConnectException as e:
-                future.set_result(True)
+                pass
+            else:
+                raise RuntimeError("should not be able to connect")
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_connect_ws(self):
         async def test_coro():
@@ -103,15 +94,10 @@ class MQTTClientTest(unittest.TestCase):
                 self.assertIsNotNone(client.session)
                 await client.disconnect()
                 await broker.shutdown()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
-            raise future.exception()
 
     def test_reconnect_ws_retain_username_password(self):
         async def test_coro():
@@ -127,14 +113,10 @@ class MQTTClientTest(unittest.TestCase):
                 self.assertIsNotNone(client.session.username)
                 self.assertIsNotNone(client.session.password)
                 await broker.shutdown()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_connect_ws_secure(self):
         async def test_coro():
@@ -147,14 +129,10 @@ class MQTTClientTest(unittest.TestCase):
                 self.assertIsNotNone(client.session)
                 await client.disconnect()
                 await broker.shutdown()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_ping(self):
         async def test_coro():
@@ -167,14 +145,10 @@ class MQTTClientTest(unittest.TestCase):
                 await client.ping()
                 await client.disconnect()
                 await broker.shutdown()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_subscribe(self):
         async def test_coro():
@@ -194,14 +168,10 @@ class MQTTClientTest(unittest.TestCase):
                 self.assertEqual(ret[2], QOS_2)
                 await client.disconnect()
                 await broker.shutdown()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_unsubscribe(self):
         async def test_coro():
@@ -218,14 +188,10 @@ class MQTTClientTest(unittest.TestCase):
                 await client.unsubscribe(['$SYS/broker/uptime'])
                 await client.disconnect()
                 await broker.shutdown()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_deliver(self):
         data = b'data'
@@ -252,14 +218,10 @@ class MQTTClientTest(unittest.TestCase):
                 await client.unsubscribe(['$SYS/broker/uptime'])
                 await client.disconnect()
                 await broker.shutdown()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
 
     def test_deliver_timeout(self):
         async def test_coro():
@@ -278,11 +240,7 @@ class MQTTClientTest(unittest.TestCase):
                 await client.unsubscribe(['$SYS/broker/uptime'])
                 await client.disconnect()
                 await broker.shutdown()
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
         self.loop.run_until_complete(test_coro())
-        if future.exception():
-            raise future.exception()
