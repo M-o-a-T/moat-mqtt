@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 
-import asyncio
+import asyncio,anyio
 import logging
 import ssl
 import copy
@@ -65,11 +65,15 @@ def mqtt_connected(func):
     async def wrapper(self, *args, **kwargs):
         if not self._connected_state.is_set():
             base_logger.warning("Client not connected, waiting for it")
-            _, pending = await asyncio.wait([self._connected_state.wait(), self._no_more_connections.wait()], return_when=asyncio.FIRST_COMPLETED)
-            for t in pending:
-                t.cancel()
-            if self._no_more_connections.is_set():
-                raise ClientException("Will not reconnect")
+            with anyio.open_task_group() as tg:
+                async def wait_connected():
+                    await self._connected_state.wait()
+                    await tg.cancel_scope.cancel()
+                async def wait_no_more():
+                    await self._no_more_connections.wait()
+                    raise ClientException("Will not reconnect")
+                await tg.spawn(wait_connected)
+                await tg.spawn(wait_no_more)
         return await func(self, *args, **kwargs)
     return wrapper
 
