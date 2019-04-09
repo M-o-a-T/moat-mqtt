@@ -16,6 +16,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     platforms='all',
+    python_requires=">=3.5",
     install_requires=[
         'transitions',
         'websockets',
@@ -30,9 +31,9 @@ setup(
         'Operating System :: POSIX',
         'Operating System :: MacOS',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Communications',
         'Topic :: Internet'
     ],
