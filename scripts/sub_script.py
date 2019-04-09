@@ -33,7 +33,7 @@ Options:
 
 import sys
 import logging
-import asyncio
+import anyio
 import os
 import json
 from hbmqtt.client import MQTTClient, ConnectException
@@ -96,13 +96,12 @@ async def do_sub(client, arguments):
                 sys.stdout.write('\n')
             except MQTTException:
                 logger.debug("Error reading packet")
-        await client.disconnect()
     except KeyboardInterrupt:
-        await client.disconnect()
+        pass
     except ConnectException as ce:
         logger.fatal("connection to '%s' failed: %r" % (arguments['--url'], ce))
-    except asyncio.CancelledError as cae:
-        logger.fatal("Publish canceled due to prvious error")
+    finally:
+        await client.disconnect()
 
 
 async def main(*args, **kwargs):
@@ -143,4 +142,4 @@ async def main(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    anyio.run(main)

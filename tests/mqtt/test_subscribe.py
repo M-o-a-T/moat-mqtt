@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
+import anyio
 import unittest
 
 from hbmqtt.mqtt.subscribe import SubscribePacket, SubscribePayload
@@ -14,7 +14,7 @@ class SubscribePacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b'\x80\x0e\x00\x0a\x00\x03a/b\x01\x00\x03c/d\x02'
         stream = BufferReader(data)
-        message = asyncio.run(SubscribePacket.from_stream(stream))
+        message = anyio.run(SubscribePacket.from_stream, stream)
         (topic, qos) = message.payload.topics[0]
         self.assertEqual(topic, 'a/b')
         self.assertEqual(qos, QOS_1)

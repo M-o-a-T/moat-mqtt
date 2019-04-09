@@ -5,7 +5,7 @@
 import unittest
 import logging
 import os
-import asyncio
+import anyio
 import sqlite3
 from hbmqtt.plugins.manager import BaseContext
 from hbmqtt.plugins.persistence import SQLitePlugin
@@ -15,9 +15,6 @@ logging.basicConfig(level=logging.DEBUG, format=formatter)
 
 
 class TestSQLitePlugin(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-
     def test_create_tables(self):
         dbfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test.db")
         context = BaseContext()

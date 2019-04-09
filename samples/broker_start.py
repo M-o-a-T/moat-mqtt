@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import anyio
 import os
 from hbmqtt.broker import Broker
 
@@ -36,8 +36,8 @@ broker = Broker(config)
 async def test_coro():
     await broker.start()
     while True:
-        await asyncio.sleep(99999)
-    #await asyncio.sleep(5)
+        await anyio.sleep(99999)
+    #await anyio.sleep(5)
     #await broker.shutdown()
 
 
@@ -45,4 +45,4 @@ if __name__ == '__main__':
     formatter = "[%(asctime)s] :: %(levelname)s :: %(name)s :: %(message)s"
     #formatter = "%(asctime)s :: %(levelname)s :: %(message)s"
     logging.basicConfig(level=logging.INFO, format=formatter)
-    asyncio.run(test_coro())
+    anyio.run(test_coro)

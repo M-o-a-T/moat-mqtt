@@ -5,7 +5,7 @@
 import unittest
 import logging
 import os
-import asyncio
+import anyio
 from hbmqtt.plugins.manager import BaseContext
 from hbmqtt.plugins.authentication import AnonymousAuthPlugin, FileAuthPlugin
 from hbmqtt.session import Session
@@ -29,7 +29,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             auth_plugin = AnonymousAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
             self.assertTrue(ret)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_disallow_anonymous(self):
         context = BaseContext()
@@ -45,7 +45,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             auth_plugin = AnonymousAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
             self.assertFalse(ret)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_allow_nonanonymous(self):
         context = BaseContext()
@@ -61,7 +61,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             auth_plugin = AnonymousAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
             self.assertTrue(ret)
-        asyncio.run(coro())
+        anyio.run(coro)
 
 
 class TestFileAuthPlugin(unittest.TestCase):
@@ -80,7 +80,7 @@ class TestFileAuthPlugin(unittest.TestCase):
             auth_plugin = FileAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
             self.assertTrue(ret)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_wrong_password(self):
         context = BaseContext()
@@ -97,7 +97,7 @@ class TestFileAuthPlugin(unittest.TestCase):
             auth_plugin = FileAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
             self.assertFalse(ret)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_unknown_password(self):
         context = BaseContext()
@@ -114,4 +114,4 @@ class TestFileAuthPlugin(unittest.TestCase):
             auth_plugin = FileAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
             self.assertFalse(ret)
-        asyncio.run(coro())
+        anyio.run(coro)

@@ -15,7 +15,7 @@ The example below shows how to write a simple MQTT client which subscribes a top
 .. code-block:: python
 
     import logging
-    import asyncio
+    import anyio
 
     from hbmqtt.client import MQTTClient, ClientException
     from hbmqtt.mqtt.constants import QOS_1, QOS_2
@@ -44,7 +44,7 @@ The example below shows how to write a simple MQTT client which subscribes a top
     if __name__ == '__main__':
         formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
         logging.basicConfig(level=logging.DEBUG, format=formatter)
-        asyncio.run(uptime_coro())
+        anyio.run(uptime_coro)
 
 When executed, this script gets the default event loop and asks it to run the ``uptime_coro`` until it completes.
 ``uptime_coro`` starts by initializing a :class:`~hbmqtt.client.MQTTClient` instance.
@@ -63,7 +63,7 @@ This example also shows to method for publishing message asynchronously.
 .. code-block:: python
 
     import logging
-    import asyncio
+    import anyio
 
     from hbmqtt.client import MQTTClient
     from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
@@ -73,14 +73,14 @@ This example also shows to method for publishing message asynchronously.
     async def test_coro():
         C = MQTTClient()
         await C.connect('mqtt://test.mosquitto.org/')
-        tasks = [
-            asyncio.ensure_future(C.publish('a/b', b'TEST MESSAGE WITH QOS_0')),
-            asyncio.ensure_future(C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)),
-            asyncio.ensure_future(C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)),
-        ]
-        await asyncio.wait(tasks)
-        logger.info("messages published")
-        await C.disconnect()
+        try:
+            async with anyio.open_task_group() as tg:
+                await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_0')
+                await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)),
+                await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)),
+            logger.info("messages published")
+        finally:
+            await C.disconnect()
 
 
     async def test_coro2():
@@ -94,14 +94,13 @@ This example also shows to method for publishing message asynchronously.
                logger.info("messages published")
         except ConnectException as ce:
             logger.error("Connection failed: %s" % ce)
-            asyncio.get_event_loop().stop()
 
 
     if __name__ == '__main__':
         formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
         logging.basicConfig(level=logging.DEBUG, format=formatter)
-        asyncio.run(test_coro())
-        asyncio.run(test_coro2())
+        anyio.run(test_coro)
+        anyio.run(test_coro2)
 
 As usual, the script runs the publish code through the async loop. ``test_coro()`` and ``test_coro()`` are ran in sequence.
 Both do the same job. ``test_coro()`` publish 3 messages in sequence. ``test_coro2()`` publishes the same message asynchronously.

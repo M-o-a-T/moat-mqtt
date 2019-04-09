@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 import unittest
-import asyncio
+import asyncio,anyio
 import os
 import logging
 from hbmqtt.client import MQTTClient, ConnectException
@@ -46,7 +46,7 @@ class MQTTClientTest(unittest.TestCase):
             self.assertIsNotNone(client.session)
             await client.disconnect()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_connect_tcp_secure(self):
         async def test_coro():
@@ -56,7 +56,7 @@ class MQTTClientTest(unittest.TestCase):
             self.assertIsNotNone(client.session)
             await client.disconnect()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_connect_tcp_failure(self):
         async def test_coro():
@@ -69,7 +69,7 @@ class MQTTClientTest(unittest.TestCase):
             else:
                 raise RuntimeError("should not be able to connect")
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_connect_ws(self):
         async def test_coro():
@@ -81,7 +81,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_reconnect_ws_retain_username_password(self):
         async def test_coro():
@@ -97,7 +97,7 @@ class MQTTClientTest(unittest.TestCase):
             self.assertIsNotNone(client.session.password)
             await broker.shutdown()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_connect_ws_secure(self):
         async def test_coro():
@@ -110,7 +110,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_ping(self):
         async def test_coro():
@@ -123,7 +123,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_subscribe(self):
         async def test_coro():
@@ -143,7 +143,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_unsubscribe(self):
         async def test_coro():
@@ -160,7 +160,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_deliver(self):
         data = b'data'
@@ -187,7 +187,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)
 
     def test_deliver_timeout(self):
         async def test_coro():
@@ -206,4 +206,4 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        asyncio.run(test_coro())
+        anyio.run(test_coro)

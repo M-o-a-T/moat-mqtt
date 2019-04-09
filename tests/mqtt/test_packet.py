@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 import unittest
-import asyncio
+import anyio
 
 from hbmqtt.mqtt.packet import CONNECT, MQTTFixedHeader
 from hbmqtt.errors import MQTTException
@@ -13,7 +13,7 @@ class TestMQTTFixedHeaderTest(unittest.TestCase):
     def test_from_bytes(self):
         data = b'\x10\x7f'
         stream = BufferReader(data)
-        header = asyncio.run(MQTTFixedHeader.from_stream(stream))
+        header = anyio.run(MQTTFixedHeader.from_stream, stream)
         self.assertEqual(header.packet_type, CONNECT)
         self.assertFalse(header.flags & 0x08)
         self.assertEqual((header.flags & 0x06) >> 1, 0)
@@ -23,7 +23,7 @@ class TestMQTTFixedHeaderTest(unittest.TestCase):
     def test_from_bytes_with_length(self):
         data = b'\x10\xff\xff\xff\x7f'
         stream = BufferReader(data)
-        header = asyncio.run(MQTTFixedHeader.from_stream(stream))
+        header = anyio.run(MQTTFixedHeader.from_stream, stream)
         self.assertEqual(header.packet_type, CONNECT)
         self.assertFalse(header.flags & 0x08)
         self.assertEqual((header.flags & 0x06) >> 1, 0)
@@ -34,7 +34,7 @@ class TestMQTTFixedHeaderTest(unittest.TestCase):
         data = b'\x10\xff\xff\xff\xff\x7f'
         stream = BufferReader(data)
         with self.assertRaises(MQTTException):
-            asyncio.run(MQTTFixedHeader.from_stream(stream))
+            anyio.run(MQTTFixedHeader.from_stream, stream)
 
     def test_to_bytes(self):
         header = MQTTFixedHeader(CONNECT, 0x00, 0)

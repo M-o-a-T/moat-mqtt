@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import anyio
 
 from hbmqtt.client import MQTTClient, ClientException
 from hbmqtt.mqtt.constants import QOS_1
@@ -19,27 +19,28 @@ async def uptime_coro():
     await C.connect('mqtt://test:test@0.0.0.0:1883')
     # await C.connect('mqtt://0.0.0.0:1883')
     # Subscribe to '$SYS/broker/uptime' with QOS=1
-    await C.subscribe([
-        ('data/memes', QOS_1),  # Topic allowed
-        ('data/classified', QOS_1),  # Topic forbidden
-        ('repositories/hbmqtt/master', QOS_1),  # Topic allowed
-        ('repositories/hbmqtt/devel', QOS_1),  # Topic forbidden
-        ('calendar/hbmqtt/releases', QOS_1),  # Topic allowed
-    ])
-    logger.info("Subscribed")
     try:
+        await C.subscribe([
+            ('data/memes', QOS_1),  # Topic allowed
+            ('data/classified', QOS_1),  # Topic forbidden
+            ('repositories/hbmqtt/master', QOS_1),  # Topic allowed
+            ('repositories/hbmqtt/devel', QOS_1),  # Topic forbidden
+            ('calendar/hbmqtt/releases', QOS_1),  # Topic allowed
+        ])
+        logger.info("Subscribed")
         for i in range(1, 100):
             message = await C.deliver_message()
             packet = message.publish_packet
             print("%d: %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
         await C.unsubscribe(['$SYS/broker/uptime', '$SYS/broker/load/#'])
         logger.info("UnSubscribed")
-        await C.disconnect()
     except ClientException as ce:
         logger.error("Client exception: %s" % ce)
+    finally:
+        await C.disconnect()
 
 
 if __name__ == '__main__':
     formatter = "[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
     logging.basicConfig(level=logging.INFO, format=formatter)
-    asyncio.run(uptime_coro())
+    anyio.run(uptime_coro)

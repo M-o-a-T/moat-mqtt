@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import anyio
 
 from hbmqtt.client import MQTTClient, ClientException
 from hbmqtt.mqtt.constants import QOS_1, QOS_2
@@ -18,24 +18,25 @@ async def uptime_coro():
     C = MQTTClient()
     await C.connect('mqtt://test.mosquitto.org/')
     # Subscribe to '$SYS/broker/uptime' with QOS=1
-    await C.subscribe([
-        ('$SYS/broker/uptime', QOS_1),
-        ('$SYS/broker/load/#', QOS_2),
-    ])
-    logger.info("Subscribed")
     try:
+        await C.subscribe([
+            ('$SYS/broker/uptime', QOS_1),
+            ('$SYS/broker/load/#', QOS_2),
+        ])
+        logger.info("Subscribed")
         for i in range(1, 100):
             message = await C.deliver_message()
             packet = message.publish_packet
             print("%d: %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
         await C.unsubscribe(['$SYS/broker/uptime', '$SYS/broker/load/#'])
         logger.info("UnSubscribed")
-        await C.disconnect()
     except ClientException as ce:
         logger.error("Client exception: %s" % ce)
+    finally:
+        await C.disconnect()
 
 
 if __name__ == '__main__':
     formatter = "[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
     logging.basicConfig(level=logging.INFO, format=formatter)
-    asyncio.run(uptime_coro())
+    anyio.run(uptime_coro)

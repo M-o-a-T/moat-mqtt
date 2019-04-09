@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import anyio
 
 from hbmqtt.client import MQTTClient
 
@@ -21,7 +21,7 @@ C = MQTTClient(config=config)
 
 async def test_coro():
     await C.connect('mqtt://test.mosquitto.org:1883/')
-    await asyncio.sleep(18)
+    await anyio.sleep(18)
 
     await C.disconnect()
 
@@ -29,4 +29,4 @@ async def test_coro():
 if __name__ == '__main__':
     formatter = "[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
     logging.basicConfig(level=logging.DEBUG, format=formatter)
-    asyncio.run(test_coro())
+    anyio.run(test_coro)

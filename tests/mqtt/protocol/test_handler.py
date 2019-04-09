@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 import unittest
-import asyncio
+import asyncio,anyio
 import logging
 import random
 from hbmqtt.plugins.manager import PluginManager
@@ -39,7 +39,7 @@ class ProtocolHandlerTest(unittest.TestCase):
             finally:
                 server.close()
                 await server.wait_closed()
-        asyncio.run(runner())
+        anyio.run(runner)
 
     def test_init_handler(self):
         async def coro():
@@ -49,7 +49,7 @@ class ProtocolHandlerTest(unittest.TestCase):
             self.assertIsNone(handler.session)
             self.assertIs(handler._loop, asyncio.get_event_loop())
             self.check_empty_waiters(handler)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_start_stop(self):
         async def server_mock(reader, writer):

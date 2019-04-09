@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
+import anyio
 import unittest
 
 from hbmqtt.mqtt.pubrec import PubrecPacket, PacketIdVariableHeader
@@ -12,7 +12,7 @@ class PubrecPacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b'\x50\x02\x00\x0a'
         stream = BufferReader(data)
-        message = asyncio.run(PubrecPacket.from_stream(stream))
+        message = anyio.run(PubrecPacket.from_stream, stream)
         self.assertEqual(message.variable_header.packet_id, 10)
 
     def test_to_bytes(self):

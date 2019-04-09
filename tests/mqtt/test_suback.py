@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
+import anyio
 import unittest
 
 from hbmqtt.mqtt.suback import SubackPacket, SubackPayload
@@ -13,7 +13,7 @@ class SubackPacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b'\x90\x06\x00\x0a\x00\x01\x02\x80'
         stream = BufferReader(data)
-        message = asyncio.run(SubackPacket.from_stream(stream))
+        message = anyio.run(SubackPacket.from_stream, stream)
         self.assertEqual(message.payload.return_codes[0], SubackPayload.RETURN_CODE_00)
         self.assertEqual(message.payload.return_codes[1], SubackPayload.RETURN_CODE_01)
         self.assertEqual(message.payload.return_codes[2], SubackPayload.RETURN_CODE_02)

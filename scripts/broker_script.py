@@ -18,7 +18,7 @@ Options:
 
 import sys
 import logging
-import asyncio
+import anyio
 import os
 from hbmqtt.broker import Broker
 from hbmqtt.version import get_version
@@ -68,8 +68,8 @@ def main(*args, **kwargs):
 
     async with Broker(config) as broker:
         while True:
-            await asyncio.sleep(99999)
+            await anyio.sleep(99999)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    anyio.run(main)

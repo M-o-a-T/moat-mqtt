@@ -11,7 +11,7 @@ The following example shows how to start a broker using the default configuratio
 .. code-block:: python
 
     import logging
-    import asyncio
+    import anyio
     import os
     from hbmqtt.broker import Broker
 
@@ -26,7 +26,7 @@ The following example shows how to start a broker using the default configuratio
     if __name__ == '__main__':
         formatter = "[%(asctime)s] :: %(levelname)s :: %(name)s :: %(message)s"
         logging.basicConfig(level=logging.INFO, format=formatter)
-        asyncio.run(broker_coro())
+        anyio.run(broker_coro)
 
 When executed, this script gets the default event loop and asks it to run the ``broker_coro`` until it completes.
 ``broker_coro`` creates :class:`~hbmqtt.broker.Broker` instance and then :meth:`~hbmqtt.broker.Broker.start` the broker for serving.

@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import anyio
 
 from hbmqtt.client import MQTTClient
 from hbmqtt.mqtt.constants import QOS_1, QOS_2
@@ -26,17 +26,17 @@ C = MQTTClient(config=config)
 
 async def test_coro():
     await C.connect('mqtts://test.mosquitto.org/', cafile='mosquitto.org.crt')
-    tasks = [
-        asyncio.ensure_future(C.publish('a/b', b'TEST MESSAGE WITH QOS_0')),
-        asyncio.ensure_future(C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)),
-        asyncio.ensure_future(C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)),
-    ]
-    await asyncio.wait(tasks)
-    logger.info("messages published")
-    await C.disconnect()
+    try:
+        async with anyio.create_task_group() as tg:
+            await tg.spawn(C.publish('a/b', b'TEST MESSAGE WITH QOS_0')
+            await tg.spawn(C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
+            await tg.spawn(C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
+        logger.info("messages published")
+    finally:
+        await C.disconnect()
 
 
 if __name__ == '__main__':
     formatter = "[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
     logging.basicConfig(level=logging.DEBUG, format=formatter)
-    asyncio.run(test_coro())
+    anyio.run(test_coro)

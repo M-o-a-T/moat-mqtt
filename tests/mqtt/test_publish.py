@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
+import anyio
 import unittest
 
 from hbmqtt.mqtt.publish import PublishPacket, PublishVariableHeader, PublishPayload
@@ -13,7 +13,7 @@ class PublishPacketTest(unittest.TestCase):
     def test_from_stream_qos_0(self):
         data = b'\x31\x11\x00\x05topic0123456789'
         stream = BufferReader(data)
-        message = asyncio.run(PublishPacket.from_stream(stream))
+        message = anyio.run(PublishPacket.from_stream, stream)
         self.assertEqual(message.variable_header.topic_name, 'topic')
         self.assertEqual(message.variable_header.packet_id, None)
         self.assertFalse((message.fixed_header.flags >> 1) & 0x03)
@@ -23,7 +23,7 @@ class PublishPacketTest(unittest.TestCase):
     def test_from_stream_qos_2(self):
         data = b'\x37\x13\x00\x05topic\x00\x0a0123456789'
         stream = BufferReader(data)
-        message = asyncio.run(PublishPacket.from_stream(stream))
+        message = anyio.run(PublishPacket.from_stream, stream)
         self.assertEqual(message.variable_header.topic_name, 'topic')
         self.assertEqual(message.variable_header.packet_id, 10)
         self.assertTrue((message.fixed_header.flags >> 1) & 0x03)

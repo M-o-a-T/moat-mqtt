@@ -3,7 +3,7 @@
 # See the file license.txt for copying permission.
 import unittest
 import logging
-import asyncio
+import anyio
 from hbmqtt.plugins.manager import PluginManager
 
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
@@ -37,12 +37,12 @@ class TestPluginManager(unittest.TestCase):
         async def coro():
             manager = PluginManager("hbmqtt.test.plugins", context=None)
             self.assertTrue(len(manager._plugins) > 0)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_fire_event(self):
         async def fire_event(manager):
             await manager.fire_event("test")
-            await asyncio.sleep(1)
+            await anyio.sleep(1)
             await manager.close()
 
         async def coro():
@@ -50,7 +50,7 @@ class TestPluginManager(unittest.TestCase):
             await fire_event(manager)
             plugin = manager.get_plugin("event_plugin")
             self.assertTrue(plugin.object.test_flag)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_fire_event_wait(self):
         async def fire_event(manager):
@@ -62,7 +62,7 @@ class TestPluginManager(unittest.TestCase):
             await fire_event(manager)
             plugin = manager.get_plugin("event_plugin")
             self.assertTrue(plugin.object.test_flag)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_map_coro(self):
         async def call_coro(manager):
@@ -73,7 +73,7 @@ class TestPluginManager(unittest.TestCase):
             await call_coro(manager)
             plugin = manager.get_plugin("event_plugin")
             self.assertTrue(plugin.object.test_coro)
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_map_coro_return(self):
         async def call_coro(manager):
@@ -84,7 +84,7 @@ class TestPluginManager(unittest.TestCase):
             ret = await call_coro(manager)
             plugin = manager.get_plugin("event_plugin")
             self.assertEqual(ret[plugin], "TEST")
-        asyncio.run(coro())
+        anyio.run(coro)
 
     def test_map_coro_filter(self):
         """
@@ -98,4 +98,4 @@ class TestPluginManager(unittest.TestCase):
             manager = PluginManager("hbmqtt.test.plugins", context=None)
             ret = await call_coro(manager)
             self.assertTrue(len(ret) == 0)
-        asyncio.run(coro())
+        anyio.run(coro)

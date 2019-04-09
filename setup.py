@@ -22,7 +22,8 @@ setup(
         'websockets',
         'passlib',
         'docopt',
-        'pyyaml'
+        'pyyaml',
+        'anyio',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

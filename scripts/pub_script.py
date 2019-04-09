@@ -36,7 +36,7 @@ Options:
 
 import sys
 import logging
-import asyncio
+import anyio
 import os
 import json
 from hbmqtt.client import MQTTClient, ConnectException
@@ -94,35 +94,29 @@ def _get_message(arguments):
 
 
 async def do_pub(client, arguments):
-    running_tasks = []
+    logger.info("%s Connecting to broker" % client.client_id)
 
+    await client.connect(uri=arguments['--url'],
+                                cleansession=arguments['--clean-session'],
+                                cafile=arguments['--ca-file'],
+                                capath=arguments['--ca-path'],
+                                cadata=arguments['--ca-data'],
+                                extra_headers=_get_extra_headers(arguments))
     try:
-        logger.info("%s Connecting to broker" % client.client_id)
-
-        await client.connect(uri=arguments['--url'],
-                                  cleansession=arguments['--clean-session'],
-                                  cafile=arguments['--ca-file'],
-                                  capath=arguments['--ca-path'],
-                                  cadata=arguments['--ca-data'],
-                                  extra_headers=_get_extra_headers(arguments))
         qos = _get_qos(arguments)
         topic = arguments['-t']
         retain = arguments['-r']
-        for message in _get_message(arguments):
-            logger.info("%s Publishing to '%s'" % (client.client_id, topic))
-            task = asyncio.ensure_future(client.publish(topic, message, qos, retain))
-            running_tasks.append(task)
-        if running_tasks:
-            await asyncio.wait(running_tasks)
-        await client.disconnect()
+        async for anyio.open_task_group() as tg:
+            for message in _get_message(arguments):
+                logger.info("%s Publishing to '%s'" % (client.client_id, topic))
+                await tg.sspawn(client.publish, topic, message, qos, retain)
         logger.info("%s Disconnected from broker" % client.client_id)
     except KeyboardInterrupt:
-        await client.disconnect()
         logger.info("%s Disconnected from broker" % client.client_id)
     except ConnectException as ce:
         logger.fatal("connection to '%s' failed: %r" % (arguments['--url'], ce))
-    except asyncio.CancelledError as cae:
-        logger.fatal("Publish canceled due to prvious error")
+    finally:
+        await client.disconnect()
 
 
 async def main(*args, **kwargs):
@@ -162,4 +156,4 @@ async def main(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    anyio.run(main)
