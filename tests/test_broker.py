@@ -46,7 +46,7 @@ test_config = {
 
 
 class AsyncMock(MagicMock):
-    def __await__(self, *args, **kwargs):
+    def __await__(self):
             future = asyncio.Future()
             future.set_result(self)
             result = yield from future
