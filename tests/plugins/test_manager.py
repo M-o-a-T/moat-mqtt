@@ -10,7 +10,7 @@ formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(
 logging.basicConfig(level=logging.INFO, format=formatter)
 
 
-class TestPlugin:
+class SimpleTestPlugin:
     def __init__(self, context):
         self.context = context
 
