@@ -25,7 +25,6 @@ def get_plugin_manager(namespace):
 
 class BaseContext:
     def __init__(self):
-        self.loop = None
         self.logger = None
 
 
@@ -35,19 +34,14 @@ class PluginManager:
     Plugins are loaded for a given namespace (group).
     This plugin manager uses coroutines to run plugin call asynchronously in an event queue
     """
-    def __init__(self, namespace, context, loop=None):
+    def __init__(self, namespace, context):
         global plugins_manager
-        if loop is not None:
-            self._loop = loop
-        else:
-            self._loop = asyncio.get_event_loop()
 
         self.logger = logging.getLogger(namespace)
         if context is None:
             self.context = BaseContext()
         else:
             self.context = context
-        self.context.loop = self._loop
         self._plugins = []
         self._load_plugins(namespace)
         self._fired_events = []
@@ -108,7 +102,7 @@ class PluginManager:
         return self._plugins
 
     def _schedule_coro(self, coro):
-        return asyncio.ensure_future(coro, loop=self._loop)
+        return asyncio.ensure_future(coro)
 
     async def fire_event(self, event_name, wait=False, *args, **kwargs):
         """
@@ -146,7 +140,7 @@ class PluginManager:
         self._fired_events.extend(tasks)
         if wait:
             if tasks:
-                await asyncio.wait(tasks, loop=self._loop)
+                await asyncio.wait(tasks)
 
     async def map(self, coro, *args, **kwargs):
         """
@@ -175,7 +169,7 @@ class PluginManager:
                         self.logger.error("Method '%r' on plugin '%s' is not a coroutine" %
                                           (coro, plugin.name))
         if tasks:
-            ret_list = await asyncio.gather(*tasks, loop=self._loop)
+            ret_list = await asyncio.gather(*tasks)
             # Create result map plugin=>ret
             ret_dict = {k: v for k, v in zip(plugins_list, ret_list)}
         else:

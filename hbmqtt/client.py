@@ -86,11 +86,10 @@ class MQTTClient:
 
         :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`hbmqtt.utils.gen_client_id`
         :param config: Client configuration
-        :param loop: asynio loop to use
         :return: class instance
     """
 
-    def __init__(self, client_id=None, config=None, loop=None):
+    def __init__(self, client_id=None, config=None):
         self.logger = logging.getLogger(__name__)
         self.config = copy.deepcopy(_defaults)
         if config is not None:
@@ -102,15 +101,11 @@ class MQTTClient:
             self.client_id = gen_client_id()
             self.logger.debug("Using generated client ID : %s" % self.client_id)
 
-        if loop is not None:
-            self._loop = loop
-        else:
-            self._loop = asyncio.get_event_loop()
         self.session = None
         self._handler = None
         self._disconnect_task = None
-        self._connected_state = asyncio.Event(loop=self._loop)
-        self._no_more_connections = asyncio.Event(loop=self._loop)
+        self._connected_state = asyncio.Event()
+        self._no_more_connections = asyncio.Event()
         self.extra_headers = {}
 
         # Init plugins manager
@@ -217,7 +212,7 @@ class MQTTClient:
         reconnect_max_interval = self.config.get('reconnect_max_interval', 10)
         reconnect_retries = self.config.get('reconnect_retries', 5)
         nb_attempt = 1
-        await asyncio.sleep(1, loop=self._loop)
+        await asyncio.sleep(1)
         while True:
             try:
                 self.logger.debug("Reconnect attempt %d ..." % nb_attempt)
@@ -230,12 +225,12 @@ class MQTTClient:
                 exp = 2 ** nb_attempt
                 delay = exp if exp < reconnect_max_interval else reconnect_max_interval
                 self.logger.debug("Waiting %d second before next attempt" % delay)
-                await asyncio.sleep(delay, loop=self._loop)
+                await asyncio.sleep(delay)
                 nb_attempt += 1
 
     async def _do_connect(self):
         return_code = await self._connect_coro()
-        self._disconnect_task = asyncio.ensure_future(self.handle_connection_close(), loop=self._loop)
+        self._disconnect_task = asyncio.ensure_future(self.handle_connection_close())
         return return_code
 
     @mqtt_connected
@@ -343,10 +338,10 @@ class MQTTClient:
             :return: instance of :class:`hbmqtt.session.ApplicationMessage` containing received message information flow.
             :raises: :class:`asyncio.TimeoutError` if timeout occurs before a message is delivered
         """
-        deliver_task = asyncio.ensure_future(self._handler.mqtt_deliver_next_message(), loop=self._loop)
+        deliver_task = asyncio.ensure_future(self._handler.mqtt_deliver_next_message())
         self.client_tasks.append(deliver_task)
         self.logger.debug("Waiting message delivery")
-        done, pending = await asyncio.wait([deliver_task], loop=self._loop, return_when=asyncio.FIRST_EXCEPTION, timeout=timeout)
+        done, pending = await asyncio.wait([deliver_task], return_when=asyncio.FIRST_EXCEPTION, timeout=timeout)
         if deliver_task in done:
             if deliver_task.exception() is not None:
                 # deliver_task raised an exception, pass it on to our caller
@@ -380,7 +375,7 @@ class MQTTClient:
             self.session.broker_uri = urlunparse(uri)
         # Init protocol handler
         #if not self._handler:
-        self._handler = ClientProtocolHandler(self.plugins_manager, loop=self._loop)
+        self._handler = ClientProtocolHandler(self.plugins_manager)
 
         if secure:
             sc = ssl.create_default_context(
@@ -403,14 +398,13 @@ class MQTTClient:
                 conn_reader, conn_writer = \
                     await asyncio.open_connection(
                         self.session.remote_address,
-                        self.session.remote_port, loop=self._loop, **kwargs)
+                        self.session.remote_port, **kwargs)
                 reader = StreamReaderAdapter(conn_reader)
                 writer = StreamWriterAdapter(conn_writer)
             elif scheme in ('ws', 'wss'):
                 websocket = await websockets.connect(
                     self.session.broker_uri,
                     subprotocols=['mqtt'],
-                    loop=self._loop,
                     extra_headers=self.extra_headers,
                     **kwargs)
                 reader = WebSocketsReader(websocket)

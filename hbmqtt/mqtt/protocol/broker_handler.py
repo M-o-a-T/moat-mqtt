@@ -22,16 +22,16 @@ from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT
 
 
 class BrokerProtocolHandler(ProtocolHandler):
-    def __init__(self, plugins_manager: PluginManager, session: Session=None, loop=None):
-        super().__init__(plugins_manager, session, loop)
+    def __init__(self, plugins_manager: PluginManager, session: Session=None):
+        super().__init__(plugins_manager, session)
         self._disconnect_waiter = None
-        self._pending_subscriptions = Queue(loop=self._loop)
-        self._pending_unsubscriptions = Queue(loop=self._loop)
+        self._pending_subscriptions = Queue()
+        self._pending_unsubscriptions = Queue()
 
     async def start(self):
         await super().start()
         if self._disconnect_waiter is None:
-            self._disconnect_waiter = futures.Future(loop=self._loop)
+            self._disconnect_waiter = futures.Future()
 
     async def stop(self):
         await super().stop()
@@ -100,13 +100,12 @@ class BrokerProtocolHandler(ProtocolHandler):
         await self._send_packet(connack)
 
     @classmethod
-    async def init_from_connect(cls, reader: ReaderAdapter, writer: WriterAdapter, plugins_manager, loop=None):
+    async def init_from_connect(cls, reader: ReaderAdapter, writer: WriterAdapter, plugins_manager):
         """
 
         :param reader:
         :param writer:
         :param plugins_manager:
-        :param loop:
         :return:
         """
         remote_address, remote_port = writer.get_peer_info()
@@ -154,7 +153,7 @@ class BrokerProtocolHandler(ProtocolHandler):
             await writer.close()
             raise MQTTException(error_msg)
 
-        incoming_session = Session(loop)
+        incoming_session = Session()
         incoming_session.client_id = connect.client_id
         incoming_session.clean_session = connect.clean_session_flag
         incoming_session.will_flag = connect.will_flag
@@ -169,5 +168,5 @@ class BrokerProtocolHandler(ProtocolHandler):
         else:
             incoming_session.keep_alive = 0
 
-        handler = cls(plugins_manager, loop=loop)
+        handler = cls(plugins_manager)
         return handler, incoming_session

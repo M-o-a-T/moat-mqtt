@@ -47,7 +47,6 @@ class ProtocolHandlerTest(unittest.TestCase):
             Session()
             handler = ProtocolHandler(plugin_manager)
             self.assertIsNone(handler.session)
-            self.assertIs(handler._loop, asyncio.get_event_loop())
             self.check_empty_waiters(handler)
         anyio.run(coro)
 

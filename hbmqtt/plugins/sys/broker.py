@@ -49,8 +49,7 @@ class BrokerSysPlugin:
 
     def schedule_broadcast_sys_topic(self, topic_basename, data):
         return asyncio.ensure_future(
-            self._broadcast_sys_topic(DOLLAR_SYS_ROOT + topic_basename, data),
-            loop=self.context.loop
+            self._broadcast_sys_topic(DOLLAR_SYS_ROOT + topic_basename, data)
         )
 
     async def on_broker_pre_start(self, *args, **kwargs):
@@ -67,7 +66,7 @@ class BrokerSysPlugin:
             sys_interval = int(self.context.config.get('sys_interval', 0))
             if sys_interval > 0:
                 self.context.logger.debug("Setup $SYS broadcasting every %d secondes" % sys_interval)
-                self.sys_handle = self.context.loop.call_later(sys_interval, self.broadcast_dollar_sys_topics)
+                self.sys_handle = asyncio.get_running_loop().call_later(sys_interval, self.broadcast_dollar_sys_topics)
             else:
                 self.context.logger.debug("$SYS disabled")
         except KeyError:
@@ -129,7 +128,7 @@ class BrokerSysPlugin:
         # Reschedule
         sys_interval = int(self.context.config['sys_interval'])
         self.context.logger.debug("Broadcasting $SYS topics")
-        self.sys_handle = self.context.loop.call_later(sys_interval, self.broadcast_dollar_sys_topics)
+        self.sys_handle = asyncio.get_running_loop().call_later(sys_interval, self.broadcast_dollar_sys_topics)
 
     async def on_mqtt_packet_received(self, *args, **kwargs):
         packet = kwargs.get('packet')
