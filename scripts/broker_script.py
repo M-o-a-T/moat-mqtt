@@ -50,10 +50,6 @@ logger = logging.getLogger(__name__)
 
 
 def main(*args, **kwargs):
-    if sys.version_info[:2] < (3, 4):
-        logger.fatal("Error: Python 3.4+ is required")
-        sys.exit(-1)
-
     arguments = docopt(__doc__, version=get_version())
     formatter = "[%(asctime)s] :: %(levelname)s - %(message)s"
 
@@ -69,16 +65,11 @@ def main(*args, **kwargs):
     else:
         config = read_yaml_config(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_broker.yaml'))
         logger.debug("Using default configuration")
-    loop = asyncio.get_event_loop()
-    broker = Broker(config)
-    try:
-        loop.run_until_complete(broker.start())
-        loop.run_forever()
-    except KeyboardInterrupt:
-        loop.run_until_complete(broker.shutdown())
-    finally:
-        loop.close()
+
+    async with Broker(config) as broker:
+        while True:
+            await asyncio.sleep(99999)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

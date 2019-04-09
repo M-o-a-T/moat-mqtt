@@ -10,13 +10,10 @@ from hbmqtt.adapters import BufferReader
 
 
 class SubackPacketTest(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-
     def test_from_stream(self):
         data = b'\x90\x06\x00\x0a\x00\x01\x02\x80'
         stream = BufferReader(data)
-        message = self.loop.run_until_complete(SubackPacket.from_stream(stream))
+        message = asyncio.run(SubackPacket.from_stream(stream))
         self.assertEqual(message.payload.return_codes[0], SubackPayload.RETURN_CODE_00)
         self.assertEqual(message.payload.return_codes[1], SubackPayload.RETURN_CODE_01)
         self.assertEqual(message.payload.return_codes[2], SubackPayload.RETURN_CODE_02)

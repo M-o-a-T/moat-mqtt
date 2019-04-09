@@ -30,20 +30,26 @@ def adapt(reader, writer):
 
 
 class ProtocolHandlerTest(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-        self.plugin_manager = PluginManager("hbmqtt.test.plugins", context=None, loop=self.loop)
-
-    def tearDown(self):
-        self.loop.close()
+    def run_(self, server_mock, test_coro):
+        async def runner():
+            self.plugin_manager = PluginManager("hbmqtt.test.plugins", context=None)
+            server = await asyncio.start_server(server_mock, '127.0.0.1', 8888)
+            try:
+                await test_coro()
+            finally:
+                server.close()
+                await server.wait_closed()
+        asyncio.run(runner())
 
     def test_init_handler(self):
-        Session()
-        handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
-        self.assertIsNone(handler.session)
-        self.assertIs(handler._loop, self.loop)
-        self.check_empty_waiters(handler)
+        async def coro():
+            plugin_manager = PluginManager("hbmqtt.test.plugins", context=None)
+            Session()
+            handler = ProtocolHandler(plugin_manager)
+            self.assertIsNone(handler.session)
+            self.assertIs(handler._loop, asyncio.get_event_loop())
+            self.check_empty_waiters(handler)
+        asyncio.run(coro())
 
     def test_start_stop(self):
         async def server_mock(reader, writer):
@@ -58,18 +64,10 @@ class ProtocolHandlerTest(unittest.TestCase):
                 handler.attach(s, reader_adapted, writer_adapted)
                 await self.start_handler(handler, s)
                 await self.stop_handler(handler, s)
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)
 
     def test_publish_qos0(self):
         async def server_mock(reader, writer):
@@ -79,14 +77,14 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertEqual(packet.qos, QOS_0)
                 self.assertIsNone(packet.packet_id)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         async def test_coro():
             try:
                 s = Session()
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888, loop=self.loop)
+                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
                 reader_adapted, writer_adapted = adapt(reader, writer)
-                handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
+                handler = ProtocolHandler(self.plugin_manager)
                 handler.attach(s, reader_adapted, writer_adapted)
                 await self.start_handler(handler, s)
                 message = await handler.mqtt_publish('/topic', b'test_data', QOS_0, False)
@@ -97,18 +95,10 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertIsNone(message.pubrel_packet)
                 self.assertIsNone(message.pubcomp_packet)
                 await self.stop_handler(handler, s)
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
-        future = asyncio.Future(loop=self.loop)
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888, loop=self.loop)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)
 
     def test_publish_qos1(self):
         async def server_mock(reader, writer):
@@ -122,13 +112,14 @@ class ProtocolHandlerTest(unittest.TestCase):
                 puback = PubackPacket.build(packet.packet_id)
                 await puback.to_stream(writer)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         async def test_coro():
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888, loop=self.loop)
+                self.session = Session()
+                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
                 reader_adapted, writer_adapted = adapt(reader, writer)
-                self.handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
+                self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
                 message = await self.handler.mqtt_publish('/topic', b'test_data', QOS_1, False)
@@ -139,21 +130,10 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertIsNone(message.pubrel_packet)
                 self.assertIsNone(message.pubcomp_packet)
                 await self.stop_handler(self.handler, self.session)
-                if not future.done():
-                    future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
         self.handler = None
-        self.session = Session()
-        future = asyncio.Future(loop=self.loop)
-
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888, loop=self.loop)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)
 
     def test_publish_qos2(self):
         async def server_mock(reader, writer):
@@ -172,13 +152,14 @@ class ProtocolHandlerTest(unittest.TestCase):
                 pubcomp = PubcompPacket.build(packet.packet_id)
                 await pubcomp.to_stream(writer)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         async def test_coro():
+            self.session = Session()
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888, loop=self.loop)
+                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
                 reader_adapted, writer_adapted = adapt(reader, writer)
-                self.handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
+                self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
                 message = await self.handler.mqtt_publish('/topic', b'test_data', QOS_2, False)
@@ -189,21 +170,11 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertIsNotNone(message.pubrel_packet)
                 self.assertIsNotNone(message.pubcomp_packet)
                 await self.stop_handler(self.handler, self.session)
-                if not future.done():
-                    future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
         self.handler = None
-        self.session = Session()
-        future = asyncio.Future(loop=self.loop)
 
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888, loop=self.loop)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)
 
     def test_receive_qos0(self):
         async def server_mock(reader, writer):
@@ -211,10 +182,11 @@ class ProtocolHandlerTest(unittest.TestCase):
             await packet.to_stream(writer)
 
         async def test_coro():
+            self.session = Session()
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888, loop=self.loop)
+                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
                 reader_adapted, writer_adapted = adapt(reader, writer)
-                self.handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
+                self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
                 message = await self.handler.mqtt_deliver_next_message()
@@ -225,20 +197,11 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertIsNone(message.pubrel_packet)
                 self.assertIsNone(message.pubcomp_packet)
                 await self.stop_handler(self.handler, self.session)
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         self.handler = None
-        self.session = Session()
-        future = asyncio.Future(loop=self.loop)
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888, loop=self.loop)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)
 
     def test_receive_qos1(self):
         async def server_mock(reader, writer):
@@ -250,13 +213,14 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertEqual(packet.packet_id, puback.packet_id)
             except Exception as ae:
                 print(ae)
-                future.set_exception(ae)
+                raise
 
         async def test_coro():
+            self.session = Session()
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888, loop=self.loop)
+                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
                 reader_adapted, writer_adapted = adapt(reader, writer)
-                self.handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
+                self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
                 message = await self.handler.mqtt_deliver_next_message()
@@ -267,21 +231,11 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertIsNone(message.pubrel_packet)
                 self.assertIsNone(message.pubcomp_packet)
                 await self.stop_handler(self.handler, self.session)
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         self.handler = None
-        self.session = Session()
-        future = asyncio.Future(loop=self.loop)
-        self.event = asyncio.Event(loop=self.loop)
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888, loop=self.loop)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)
 
     def test_receive_qos2(self):
         async def server_mock(reader, writer):
@@ -298,13 +252,14 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertIsNotNone(pubcomp)
                 self.assertEqual(packet.packet_id, pubcomp.packet_id)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         async def test_coro():
+            self.session = Session()
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888, loop=self.loop)
+                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
                 reader_adapted, writer_adapted = adapt(reader, writer)
-                self.handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
+                self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
                 message = await self.handler.mqtt_deliver_next_message()
@@ -315,20 +270,11 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.assertIsNotNone(message.pubrel_packet)
                 self.assertIsNotNone(message.pubcomp_packet)
                 await self.stop_handler(self.handler, self.session)
-                future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         self.handler = None
-        self.session = Session()
-        future = asyncio.Future(loop=self.loop)
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888, loop=self.loop)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)
 
     async def start_handler(self, handler, session):
         self.check_empty_waiters(handler)
@@ -364,34 +310,25 @@ class ProtocolHandlerTest(unittest.TestCase):
                 puback = PubackPacket.build(packet.packet_id)
                 await puback.to_stream(writer)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         async def test_coro():
+            self.session = Session()
+            message = OutgoingApplicationMessage(1, '/topic', QOS_1, b'test_data', False)
+            message.publish_packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_1, False)
+            self.session.inflight_out[1] = message
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888, loop=self.loop)
+                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
                 reader_adapted, writer_adapted = adapt(reader, writer)
-                self.handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
+                self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.handler.start()
                 await self.stop_handler(self.handler, self.session)
-                if not future.done():
-                    future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
         self.handler = None
-        self.session = Session()
-        message = OutgoingApplicationMessage(1, '/topic', QOS_1, b'test_data', False)
-        message.publish_packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_1, False)
-        self.session.inflight_out[1] = message
-        future = asyncio.Future(loop=self.loop)
 
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888, loop=self.loop)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)
 
     def test_publish_qos2_retry(self):
         async def server_mock(reader, writer):
@@ -410,31 +347,22 @@ class ProtocolHandlerTest(unittest.TestCase):
                 pubcomp = PubcompPacket.build(packet.packet_id)
                 await pubcomp.to_stream(writer)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
 
         async def test_coro():
+            self.session = Session()
+            message = OutgoingApplicationMessage(1, '/topic', QOS_2, b'test_data', False)
+            message.publish_packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_2, False)
+            self.session.inflight_out[1] = message
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888, loop=self.loop)
+                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
                 reader_adapted, writer_adapted = adapt(reader, writer)
-                self.handler = ProtocolHandler(self.plugin_manager, loop=self.loop)
+                self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.handler.start()
                 await self.stop_handler(self.handler, self.session)
-                if not future.done():
-                    future.set_result(True)
             except Exception as ae:
-                future.set_exception(ae)
+                raise
         self.handler = None
-        self.session = Session()
-        message = OutgoingApplicationMessage(1, '/topic', QOS_2, b'test_data', False)
-        message.publish_packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_2, False)
-        self.session.inflight_out[1] = message
-        future = asyncio.Future(loop=self.loop)
 
-        coro = asyncio.start_server(server_mock, '127.0.0.1', 8888, loop=self.loop)
-        server = self.loop.run_until_complete(coro)
-        self.loop.run_until_complete(test_coro())
-        server.close()
-        self.loop.run_until_complete(server.wait_closed())
-        if future.exception():
-            raise future.exception()
+        self.run_(server_mock, test_coro)

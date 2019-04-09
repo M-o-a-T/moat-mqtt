@@ -15,9 +15,6 @@ logging.basicConfig(level=logging.DEBUG, format=formatter)
 
 
 class TestAnonymousAuthPlugin(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-
     def test_allow_anonymous(self):
         context = BaseContext()
         context.logger = logging.getLogger(__name__)
@@ -26,11 +23,13 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
                 'allow-anonymous': True
             }
         }
-        s = Session()
-        s.username = ""
-        auth_plugin = AnonymousAuthPlugin(context)
-        ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
-        self.assertTrue(ret)
+        async def coro():
+            s = Session()
+            s.username = ""
+            auth_plugin = AnonymousAuthPlugin(context)
+            ret = await auth_plugin.authenticate(session=s)
+            self.assertTrue(ret)
+        asyncio.run(coro())
 
     def test_disallow_anonymous(self):
         context = BaseContext()
@@ -40,11 +39,13 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
                 'allow-anonymous': False
             }
         }
-        s = Session()
-        s.username = ""
-        auth_plugin = AnonymousAuthPlugin(context)
-        ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
-        self.assertFalse(ret)
+        async def coro():
+            s = Session()
+            s.username = ""
+            auth_plugin = AnonymousAuthPlugin(context)
+            ret = await auth_plugin.authenticate(session=s)
+            self.assertFalse(ret)
+        asyncio.run(coro())
 
     def test_allow_nonanonymous(self):
         context = BaseContext()
@@ -54,17 +55,16 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
                 'allow-anonymous': False
             }
         }
-        s = Session()
-        s.username = "test"
-        auth_plugin = AnonymousAuthPlugin(context)
-        ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
-        self.assertTrue(ret)
+        async def coro():
+            s = Session()
+            s.username = "test"
+            auth_plugin = AnonymousAuthPlugin(context)
+            ret = await auth_plugin.authenticate(session=s)
+            self.assertTrue(ret)
+        asyncio.run(coro())
 
 
 class TestFileAuthPlugin(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-
     def test_allow(self):
         context = BaseContext()
         context.logger = logging.getLogger(__name__)
@@ -73,12 +73,14 @@ class TestFileAuthPlugin(unittest.TestCase):
                 'password-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd")
             }
         }
-        s = Session()
-        s.username = "user"
-        s.password = "test"
-        auth_plugin = FileAuthPlugin(context)
-        ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
-        self.assertTrue(ret)
+        async def coro():
+            s = Session()
+            s.username = "user"
+            s.password = "test"
+            auth_plugin = FileAuthPlugin(context)
+            ret = await auth_plugin.authenticate(session=s)
+            self.assertTrue(ret)
+        asyncio.run(coro())
 
     def test_wrong_password(self):
         context = BaseContext()
@@ -88,12 +90,14 @@ class TestFileAuthPlugin(unittest.TestCase):
                 'password-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd")
             }
         }
-        s = Session()
-        s.username = "user"
-        s.password = "wrong password"
-        auth_plugin = FileAuthPlugin(context)
-        ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
-        self.assertFalse(ret)
+        async def coro():
+            s = Session()
+            s.username = "user"
+            s.password = "wrong password"
+            auth_plugin = FileAuthPlugin(context)
+            ret = await auth_plugin.authenticate(session=s)
+            self.assertFalse(ret)
+        asyncio.run(coro())
 
     def test_unknown_password(self):
         context = BaseContext()
@@ -103,9 +107,11 @@ class TestFileAuthPlugin(unittest.TestCase):
                 'password-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd")
             }
         }
-        s = Session()
-        s.username = "some user"
-        s.password = "some password"
-        auth_plugin = FileAuthPlugin(context)
-        ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
-        self.assertFalse(ret)
+        async def coro():
+            s = Session()
+            s.username = "some user"
+            s.password = "some password"
+            auth_plugin = FileAuthPlugin(context)
+            ret = await auth_plugin.authenticate(session=s)
+            self.assertFalse(ret)
+        asyncio.run(coro())

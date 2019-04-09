@@ -49,7 +49,7 @@ class TestSQLitePlugin(unittest.TestCase):
     #     sql_plugin = SQLitePlugin(context)
     #     s = Session()
     #     s.client_id = 'test_save_session'
-    #     ret = self.loop.run_until_complete(sql_plugin.save_session(session=s))
+    #     ret = asyncio.run(sql_plugin.save_session(session=s))
     #
     #     conn = sqlite3.connect(dbfile)
     #     cursor = conn.cursor()

@@ -125,11 +125,7 @@ async def do_pub(client, arguments):
         logger.fatal("Publish canceled due to prvious error")
 
 
-def main(*args, **kwargs):
-    if sys.version_info[:2] < (3, 4):
-        logger.fatal("Error: Python 3.4+ is required")
-        sys.exit(-1)
-
+async def main(*args, **kwargs):
     arguments = docopt(__doc__, version=get_version())
     #print(arguments)
     formatter = "[%(asctime)s] :: %(levelname)s - %(message)s"
@@ -146,7 +142,6 @@ def main(*args, **kwargs):
     else:
         config = read_yaml_config(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_client.yaml'))
         logger.debug("Using default configuration")
-    loop = asyncio.get_event_loop()
 
     client_id = arguments.get("-i", None)
     if not client_id:
@@ -162,10 +157,9 @@ def main(*args, **kwargs):
         config['will']['qos'] = int(arguments['--will-qos'])
         config['will']['retain'] = arguments['--will-retain']
 
-    client = MQTTClient(client_id=client_id, config=config, loop=loop)
-    loop.run_until_complete(do_pub(client, arguments))
-    loop.close()
+    client = MQTTClient(client_id=client_id, config=config)
+    await do_pub(client, arguments)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

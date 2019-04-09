@@ -10,13 +10,10 @@ from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
 
 class PublishPacketTest(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-
     def test_from_stream_qos_0(self):
         data = b'\x31\x11\x00\x05topic0123456789'
         stream = BufferReader(data)
-        message = self.loop.run_until_complete(PublishPacket.from_stream(stream))
+        message = asyncio.run(PublishPacket.from_stream(stream))
         self.assertEqual(message.variable_header.topic_name, 'topic')
         self.assertEqual(message.variable_header.packet_id, None)
         self.assertFalse((message.fixed_header.flags >> 1) & 0x03)
@@ -26,7 +23,7 @@ class PublishPacketTest(unittest.TestCase):
     def test_from_stream_qos_2(self):
         data = b'\x37\x13\x00\x05topic\x00\x0a0123456789'
         stream = BufferReader(data)
-        message = self.loop.run_until_complete(PublishPacket.from_stream(stream))
+        message = asyncio.run(PublishPacket.from_stream(stream))
         self.assertEqual(message.variable_header.topic_name, 'topic')
         self.assertEqual(message.variable_header.packet_id, 10)
         self.assertTrue((message.fixed_header.flags >> 1) & 0x03)

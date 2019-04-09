@@ -11,13 +11,10 @@ from hbmqtt.adapters import BufferReader
 
 
 class SubscribePacketTest(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-
     def test_from_stream(self):
         data = b'\x80\x0e\x00\x0a\x00\x03a/b\x01\x00\x03c/d\x02'
         stream = BufferReader(data)
-        message = self.loop.run_until_complete(SubscribePacket.from_stream(stream))
+        message = asyncio.run(SubscribePacket.from_stream(stream))
         (topic, qos) = message.payload.topics[0]
         self.assertEqual(topic, 'a/b')
         self.assertEqual(qos, QOS_1)

@@ -13,9 +13,6 @@ from hbmqtt.codecs import (
 
 
 class TestCodecs(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-
     def test_bytes_to_hex_str(self):
         ret = bytes_to_hex_str(b'\x7f')
         self.assertEqual(ret, '0x7f')
@@ -27,10 +24,12 @@ class TestCodecs(unittest.TestCase):
         self.assertEqual(ret, 65535)
 
     def test_decode_string(self):
-        stream = asyncio.StreamReader(loop=self.loop)
-        stream.feed_data(b'\x00\x02AA')
-        ret = self.loop.run_until_complete(decode_string(stream))
-        self.assertEqual(ret, 'AA')
+        async def test_coro():
+            stream = asyncio.StreamReader()
+            stream.feed_data(b'\x00\x02AA')
+            ret = await decode_string(stream)
+            self.assertEqual(ret, 'AA')
+        asyncio.run(test_coro())
 
     def test_encode_string(self):
         encoded = encode_string('AA')

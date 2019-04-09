@@ -35,6 +35,8 @@ broker = Broker(config)
 
 async def test_coro():
     await broker.start()
+    while True:
+        await asyncio.sleep(99999)
     #await asyncio.sleep(5)
     #await broker.shutdown()
 
@@ -43,5 +45,4 @@ if __name__ == '__main__':
     formatter = "[%(asctime)s] :: %(levelname)s :: %(name)s :: %(message)s"
     #formatter = "%(asctime)s :: %(levelname)s :: %(message)s"
     logging.basicConfig(level=logging.INFO, format=formatter)
-    asyncio.get_event_loop().run_until_complete(test_coro())
-    asyncio.get_event_loop().run_forever()
+    asyncio.run(test_coro())

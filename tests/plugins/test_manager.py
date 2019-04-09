@@ -33,60 +33,69 @@ class EventTestPlugin:
 
 
 class TestPluginManager(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-
     def test_load_plugin(self):
-        manager = PluginManager("hbmqtt.test.plugins", context=None)
-        self.assertTrue(len(manager._plugins) > 0)
+        async def coro():
+            manager = PluginManager("hbmqtt.test.plugins", context=None)
+            self.assertTrue(len(manager._plugins) > 0)
+        asyncio.run(coro())
 
     def test_fire_event(self):
-        async def fire_event():
+        async def fire_event(manager):
             await manager.fire_event("test")
-            await asyncio.sleep(1, loop=self.loop)
+            await asyncio.sleep(1)
             await manager.close()
 
-        manager = PluginManager("hbmqtt.test.plugins", context=None, loop=self.loop)
-        self.loop.run_until_complete(fire_event())
-        plugin = manager.get_plugin("event_plugin")
-        self.assertTrue(plugin.object.test_flag)
+        async def coro():
+            manager = PluginManager("hbmqtt.test.plugins", context=None)
+            await fire_event(manager)
+            plugin = manager.get_plugin("event_plugin")
+            self.assertTrue(plugin.object.test_flag)
+        asyncio.run(coro())
 
     def test_fire_event_wait(self):
-        async def fire_event():
+        async def fire_event(manager):
             await manager.fire_event("test", wait=True)
             await manager.close()
 
-        manager = PluginManager("hbmqtt.test.plugins", context=None, loop=self.loop)
-        self.loop.run_until_complete(fire_event())
-        plugin = manager.get_plugin("event_plugin")
-        self.assertTrue(plugin.object.test_flag)
+        async def coro():
+            manager = PluginManager("hbmqtt.test.plugins", context=None)
+            await fire_event(manager)
+            plugin = manager.get_plugin("event_plugin")
+            self.assertTrue(plugin.object.test_flag)
+        asyncio.run(coro())
 
     def test_map_coro(self):
-        async def call_coro():
+        async def call_coro(manager):
             await manager.map_plugin_coro('test_coro')
 
-        manager = PluginManager("hbmqtt.test.plugins", context=None, loop=self.loop)
-        self.loop.run_until_complete(call_coro())
-        plugin = manager.get_plugin("event_plugin")
-        self.assertTrue(plugin.object.test_coro)
+        async def coro():
+            manager = PluginManager("hbmqtt.test.plugins", context=None)
+            await call_coro(manager)
+            plugin = manager.get_plugin("event_plugin")
+            self.assertTrue(plugin.object.test_coro)
+        asyncio.run(coro())
 
     def test_map_coro_return(self):
-        async def call_coro():
+        async def call_coro(manager):
             return await manager.map_plugin_coro('ret_coro')
 
-        manager = PluginManager("hbmqtt.test.plugins", context=None, loop=self.loop)
-        ret = self.loop.run_until_complete(call_coro())
-        plugin = manager.get_plugin("event_plugin")
-        self.assertEqual(ret[plugin], "TEST")
+        async def coro():
+            manager = PluginManager("hbmqtt.test.plugins", context=None)
+            ret = await call_coro(manager)
+            plugin = manager.get_plugin("event_plugin")
+            self.assertEqual(ret[plugin], "TEST")
+        asyncio.run(coro())
 
     def test_map_coro_filter(self):
         """
         Run plugin coro but expect no return as an empty filter is given
         :return:
         """
-        async def call_coro():
+        async def call_coro(manager):
             return await manager.map_plugin_coro('ret_coro', filter_plugins=[])
 
-        manager = PluginManager("hbmqtt.test.plugins", context=None, loop=self.loop)
-        ret = self.loop.run_until_complete(call_coro())
-        self.assertTrue(len(ret) == 0)
+        async def coro():
+            manager = PluginManager("hbmqtt.test.plugins", context=None)
+            ret = await call_coro(manager)
+            self.assertTrue(len(ret) == 0)
+        asyncio.run(coro())
