@@ -48,26 +48,20 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_connect_tcp(self):
         async def test_coro():
-            try:
-                client = MQTTClient()
-                await client.connect('mqtt://test.mosquitto.org/')
-                self.assertIsNotNone(client.session)
-                await client.disconnect()
-            except Exception as ae:
-                raise
+            client = MQTTClient()
+            await client.connect('mqtt://test.mosquitto.org/')
+            self.assertIsNotNone(client.session)
+            await client.disconnect()
 
         self.loop.run_until_complete(test_coro())
 
     def test_connect_tcp_secure(self):
         async def test_coro():
-            try:
-                client = MQTTClient(config={'check_hostname': False})
-                ca = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mosquitto.org.crt')
-                await client.connect('mqtts://test.mosquitto.org/', cafile=ca)
-                self.assertIsNotNone(client.session)
-                await client.disconnect()
-            except Exception as ae:
-                raise
+            client = MQTTClient(config={'check_hostname': False})
+            ca = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mosquitto.org.crt')
+            await client.connect('mqtts://test.mosquitto.org/', cafile=ca)
+            self.assertIsNotNone(client.session)
+            await client.disconnect()
 
         self.loop.run_until_complete(test_coro())
 
@@ -86,110 +80,92 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_connect_ws(self):
         async def test_coro():
-            try:
-                broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
-                await broker.start()
-                client = MQTTClient()
-                await client.connect('ws://127.0.0.1:8080/')
-                self.assertIsNotNone(client.session)
-                await client.disconnect()
-                await broker.shutdown()
-            except Exception as ae:
-                raise
+            broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
+            await broker.start()
+            client = MQTTClient()
+            await client.connect('ws://127.0.0.1:8080/')
+            self.assertIsNotNone(client.session)
+            await client.disconnect()
+            await broker.shutdown()
 
         self.loop.run_until_complete(test_coro())
 
     def test_reconnect_ws_retain_username_password(self):
         async def test_coro():
-            try:
-                broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
-                await broker.start()
-                client = MQTTClient()
-                await client.connect('ws://fred:password@127.0.0.1:8080/')
-                self.assertIsNotNone(client.session)
-                await client.disconnect()
-                await client.reconnect()
+            broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
+            await broker.start()
+            client = MQTTClient()
+            await client.connect('ws://fred:password@127.0.0.1:8080/')
+            self.assertIsNotNone(client.session)
+            await client.disconnect()
+            await client.reconnect()
 
-                self.assertIsNotNone(client.session.username)
-                self.assertIsNotNone(client.session.password)
-                await broker.shutdown()
-            except Exception as ae:
-                raise
+            self.assertIsNotNone(client.session.username)
+            self.assertIsNotNone(client.session.password)
+            await broker.shutdown()
 
         self.loop.run_until_complete(test_coro())
 
     def test_connect_ws_secure(self):
         async def test_coro():
-            try:
-                broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
-                await broker.start()
-                client = MQTTClient()
-                ca = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mosquitto.org.crt')
-                await client.connect('ws://127.0.0.1:8081/', cafile=ca)
-                self.assertIsNotNone(client.session)
-                await client.disconnect()
-                await broker.shutdown()
-            except Exception as ae:
-                raise
+            broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
+            await broker.start()
+            client = MQTTClient()
+            ca = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mosquitto.org.crt')
+            await client.connect('ws://127.0.0.1:8081/', cafile=ca)
+            self.assertIsNotNone(client.session)
+            await client.disconnect()
+            await broker.shutdown()
 
         self.loop.run_until_complete(test_coro())
 
     def test_ping(self):
         async def test_coro():
-            try:
-                broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
-                await broker.start()
-                client = MQTTClient()
-                await client.connect('mqtt://127.0.0.1/')
-                self.assertIsNotNone(client.session)
-                await client.ping()
-                await client.disconnect()
-                await broker.shutdown()
-            except Exception as ae:
-                raise
+            broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
+            await broker.start()
+            client = MQTTClient()
+            await client.connect('mqtt://127.0.0.1/')
+            self.assertIsNotNone(client.session)
+            await client.ping()
+            await client.disconnect()
+            await broker.shutdown()
 
         self.loop.run_until_complete(test_coro())
 
     def test_subscribe(self):
         async def test_coro():
-            try:
-                broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
-                await broker.start()
-                client = MQTTClient()
-                await client.connect('mqtt://127.0.0.1/')
-                self.assertIsNotNone(client.session)
-                ret = await client.subscribe([
-                    ('$SYS/broker/uptime', QOS_0),
-                    ('$SYS/broker/uptime', QOS_1),
-                    ('$SYS/broker/uptime', QOS_2),
-                ])
-                self.assertEqual(ret[0], QOS_0)
-                self.assertEqual(ret[1], QOS_1)
-                self.assertEqual(ret[2], QOS_2)
-                await client.disconnect()
-                await broker.shutdown()
-            except Exception as ae:
-                raise
+            broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
+            await broker.start()
+            client = MQTTClient()
+            await client.connect('mqtt://127.0.0.1/')
+            self.assertIsNotNone(client.session)
+            ret = await client.subscribe([
+                ('$SYS/broker/uptime', QOS_0),
+                ('$SYS/broker/uptime', QOS_1),
+                ('$SYS/broker/uptime', QOS_2),
+            ])
+            self.assertEqual(ret[0], QOS_0)
+            self.assertEqual(ret[1], QOS_1)
+            self.assertEqual(ret[2], QOS_2)
+            await client.disconnect()
+            await broker.shutdown()
 
         self.loop.run_until_complete(test_coro())
 
     def test_unsubscribe(self):
         async def test_coro():
-            try:
-                broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
-                await broker.start()
-                client = MQTTClient()
-                await client.connect('mqtt://127.0.0.1/')
-                self.assertIsNotNone(client.session)
-                ret = await client.subscribe([
-                    ('$SYS/broker/uptime', QOS_0),
-                ])
-                self.assertEqual(ret[0], QOS_0)
-                await client.unsubscribe(['$SYS/broker/uptime'])
-                await client.disconnect()
-                await broker.shutdown()
-            except Exception as ae:
-                raise
+            broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
+            await broker.start()
+            client = MQTTClient()
+            await client.connect('mqtt://127.0.0.1/')
+            self.assertIsNotNone(client.session)
+            ret = await client.subscribe([
+                ('$SYS/broker/uptime', QOS_0),
+            ])
+            self.assertEqual(ret[0], QOS_0)
+            await client.unsubscribe(['$SYS/broker/uptime'])
+            await client.disconnect()
+            await broker.shutdown()
 
         self.loop.run_until_complete(test_coro())
 
@@ -197,50 +173,44 @@ class MQTTClientTest(unittest.TestCase):
         data = b'data'
 
         async def test_coro():
-            try:
-                broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
-                await broker.start()
-                client = MQTTClient()
-                await client.connect('mqtt://127.0.0.1/')
-                self.assertIsNotNone(client.session)
-                ret = await client.subscribe([
-                    ('test_topic', QOS_0),
-                ])
-                self.assertEqual(ret[0], QOS_0)
-                client_pub = MQTTClient()
-                await client_pub.connect('mqtt://127.0.0.1/')
-                await client_pub.publish('test_topic', data, QOS_0)
-                await client_pub.disconnect()
-                message = await client.deliver_message()
-                self.assertIsNotNone(message)
-                self.assertIsNotNone(message.publish_packet)
-                self.assertEqual(message.data, data)
-                await client.unsubscribe(['$SYS/broker/uptime'])
-                await client.disconnect()
-                await broker.shutdown()
-            except Exception as ae:
-                raise
+            broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
+            await broker.start()
+            client = MQTTClient()
+            await client.connect('mqtt://127.0.0.1/')
+            self.assertIsNotNone(client.session)
+            ret = await client.subscribe([
+                ('test_topic', QOS_0),
+            ])
+            self.assertEqual(ret[0], QOS_0)
+            client_pub = MQTTClient()
+            await client_pub.connect('mqtt://127.0.0.1/')
+            await client_pub.publish('test_topic', data, QOS_0)
+            await client_pub.disconnect()
+            message = await client.deliver_message()
+            self.assertIsNotNone(message)
+            self.assertIsNotNone(message.publish_packet)
+            self.assertEqual(message.data, data)
+            await client.unsubscribe(['$SYS/broker/uptime'])
+            await client.disconnect()
+            await broker.shutdown()
 
         self.loop.run_until_complete(test_coro())
 
     def test_deliver_timeout(self):
         async def test_coro():
-            try:
-                broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
-                await broker.start()
-                client = MQTTClient()
-                await client.connect('mqtt://127.0.0.1/')
-                self.assertIsNotNone(client.session)
-                ret = await client.subscribe([
-                    ('test_topic', QOS_0),
-                ])
-                self.assertEqual(ret[0], QOS_0)
-                with self.assertRaises(asyncio.TimeoutError):
-                    await client.deliver_message(timeout=2)
-                await client.unsubscribe(['$SYS/broker/uptime'])
-                await client.disconnect()
-                await broker.shutdown()
-            except Exception as ae:
-                raise
+            broker = Broker(broker_config, plugin_namespace="hbmqtt.test.plugins")
+            await broker.start()
+            client = MQTTClient()
+            await client.connect('mqtt://127.0.0.1/')
+            self.assertIsNotNone(client.session)
+            ret = await client.subscribe([
+                ('test_topic', QOS_0),
+            ])
+            self.assertEqual(ret[0], QOS_0)
+            with self.assertRaises(asyncio.TimeoutError):
+                await client.deliver_message(timeout=2)
+            await client.unsubscribe(['$SYS/broker/uptime'])
+            await client.disconnect()
+            await broker.shutdown()
 
         self.loop.run_until_complete(test_coro())
