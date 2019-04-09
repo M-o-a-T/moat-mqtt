@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 
-__all__ = ['get_plugin_manager', 'BaseContext', 'PluginManager']
+__all__ = ['BaseContext', 'PluginManager']
 
 import pkg_resources
 import logging
@@ -14,14 +14,6 @@ from collections import namedtuple
 
 
 Plugin = namedtuple('Plugin', ['name', 'ep', 'object'])
-
-plugins_manager = dict()
-
-
-def get_plugin_manager(namespace):
-    global plugins_manager
-    return plugins_manager.get(namespace, None)
-
 
 class BaseContext:
     def __init__(self):
@@ -35,8 +27,6 @@ class PluginManager:
     This plugin manager uses coroutines to run plugin call asynchronously in an event queue
     """
     def __init__(self, namespace, context):
-        global plugins_manager
-
         self.logger = logging.getLogger(namespace)
         if context is None:
             self.context = BaseContext()
@@ -44,8 +34,6 @@ class PluginManager:
             self.context = context
         self._plugins = []
         self._load_plugins(namespace)
-        self._fired_events = []
-        plugins_manager[namespace] = self
 
     @property
     def app_context(self):
