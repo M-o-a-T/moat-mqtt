@@ -51,13 +51,6 @@ class AsyncMock(MagicMock):
         return self
 
 class BrokerTest(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-
-    def tearDown(self):
-        self.loop.close()
-
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_start_stop(self, MockPluginManager):
         async def test_coro():
@@ -76,7 +69,7 @@ class BrokerTest(unittest.TestCase):
                     call().fire_event(EVENT_BROKER_POST_SHUTDOWN)], any_order=True)
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_connect(self, MockPluginManager):
@@ -98,7 +91,7 @@ class BrokerTest(unittest.TestCase):
                     call().fire_event(EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client.session.client_id)],
                 any_order=True)
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_connect_will_flag(self, MockPluginManager):
@@ -108,7 +101,7 @@ class BrokerTest(unittest.TestCase):
             self.assertTrue(broker.transitions.is_started())
 
             conn_reader, conn_writer = \
-                await asyncio.open_connection('127.0.0.1', 1883, loop=self.loop)
+                await asyncio.open_connection('127.0.0.1', 1883)
             reader = StreamReaderAdapter(conn_reader)
             writer = StreamWriterAdapter(conn_writer)
 
@@ -137,7 +130,7 @@ class BrokerTest(unittest.TestCase):
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_connect_clean_session_false(self, MockPluginManager):
@@ -157,7 +150,7 @@ class BrokerTest(unittest.TestCase):
             await asyncio.sleep(0.1)
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe(self, MockPluginManager):
@@ -187,7 +180,7 @@ class BrokerTest(unittest.TestCase):
                                     client_id=client.session.client_id,
                                     topic='/topic', qos=QOS_0)], any_order=True)
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_twice(self, MockPluginManager):
@@ -223,7 +216,7 @@ class BrokerTest(unittest.TestCase):
                                     client_id=client.session.client_id,
                                     topic='/topic', qos=QOS_0)], any_order=True)
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_unsubscribe(self, MockPluginManager):
@@ -261,7 +254,7 @@ class BrokerTest(unittest.TestCase):
                                         topic='/topic')
                 ], any_order=True)
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish(self, MockPluginManager):
@@ -287,7 +280,7 @@ class BrokerTest(unittest.TestCase):
                                         message=ret_message),
                 ], any_order=True)
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     #@patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_dup(self):
@@ -297,7 +290,7 @@ class BrokerTest(unittest.TestCase):
             self.assertTrue(broker.transitions.is_started())
 
             conn_reader, conn_writer = \
-                await asyncio.open_connection('127.0.0.1', 1883, loop=self.loop)
+                await asyncio.open_connection('127.0.0.1', 1883)
             reader = StreamReaderAdapter(conn_reader)
             writer = StreamWriterAdapter(conn_writer)
 
@@ -314,7 +307,7 @@ class BrokerTest(unittest.TestCase):
 
             publish_1 = PublishPacket.build('/test', b'data', 1, False, QOS_2, False)
             await publish_1.to_stream(writer)
-            asyncio.ensure_future(PubrecPacket.from_stream(reader), loop=self.loop)
+            asyncio.ensure_future(PubrecPacket.from_stream(reader))
 
             await asyncio.sleep(2)
 
@@ -331,7 +324,7 @@ class BrokerTest(unittest.TestCase):
             await asyncio.sleep(0.1)
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_invalid_topic(self, MockPluginManager):
@@ -351,7 +344,7 @@ class BrokerTest(unittest.TestCase):
             await broker.shutdown()
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_big(self, MockPluginManager):
@@ -377,7 +370,7 @@ class BrokerTest(unittest.TestCase):
                                         message=ret_message),
                 ], any_order=True)
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_retain(self, MockPluginManager):
@@ -401,7 +394,7 @@ class BrokerTest(unittest.TestCase):
             await broker.shutdown()
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_retain_delete(self, MockPluginManager):
@@ -420,7 +413,7 @@ class BrokerTest(unittest.TestCase):
             await broker.shutdown()
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_publish(self, MockPluginManager):
@@ -448,7 +441,7 @@ class BrokerTest(unittest.TestCase):
             await broker.shutdown()
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_invalid(self, MockPluginManager):
@@ -468,7 +461,7 @@ class BrokerTest(unittest.TestCase):
             await broker.shutdown()
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_publish_dollar_topic_1(self, MockPluginManager):
@@ -498,7 +491,7 @@ class BrokerTest(unittest.TestCase):
             await broker.shutdown()
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_publish_dollar_topic_2(self, MockPluginManager):
@@ -528,7 +521,7 @@ class BrokerTest(unittest.TestCase):
             await broker.shutdown()
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_retain_subscribe(self, MockPluginManager):
@@ -560,7 +553,7 @@ class BrokerTest(unittest.TestCase):
             await broker.shutdown()
             self.assertTrue(broker.transitions.is_stopped())
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     async def _client_publish(self, topic, data, qos, retain=False):
         pub_client = MQTTClient()

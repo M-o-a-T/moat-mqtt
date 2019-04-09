@@ -39,13 +39,6 @@ broker_config = {
 
 
 class MQTTClientTest(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-
-    def tearDown(self):
-        self.loop.close()
-
     def test_connect_tcp(self):
         async def test_coro():
             client = MQTTClient()
@@ -53,7 +46,7 @@ class MQTTClientTest(unittest.TestCase):
             self.assertIsNotNone(client.session)
             await client.disconnect()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_connect_tcp_secure(self):
         async def test_coro():
@@ -63,7 +56,7 @@ class MQTTClientTest(unittest.TestCase):
             self.assertIsNotNone(client.session)
             await client.disconnect()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_connect_tcp_failure(self):
         async def test_coro():
@@ -76,7 +69,7 @@ class MQTTClientTest(unittest.TestCase):
             else:
                 raise RuntimeError("should not be able to connect")
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_connect_ws(self):
         async def test_coro():
@@ -88,7 +81,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_reconnect_ws_retain_username_password(self):
         async def test_coro():
@@ -104,7 +97,7 @@ class MQTTClientTest(unittest.TestCase):
             self.assertIsNotNone(client.session.password)
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_connect_ws_secure(self):
         async def test_coro():
@@ -117,7 +110,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_ping(self):
         async def test_coro():
@@ -130,7 +123,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_subscribe(self):
         async def test_coro():
@@ -150,7 +143,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_unsubscribe(self):
         async def test_coro():
@@ -167,7 +160,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_deliver(self):
         data = b'data'
@@ -194,7 +187,7 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
 
     def test_deliver_timeout(self):
         async def test_coro():
@@ -213,4 +206,4 @@ class MQTTClientTest(unittest.TestCase):
             await client.disconnect()
             await broker.shutdown()
 
-        self.loop.run_until_complete(test_coro())
+        asyncio.run(test_coro())
