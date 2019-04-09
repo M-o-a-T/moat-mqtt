@@ -212,7 +212,7 @@ class MQTTClient:
         reconnect_max_interval = self.config.get('reconnect_max_interval', 10)
         reconnect_retries = self.config.get('reconnect_retries', 5)
         nb_attempt = 1
-        await asyncio.sleep(1)
+        await anyio.sleep(1)
         while True:
             try:
                 self.logger.debug("Reconnect attempt %d ..." % nb_attempt)
@@ -225,7 +225,7 @@ class MQTTClient:
                 exp = 2 ** nb_attempt
                 delay = exp if exp < reconnect_max_interval else reconnect_max_interval
                 self.logger.debug("Waiting %d second before next attempt" % delay)
-                await asyncio.sleep(delay)
+                await anyio.sleep(delay)
                 nb_attempt += 1
 
     async def _do_connect(self):

@@ -4,7 +4,7 @@
 import logging
 import ssl
 import websockets
-import asyncio
+import asyncio,anyio
 import sys
 import re
 from asyncio import CancelledError
@@ -392,7 +392,7 @@ class Broker:
                 # Backwards compat: MachineError is raised by transitions < 0.5.0.
                 self.logger.warning("Client %s is reconnecting too quickly, make it wait" % client_session.client_id)
                 # Wait a bit may be client is reconnecting too fast
-                await asyncio.sleep(1)
+                await anyio.sleep(1)
         await handler.mqtt_connack_authorize(authenticated)
 
         await self.plugins_manager.fire_event(EVENT_BROKER_CLIENT_CONNECTED, client_id=client_session.client_id)

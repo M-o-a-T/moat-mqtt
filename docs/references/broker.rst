@@ -20,7 +20,7 @@ The following example shows how to start a broker using the default configuratio
         broker = Broker()
         async with Broker() as broker:
             while True:
-                await asyncio.sleep(99999)
+                await anyio.sleep(99999)
 
 
     if __name__ == '__main__':
