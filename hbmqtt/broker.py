@@ -286,7 +286,7 @@ class Broker:
         except Exception as e:
             self.logger.error("Broker startup failed: %s" % e)
             self.transitions.starting_fail()
-            raise BrokerException("Broker instance can't be started: %s" % e)
+            raise BrokerException("Broker instance can't be started") from e
 
     async def shutdown(self):
         """
@@ -301,8 +301,7 @@ class Broker:
             self.transitions.shutdown()
         except (MachineError, ValueError) as exc:
             # Backwards compat: MachineError is raised by transitions < 0.5.0.
-            self.logger.debug("Invalid method call at this moment: %s" % exc)
-            raise BrokerException("Broker instance can't be stopped: %s" % exc)
+            raise BrokerException("Broker instance can't be stopped") from exc
 
         # Fire broker_shutdown event to plugins
         await self.plugins_manager.fire_event(EVENT_BROKER_PRE_SHUTDOWN)
