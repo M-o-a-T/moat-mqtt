@@ -1,7 +1,8 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from asyncio import futures, Queue
+import anyio
+from asyncio import futures
 from hbmqtt.mqtt.protocol.handler import ProtocolHandler
 from hbmqtt.mqtt.connack import (
     CONNECTION_ACCEPTED, UNACCEPTABLE_PROTOCOL_VERSION, IDENTIFIER_REJECTED,
@@ -25,8 +26,8 @@ class BrokerProtocolHandler(ProtocolHandler):
     def __init__(self, plugins_manager: PluginManager, session: Session=None):
         super().__init__(plugins_manager, session)
         self._disconnect_waiter = None
-        self._pending_subscriptions = Queue()
-        self._pending_unsubscriptions = Queue()
+        self._pending_subscriptions = anyio.create_queue(9999)
+        self._pending_unsubscriptions = anyio.create_queue(9999)
 
     async def start(self):
         if self._disconnect_waiter is None:

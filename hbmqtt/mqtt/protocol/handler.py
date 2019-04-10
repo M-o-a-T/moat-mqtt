@@ -224,9 +224,9 @@ class ProtocolHandler:
                 self.logger.warning("[MQTT-3.3.1-2] DUP flag must set to 0 for QOS 0 message. Message ignored: %s" %
                                     repr(app_message.publish_packet))
             else:
-                try:
-                    self.session.delivered_message_queue.put_nowait(app_message)
-                except:
+                if self.session.delivered_message_queue.qsize() < 9999:
+                    await self.session.delivered_message_queue.put(app_message)
+                else:
                     self.logger.warning("delivered messages queue full. QOS_0 message discarded")
 
     async def _handle_qos1_message_flow(self, app_message):

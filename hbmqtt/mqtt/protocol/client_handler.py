@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio,anyio
+import anyio
 from asyncio import futures
 import sys
 from hbmqtt.mqtt.protocol.handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
@@ -22,7 +22,7 @@ class ClientProtocolHandler(ProtocolHandler):
     def __init__(self, plugins_manager: PluginManager, session: Session=None):
         super().__init__(plugins_manager, session)
         self._ping_task = None
-        self._pingresp_queue = asyncio.Queue()
+        self._pingresp_queue = anyio.create_queue(9999)
         self._subscriptions_waiter = dict()
         self._unsubscriptions_waiter = dict()
         self._disconnect_waiter = None

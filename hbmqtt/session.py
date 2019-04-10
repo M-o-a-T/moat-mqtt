@@ -1,8 +1,9 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
+import anyio
+
 from transitions import Machine
-from asyncio import Queue
 from collections import OrderedDict
 from hbmqtt.mqtt.publish import PublishPacket
 from hbmqtt.errors import HBMQTTException
@@ -124,10 +125,10 @@ class Session:
         self.inflight_in = OrderedDict()
 
         # Stores messages retained for this session
-        self.retained_messages = Queue()
+        self.retained_messages = anyio.create_queue(9999)
 
         # Stores PUBLISH messages ID received in order and ready for application process
-        self.delivered_message_queue = Queue()
+        self.delivered_message_queue = anyio.create_queue(9999)
 
     def _init_states(self):
         self.transitions = Machine(states=Session.states, initial='new')
@@ -174,8 +175,8 @@ class Session:
 
     def __setstate(self, state):
         self.__dict__.update(state)
-        self.retained_messages = Queue()
-        self.delivered_message_queue = Queue()
+        self.retained_messages = anyio.create_queue(9999)
+        self.delivered_message_queue = anyio.create_queue(9999)
 
     def __eq__(self, other):
         return self.client_id == other.client_id
