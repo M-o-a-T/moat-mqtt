@@ -151,14 +151,24 @@ class ProtocolHandler:
         Handle [MQTT-4.4.0-1] by resending PUBLISH and PUBREL messages for pending out messages
         :return:
         """
+        done = pending = 0
         self.logger.debug("Begin messages delivery retries")
-        tasks = []
-        for message in itertools.chain(self.session.inflight_in.values(), self.session.inflight_out.values()):
-            tasks.append(asyncio.wait_for(self._handle_message_flow(message), 10))
-        if tasks:
-            done, pending = await asyncio.wait(tasks)
-            self.logger.debug("%d messages redelivered" % len(done))
-            self.logger.debug("%d messages not redelivered due to timeout" % len(pending))
+
+        async def process_one(message):
+            async with anyio.move_on_after(10):
+                await self._handle_message_flow(message)
+
+                nonlocal done
+                done += 1
+
+        async with anyio.create_task_group() as tg:
+            for message in itertools.chain(self.session.inflight_in.values(), self.session.inflight_out.values()):
+                pending += 1
+                await tg.spawn(process_one, message)
+        pending -= done
+
+        self.logger.debug("%d messages redelivered" % done)
+        self.logger.debug("%d messages not redelivered due to timeout" % pending)
         self.logger.debug("End messages delivery retries")
 
     async def mqtt_publish(self, topic, data, qos, retain, ack_timeout=None):
@@ -183,7 +193,8 @@ class ProtocolHandler:
         message = OutgoingApplicationMessage(packet_id, topic, qos, data, retain)
         # Handle message flow
         if ack_timeout is not None and ack_timeout > 0:
-            await asyncio.wait_for(self._handle_message_flow(message), ack_timeout)
+            async with anyio.move_on_after(ack_timeout):
+                await self._handle_message_flow(message)
         else:
             await self._handle_message_flow(message)
 
@@ -296,6 +307,7 @@ class ProtocolHandler:
                     # Store message in session
                     self.session.inflight_out[app_message.packet_id] = app_message
                     publish_packet = app_message.build_publish_packet()
+
                 # Wait PUBREC
                 if app_message.packet_id in self._pubrec_waiters:
                     # PUBREC waiter already exists for this packet ID
