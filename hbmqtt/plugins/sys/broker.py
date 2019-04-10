@@ -47,11 +47,6 @@ class BrokerSysPlugin:
     async def _broadcast_sys_topic(self, topic_basename, data):
         return await self.context.broadcast_message(topic_basename, data)
 
-    def schedule_broadcast_sys_topic(self, topic_basename, data):
-        return asyncio.ensure_future(
-            self._broadcast_sys_topic(DOLLAR_SYS_ROOT + topic_basename, data)
-        )
-
     async def on_broker_pre_start(self, *args, **kwargs):
         self._clear_stats()
 
@@ -66,7 +61,9 @@ class BrokerSysPlugin:
             sys_interval = int(self.context.config.get('sys_interval', 0))
             if sys_interval > 0:
                 self.context.logger.debug("Setup $SYS broadcasting every %d secondes" % sys_interval)
-                self.sys_handle = asyncio.get_running_loop().call_later(sys_interval, self.broadcast_dollar_sys_topics)
+                evt = anyio.create_event()
+                await self.context._tg.spawn(self.broadcast_dollar_sys_topics_loop, sys_interval, evt)
+                await evt.wait()
             else:
                 self.context.logger.debug("$SYS disabled")
         except KeyError:
@@ -76,9 +73,16 @@ class BrokerSysPlugin:
     async def on_broker_pre_stop(self, *args, **kwargs):
         # Stop $SYS topics broadcasting
         if self.sys_handle:
-            self.sys_handle.cancel()
+            await self.sys_handle.cancel()
 
-    def broadcast_dollar_sys_topics(self):
+    async def broadcast_dollar_sys_topics_loop(self, interval, evt):
+        async with anyio.open_cancel_scope() as scope:
+            self.sys_handle = scope
+            await evt.set()
+            while True:
+                await anyio.sleep(interval)
+                await self.broadcast_dollar_sys_topics()
+    async def broadcast_dollar_sys_topics(self):
         """
         Broadcast dynamic $SYS topics updates and reschedule next execution depending on 'sys_interval' config
         parameter.
@@ -101,34 +105,25 @@ class BrokerSysPlugin:
             subscriptions_count += len(self.context.subscriptions[topic])
 
         # Broadcast updates
-        tasks = deque()
-        tasks.append(self.schedule_broadcast_sys_topic('load/bytes/received', int_to_bytes_str(self._stats[STAT_BYTES_RECEIVED])))
-        tasks.append(self.schedule_broadcast_sys_topic('load/bytes/sent', int_to_bytes_str(self._stats[STAT_BYTES_SENT])))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/received', int_to_bytes_str(self._stats[STAT_MSG_RECEIVED])))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/sent', int_to_bytes_str(self._stats[STAT_MSG_SENT])))
-        tasks.append(self.schedule_broadcast_sys_topic('time', str(datetime.now()).encode('utf-8')))
-        tasks.append(self.schedule_broadcast_sys_topic('uptime', int_to_bytes_str(int(uptime.total_seconds()))))
-        tasks.append(self.schedule_broadcast_sys_topic('uptime/formated', str(uptime).encode('utf-8')))
-        tasks.append(self.schedule_broadcast_sys_topic('clients/connected', int_to_bytes_str(client_connected)))
-        tasks.append(self.schedule_broadcast_sys_topic('clients/disconnected', int_to_bytes_str(client_disconnected)))
-        tasks.append(self.schedule_broadcast_sys_topic('clients/maximum', int_to_bytes_str(self._stats[STAT_CLIENTS_MAXIMUM])))
-        tasks.append(self.schedule_broadcast_sys_topic('clients/total', int_to_bytes_str(client_connected + client_disconnected)))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/inflight', int_to_bytes_str(inflight_in + inflight_out)))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/inflight/in', int_to_bytes_str(inflight_in)))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/inflight/out', int_to_bytes_str(inflight_out)))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/inflight/stored', int_to_bytes_str(messages_stored)))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/publish/received', int_to_bytes_str(self._stats[STAT_PUBLISH_RECEIVED])))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/publish/sent', int_to_bytes_str(self._stats[STAT_PUBLISH_SENT])))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/retained/count', int_to_bytes_str(len(self.context.retained_messages))))
-        tasks.append(self.schedule_broadcast_sys_topic('messages/subscriptions/count', int_to_bytes_str(subscriptions_count)))
-
-        # Wait until broadcasting tasks end
-        while tasks and tasks[0].done():
-            tasks.popleft()
-        # Reschedule
-        sys_interval = int(self.context.config['sys_interval'])
-        self.context.logger.debug("Broadcasting $SYS topics")
-        self.sys_handle = asyncio.get_running_loop().call_later(sys_interval, self.broadcast_dollar_sys_topics)
+        await self._broadcast_sys_topic('load/bytes/received', int_to_bytes_str(self._stats[STAT_BYTES_RECEIVED]))
+        await self._broadcast_sys_topic('load/bytes/sent', int_to_bytes_str(self._stats[STAT_BYTES_SENT]))
+        await self._broadcast_sys_topic('messages/received', int_to_bytes_str(self._stats[STAT_MSG_RECEIVED]))
+        await self._broadcast_sys_topic('messages/sent', int_to_bytes_str(self._stats[STAT_MSG_SENT]))
+        await self._broadcast_sys_topic('time', str(datetime.now()).encode('utf-8'))
+        await self._broadcast_sys_topic('uptime', int_to_bytes_str(int(uptime.total_seconds())))
+        await self._broadcast_sys_topic('uptime/formated', str(uptime).encode('utf-8'))
+        await self._broadcast_sys_topic('clients/connected', int_to_bytes_str(client_connected))
+        await self._broadcast_sys_topic('clients/disconnected', int_to_bytes_str(client_disconnected))
+        await self._broadcast_sys_topic('clients/maximum', int_to_bytes_str(self._stats[STAT_CLIENTS_MAXIMUM]))
+        await self._broadcast_sys_topic('clients/total', int_to_bytes_str(client_connected + client_disconnected))
+        await self._broadcast_sys_topic('messages/inflight', int_to_bytes_str(inflight_in + inflight_out))
+        await self._broadcast_sys_topic('messages/inflight/in', int_to_bytes_str(inflight_in))
+        await self._broadcast_sys_topic('messages/inflight/out', int_to_bytes_str(inflight_out))
+        await self._broadcast_sys_topic('messages/inflight/stored', int_to_bytes_str(messages_stored))
+        await self._broadcast_sys_topic('messages/publish/received', int_to_bytes_str(self._stats[STAT_PUBLISH_RECEIVED]))
+        await self._broadcast_sys_topic('messages/publish/sent', int_to_bytes_str(self._stats[STAT_PUBLISH_SENT]))
+        await self._broadcast_sys_topic('messages/retained/count', int_to_bytes_str(len(self.context.retained_messages)))
+        await self._broadcast_sys_topic('messages/subscriptions/count', int_to_bytes_str(subscriptions_count))
 
     async def on_mqtt_packet_received(self, *args, **kwargs):
         packet = kwargs.get('packet')

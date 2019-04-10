@@ -29,22 +29,24 @@ class BrokerProtocolHandler(ProtocolHandler):
         self._pending_unsubscriptions = Queue()
 
     async def start(self):
-        await super().start()
         if self._disconnect_waiter is None:
             self._disconnect_waiter = futures.Future()
+        await super().start()
 
     async def stop(self):
-        await super().stop()
-        if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
-            self._disconnect_waiter.set_result(None)
+        try:
+            await super().stop()
+        finally:
+            if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
+                self._disconnect_waiter.set_result(None)
 
     async def wait_disconnect(self):
         return await self._disconnect_waiter
 
-    def handle_write_timeout(self):
+    async def handle_write_timeout(self):
         pass
 
-    def handle_read_timeout(self):
+    async def handle_read_timeout(self):
         if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
             self._disconnect_waiter.set_result(None)
 

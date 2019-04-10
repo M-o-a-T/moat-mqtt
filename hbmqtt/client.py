@@ -8,6 +8,7 @@ import ssl
 import copy
 from urllib.parse import urlparse, urlunparse
 from functools import wraps
+from async_generator import asynccontextmanager
 
 from hbmqtt.utils import not_in_dict_or_none
 from hbmqtt.session import Session
@@ -65,7 +66,7 @@ def mqtt_connected(func):
     async def wrapper(self, *args, **kwargs):
         if not self._connected_state.is_set():
             base_logger.warning("Client not connected, waiting for it")
-            with anyio.open_task_group() as tg:
+            async with anyio.create_task_group() as tg:
                 async def wait_connected():
                     await self._connected_state.wait()
                     await tg.cancel_scope.cancel()
@@ -77,6 +78,16 @@ def mqtt_connected(func):
         return await func(self, *args, **kwargs)
     return wrapper
 
+@asynccontextmanager
+async def open_mqttclient(client_id=None, config=None):
+    async with anyio.create_task_group() as tg:
+        C = MQTTClient(tg, client_id, config)
+        try:
+            yield C
+        finally:
+            async with anyio.open_cancel_scope(shield=True):
+                await C.disconnect()
+                await tg.cancel_scope.cancel()
 
 class MQTTClient:
     """
@@ -84,12 +95,13 @@ class MQTTClient:
 
         MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
 
+        :param tg: The task group in which to run open-ended subtasks.
         :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`hbmqtt.utils.gen_client_id`
         :param config: Client configuration
         :return: class instance
     """
 
-    def __init__(self, client_id=None, config=None):
+    def __init__(self, tg: anyio.abc.TaskGroup, client_id=None, config=None):
         self.logger = logging.getLogger(__name__)
         self.config = copy.deepcopy(_defaults)
         if config is not None:
@@ -102,6 +114,7 @@ class MQTTClient:
             self.logger.debug("Using generated client ID : %s" % self.client_id)
 
         self.session = None
+        self._tg = tg
         self._handler = None
         self._disconnect_task = None
         self._connected_state = asyncio.Event()
@@ -111,15 +124,8 @@ class MQTTClient:
         # Init plugins manager
         context = ClientContext()
         context.config = self.config
-        self.plugins_manager = PluginManager('hbmqtt.client.plugins', context)
-        self.client_tasks = deque()
-
-    async def _aenter__(self):
-        await self._connect()
-        return self
-    
-    async def __aexit__(self, *tb):
-        await self.disconnect()
+        self.plugins_manager = PluginManager(tg, 'hbmqtt.client.plugins', context)
+        self.client_tasks = set()
 
     async def connect(self,
                 uri=None,
@@ -144,24 +150,13 @@ class MQTTClient:
             :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
             :raise: :class:`hbmqtt.client.ConnectException` if connection fails
         """
-        self.broker(uri, cleansession, cafile, capath, cadata, extra_headers)
-        return await self._connect()
-
-    def broker(self,
-                uri=None,
-                cleansession=None,
-                cafile=None,
-                capath=None,
-                cadata=None,
-                extra_headers={}):
         self.session = self._initsession(uri, cleansession, cafile, capath, cadata)
         self.extra_headers = extra_headers;
         self.logger.debug("Connect to: %s" % uri)
 
-    async def _connect(self):
         try:
             return await self._do_connect()
-        except Exception as be:
+        except SyntaxError as be:
             self.logger.warning("Connection failed: %r" % be)
             auto_reconnect = self.config.get('auto_reconnect', False)
             if not auto_reconnect:
@@ -178,9 +173,12 @@ class MQTTClient:
             This method is a *coroutine*.
         """
 
+        # do not reconnect any more
+        self.config['auto_reconnect'] = False
+
         if self.session.transitions.is_connected():
-            if not self._disconnect_task.done():
-                self._disconnect_task.cancel()
+            if self._disconnect_task is not None:
+                await self._disconnect_task.cancel()
             await self._handler.mqtt_disconnect()
             self._connected_state.clear()
             await self._handler.stop()
@@ -217,7 +215,7 @@ class MQTTClient:
             try:
                 self.logger.debug("Reconnect attempt %d ..." % nb_attempt)
                 return await self._do_connect()
-            except Exception as e:
+            except SyntaxError as e:  # no you can't reconnect on every exception
                 self.logger.warning("Reconnection attempt failed: %r" % e)
                 if reconnect_retries >= 0 and nb_attempt > reconnect_retries:
                     self.logger.error("Maximum number of connection attempts reached. Reconnection aborted")
@@ -230,7 +228,9 @@ class MQTTClient:
 
     async def _do_connect(self):
         return_code = await self._connect_coro()
-        self._disconnect_task = asyncio.ensure_future(self.handle_connection_close())
+        evt = anyio.create_event()
+        await self._tg.spawn(self.handle_connection_close, evt)
+        await evt.wait()
         return return_code
 
     @mqtt_connected
@@ -338,20 +338,13 @@ class MQTTClient:
             :return: instance of :class:`hbmqtt.session.ApplicationMessage` containing received message information flow.
             :raises: :class:`asyncio.TimeoutError` if timeout occurs before a message is delivered
         """
-        deliver_task = asyncio.ensure_future(self._handler.mqtt_deliver_next_message())
-        self.client_tasks.append(deliver_task)
         self.logger.debug("Waiting message delivery")
-        done, pending = await asyncio.wait([deliver_task], return_when=asyncio.FIRST_EXCEPTION, timeout=timeout)
-        if deliver_task in done:
-            if deliver_task.exception() is not None:
-                # deliver_task raised an exception, pass it on to our caller
-                raise deliver_task.exception()
-            self.client_tasks.pop()
-            return deliver_task.result()
-        else:
-            #timeout occured before message received
-            deliver_task.cancel()
-            raise asyncio.TimeoutError
+        async with anyio.fail_after(timeout) as scope:
+            self.client_tasks.add(scope)
+            try:
+                return await self._handler.mqtt_deliver_next_message()
+            finally:
+                self.client_tasks.remove(scope)
 
     async def _connect_coro(self):
         kwargs = dict()
@@ -438,18 +431,20 @@ class MQTTClient:
             self.session.transitions.disconnect()
             raise ConnectException(e)
 
-    async def handle_connection_close(self):
+    async def handle_connection_close(self, evt):
 
-        def cancel_tasks():
+        async def cancel_tasks():
             self._no_more_connections.set()
             while self.client_tasks:
-                task = self.client_tasks.popleft()
-                if not task.done():
-                    task.set_exception(ClientException("Connection lost"))
+                task = self.client_tasks.pop()
+                await task.cancel()
 
-        self.logger.debug("Watch broker disconnection")
-        # Wait for disconnection from broker (like connection lost)
-        await self._handler.wait_disconnect()
+        async with anyio.open_cancel_scope() as scope:
+            self._disconnect_task = scope
+            await evt.set()
+            self.logger.debug("Watch broker disconnection")
+            # Wait for disconnection from broker (like connection lost)
+            await self._handler.wait_disconnect()
         self.logger.warning("Disconnected from broker")
 
         # Block client API
@@ -467,10 +462,10 @@ class MQTTClient:
                 await self.reconnect()
             except ConnectException:
                 # Cancel client pending tasks
-                cancel_tasks()
+                await cancel_tasks()
         else:
             # Cancel client pending tasks
-            cancel_tasks()
+            await cancel_tasks()
 
     def _initsession(
             self,

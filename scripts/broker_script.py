@@ -20,7 +20,7 @@ import sys
 import logging
 import anyio
 import os
-from hbmqtt.broker import Broker
+from hbmqtt.broker import create_broker
 from hbmqtt.version import get_version
 from docopt import docopt
 from hbmqtt.utils import read_yaml_config
@@ -66,7 +66,7 @@ def main(*args, **kwargs):
         config = read_yaml_config(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_broker.yaml'))
         logger.debug("Using default configuration")
 
-    async with Broker(config) as broker:
+    async with create_broker(config) as broker:
         while True:
             await anyio.sleep(99999)
 

@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
+import asyncio,anyio
 from asyncio import futures
 import sys
 from hbmqtt.mqtt.protocol.handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
@@ -28,21 +28,21 @@ class ClientProtocolHandler(ProtocolHandler):
         self._disconnect_waiter = None
 
     async def start(self):
-        await super().start()
         if self._disconnect_waiter is None:
             self._disconnect_waiter = futures.Future()
+        await super().start()
 
     async def stop(self):
-        await super().stop()
-        if self._ping_task:
-            try:
+        try:
+            await super().stop()
+        finally:
+            t, self._ping_task = self._ping_task, None
+            if t:
                 self.logger.debug("Cancel ping task")
-                self._ping_task.cancel()
-            except Exception:
-                pass
-        if not self._disconnect_waiter.done():
-            self._disconnect_waiter.cancel()
-        self._disconnect_waiter = None
+                await t.cancel()
+            if self._disconnect_waiter and not self._disconnect_waiter.done():
+                self._disconnect_waiter.cancel()
+            self._disconnect_waiter = None
 
     def _build_connect_packet(self):
         vh = ConnectVariableHeader()
@@ -82,15 +82,18 @@ class ClientProtocolHandler(ProtocolHandler):
         await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_RECEIVED, packet=connack, session=self.session)
         return connack.return_code
 
-    def handle_write_timeout(self):
+    async def handle_write_timeout(self):
         try:
             if not self._ping_task:
                 self.logger.debug("Scheduling Ping")
-                self._ping_task = asyncio.ensure_future(self.mqtt_ping())
-        except Exception as be:
-            self.logger.debug("Exception ignored in ping task: %r" % be)
+                evt = anyio.create_event()
+                await self._tg.spawn(self.mqtt_ping, evt)
+                await evt.wait()
+        except BaseException as be:
+            self.logger.debug("Exception in ping task: %r" % be)
+            raise
 
-    def handle_read_timeout(self):
+    async def handle_read_timeout(self):
         pass
 
     async def mqtt_subscribe(self, topics, packet_id):
@@ -144,21 +147,27 @@ class ClientProtocolHandler(ProtocolHandler):
         disconnect_packet = DisconnectPacket()
         await self._send_packet(disconnect_packet)
 
-    async def mqtt_ping(self):
-        ping_packet = PingReqPacket()
-        await self._send_packet(ping_packet)
-        resp = await self._pingresp_queue.get()
-        if self._ping_task:
-            self._ping_task = None
-        return resp
+    async def mqtt_ping(self, evt=None):
+        async with anyio.open_cancel_scope() as scope:
+            self._ping_task = scope
+            if evt is not None:
+                await evt.set()
+            try:
+                ping_packet = PingReqPacket()
+                await self._send_packet(ping_packet)
+                resp = await self._pingresp_queue.get()
+                return resp
+            finally:
+                self._ping_task = None
 
     async def handle_pingresp(self, pingresp: PingRespPacket):
         await self._pingresp_queue.put(pingresp)
 
     async def handle_connection_closed(self):
         self.logger.debug("Broker closed connection")
-        if not self._disconnect_waiter.done():
+        if self._disconnect_waiter and not self._disconnect_waiter.done():
             self._disconnect_waiter.set_result(None)
 
     async def wait_disconnect(self):
-        await self._disconnect_waiter
+        if self._disconnect_waiter:
+            await self._disconnect_waiter

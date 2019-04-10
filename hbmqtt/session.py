@@ -1,7 +1,6 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
 from transitions import Machine
 from asyncio import Queue
 from collections import OrderedDict

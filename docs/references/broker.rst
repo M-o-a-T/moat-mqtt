@@ -13,12 +13,11 @@ The following example shows how to start a broker using the default configuratio
     import logging
     import anyio
     import os
-    from hbmqtt.broker import Broker
+    from hbmqtt.broker import open_broker
 
 
     async def broker_coro():
-        broker = Broker()
-        async with Broker() as broker:
+        async with create_broker() as broker:
             while True:
                 await anyio.sleep(99999)
 
@@ -29,7 +28,7 @@ The following example shows how to start a broker using the default configuratio
         anyio.run(broker_coro)
 
 When executed, this script gets the default event loop and asks it to run the ``broker_coro`` until it completes.
-``broker_coro`` creates :class:`~hbmqtt.broker.Broker` instance and then :meth:`~hbmqtt.broker.Broker.start` the broker for serving.
+``broker_coro`` creates a running :class:`~hbmqtt.broker.Broker` instance
 Once completed, the loop is ran forever, making this script never stop ...
 
 Reference
@@ -47,6 +46,8 @@ Broker API
 
 Broker configuration
 ....................
+
+Typically, you create a :class:`~hbmqtt.broker.Broker` instance by way of ``async with`` :proc:`~hbmqtt.broker.create_broker`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
 
 The :class:`~hbmqtt.broker.Broker` ``__init__`` method accepts a ``config`` parameter which allow to setup some behaviour and defaults settings. This argument must be a Python dict object. For convinience, it is presented below as a YAML file [1]_.
 

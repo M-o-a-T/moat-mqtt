@@ -1,7 +1,7 @@
 import logging
 import anyio
 import os
-from hbmqtt.broker import Broker
+from hbmqtt.broker import create_broker
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +39,10 @@ config = {
     }
 }
 
-broker = Broker(config)
-
-
 async def test_coro():
-    await broker.start()
-    while True:
-        await anyio.sleep(99999)
+    async with create_broker() as broker:
+        while True:
+            await anyio.sleep(99999)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import logging
 import anyio
 
-from hbmqtt.client import MQTTClient
+from hbmqtt.client import open_mqttclient
 
 
 #
@@ -16,14 +16,12 @@ config = {
     'keep_alive': 5,
     'ping_delay': 1,
 }
-C = MQTTClient(config=config)
 
 
 async def test_coro():
-    await C.connect('mqtt://test.mosquitto.org:1883/')
-    await anyio.sleep(18)
-
-    await C.disconnect()
+    async with open_mqttclient() as C:
+        await C.connect('mqtt://test.mosquitto.org:1883/')
+        await anyio.sleep(18)
 
 
 if __name__ == '__main__':

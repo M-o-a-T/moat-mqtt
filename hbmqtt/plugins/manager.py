@@ -6,11 +6,13 @@ __all__ = ['BaseContext', 'PluginManager']
 
 import pkg_resources
 import logging
-import asyncio
+import asyncio,anyio
 import copy
 import sys
 
 from collections import namedtuple
+from async_generator import asynccontextmanager
+from functools import partial
 
 
 Plugin = namedtuple('Plugin', ['name', 'ep', 'object'])
@@ -26,7 +28,9 @@ class PluginManager:
     Plugins are loaded for a given namespace (group).
     This plugin manager uses coroutines to run plugin call asynchronously in an event queue
     """
-    def __init__(self, namespace, context):
+    def __init__(self, tg: anyio.abc.TaskGroup, namespace, context):
+        self._tg = tg
+
         self.logger = logging.getLogger(namespace)
         if context is None:
             self.context = BaseContext()
@@ -78,8 +82,6 @@ class PluginManager:
         :return:
         """
         await self.map_plugin_coro("close")
-        for task in self._fired_events:
-            task.cancel()
 
     @property
     def plugins(self):
@@ -88,9 +90,6 @@ class PluginManager:
         :return:
         """
         return self._plugins
-
-    def _schedule_coro(self, coro):
-        return asyncio.ensure_future(coro)
 
     async def fire_event(self, event_name, wait=False, *args, **kwargs):
         """
@@ -105,30 +104,30 @@ class PluginManager:
         :param wait: indicates if fire_event should wait for plugin calls completion (True), or not
         :return:
         """
-        tasks = []
-        event_method_name = "on_" + event_name
-        for plugin in self._plugins:
-            event_method = getattr(plugin.object, event_method_name, None)
-            if event_method:
-                try:
-                    task = self._schedule_coro(event_method(*args, **kwargs))
-                    tasks.append(task)
+        @asynccontextmanager
+        async def _event_tg(wait):
+            if wait:
+                async with anyio.create_task_group() as tg:
+                    yield tg
+            else:
+                yield self._tg
 
-                    def clean_fired_events(future):
-                        try:
-                            self._fired_events.remove(task)
-                        except (KeyError, ValueError):
-                            pass
+        async def _schedule_coro(tg, coro):
+            if kwargs:
+                coro = partial(coro, **kwargs)
+            await tg.spawn(coro, *args)
 
-                    task.add_done_callback(clean_fired_events)
-                except AssertionError:
-                    self.logger.error("Method '%s' on plugin '%s' is not a coroutine" %
-                                      (event_method_name, plugin.name))
+        async with _event_tg(wait) as tg:
+            event_method_name = "on_" + event_name
+            for plugin in self._plugins:
+                event_method = getattr(plugin.object, event_method_name, None)
+                if event_method:
+                    try:
+                        await _schedule_coro(tg, event_method)
 
-        self._fired_events.extend(tasks)
-        if wait:
-            if tasks:
-                await asyncio.wait(tasks)
+                    except TypeError:
+                        self.logger.error("Method '%s' on plugin '%s' is not a coroutine" %
+                                        (event_method_name, plugin.name))
 
     async def map(self, coro, *args, **kwargs):
         """
@@ -141,27 +140,22 @@ class PluginManager:
         :param kwargs: arguments to pass to coro
         :return: dict containing return from coro call for each plugin
         """
+        async def worker(plugin):
+            res = await coro(plugin, *args, **kwargs)
+            ret_dict[plugin] = res
+
         p_list = kwargs.pop('filter_plugins', None)
         if p_list is None:
             p_list = [p.name for p in self.plugins]
-        tasks = []
-        plugins_list = []
-        for plugin in self._plugins:
-            if plugin.name in p_list:
-                coro_instance = coro(plugin, *args, **kwargs)
-                if coro_instance:
+        ret_dict = {}
+        async with anyio.create_task_group() as tg:
+            for plugin in self._plugins:
+                if plugin.name in p_list:
                     try:
-                        tasks.append(self._schedule_coro(coro_instance))
-                        plugins_list.append(plugin)
-                    except AssertionError:
+                        await tg.spawn(worker, plugin)
+                    except TypeError:
                         self.logger.error("Method '%r' on plugin '%s' is not a coroutine" %
                                           (coro, plugin.name))
-        if tasks:
-            ret_list = await asyncio.gather(*tasks)
-            # Create result map plugin=>ret
-            ret_dict = {k: v for k, v in zip(plugins_list, ret_list)}
-        else:
-            ret_dict = {}
         return ret_dict
 
     @staticmethod

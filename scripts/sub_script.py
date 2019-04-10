@@ -36,7 +36,7 @@ import logging
 import anyio
 import os
 import json
-from hbmqtt.client import MQTTClient, ConnectException
+from hbmqtt.client import open_mqttclient, ConnectException
 from hbmqtt.errors import MQTTException
 from hbmqtt.version import get_version
 from docopt import docopt
@@ -137,8 +137,8 @@ async def main(*args, **kwargs):
         config['will']['qos'] = int(arguments['--will-qos'])
         config['will']['retain'] = arguments['--will-retain']
 
-    client = MQTTClient(client_id=client_id, config=config)
-    await do_sub(client, arguments)
+    async with open_mqttclient(client_id=client_id, config=config) as C:
+        await do_sub(C, arguments)
 
 
 if __name__ == "__main__":

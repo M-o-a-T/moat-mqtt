@@ -7,8 +7,8 @@ import websockets
 import asyncio,anyio
 import sys
 import re
-from asyncio import CancelledError
 from collections import deque
+from async_generator import asynccontextmanager
 
 from functools import partial
 from transitions import Machine, MachineError
@@ -131,6 +131,17 @@ class BrokerContext(BaseContext):
         return self._broker_instance._subscriptions
 
 
+@asynccontextmanager
+async def create_broker(config=None, plugin_namespace=None):
+    async with anyio.create_task_group() as tg:
+        b = Broker(tg, config, plugin_namespace)
+        try:
+            await b.start()
+            yield b
+        finally:
+            await b.shutdown()
+            await tg.cancel_scope.cancel()
+
 class Broker:
     """
     MQTT 3.1.1 compliant broker implementation
@@ -141,7 +152,7 @@ class Broker:
     """
     states = ['new', 'starting', 'started', 'not_started', 'stopping', 'stopped', 'not_stopped', 'stopped']
 
-    def __init__(self, config=None, plugin_namespace=None):
+    def __init__(self, tg: anyio.abc.TaskGroup, config=None, plugin_namespace=None):
         self.logger = logging.getLogger(__name__)
         self.config = _defaults
         if config is not None:
@@ -154,8 +165,7 @@ class Broker:
         self._subscriptions = dict()
         self._retained_messages = dict()
         self._broadcast_queue = asyncio.Queue()
-
-        self._broadcast_task = None
+        self._tg = tg
 
         # Init plugins manager
         context = BrokerContext(self)
@@ -164,7 +174,7 @@ class Broker:
             namespace = plugin_namespace
         else:
             namespace = 'hbmqtt.broker.plugins'
-        self.plugins_manager = PluginManager(namespace, context)
+        self.plugins_manager = PluginManager(tg, namespace, context)
 
     def _build_listeners_config(self, broker_config):
         self.listeners_config = dict()
@@ -187,13 +197,6 @@ class Broker:
         self.transitions.add_transition(trigger='stopping_success', source='stopping', dest='stopped')
         self.transitions.add_transition(trigger='stopping_failure', source='stopping', dest='not_stopped')
         self.transitions.add_transition(trigger='start', source='stopped', dest='starting')
-
-    async def __aenter__(self):
-        await self.start()
-        return self
-    
-    async def __aexit__(self, *tb):
-        await self.shutdown()
 
     async def start(self):
         """
@@ -280,7 +283,7 @@ class Broker:
             await self.plugins_manager.fire_event(EVENT_BROKER_POST_START)
 
             #Start broadcast loop
-            self._broadcast_task = asyncio.ensure_future(self._broadcast_loop())
+            await self._tg.spawn(self._broadcast_loop)
 
             self.logger.debug("Broker started")
         except Exception as e:
@@ -307,8 +310,6 @@ class Broker:
         await self.plugins_manager.fire_event(EVENT_BROKER_PRE_SHUTDOWN)
 
         # Stop broadcast loop
-        if self._broadcast_task:
-            self._broadcast_task.cancel()
         if self._broadcast_queue.qsize() > 0:
             self.logger.warning("%d messages not broadcasted" % self._broadcast_queue.qsize())
 
@@ -402,43 +403,36 @@ class Broker:
         await self.publish_session_retained_messages(client_session)
 
         # Init and start loop for handling client messages (publish, subscribe/unsubscribe, disconnect)
-        disconnect_waiter = asyncio.ensure_future(handler.wait_disconnect())
-        subscribe_waiter = asyncio.ensure_future(handler.get_next_pending_subscription())
-        unsubscribe_waiter = asyncio.ensure_future(handler.get_next_pending_unsubscription())
-        wait_deliver = asyncio.ensure_future(handler.mqtt_deliver_next_message())
-        connected = True
-        while connected:
-            try:
-                done, pending = await asyncio.wait(
-                    [disconnect_waiter, subscribe_waiter, unsubscribe_waiter, wait_deliver],
-                    return_when=asyncio.FIRST_COMPLETED)
-                if disconnect_waiter in done:
-                    result = disconnect_waiter.result()
-                    self.logger.debug("%s Result from wait_diconnect: %s" % (client_session.client_id, result))
-                    if result is None:
-                        self.logger.debug("Will flag: %s" % client_session.will_flag)
-                        # Connection closed anormally, send will message
-                        if client_session.will_flag:
-                            self.logger.debug("Client %s disconnected abnormally, sending will message" %
-                                              format_client_message(client_session))
-                            await self._broadcast_message(
-                                client_session,
-                                client_session.will_topic,
-                                client_session.will_message,
-                                client_session.will_qos)
-                            if client_session.will_retain:
-                                self.retain_message(client_session,
-                                                    client_session.will_topic,
-                                                    client_session.will_message,
-                                                    client_session.will_qos)
-                    self.logger.debug("%s Disconnecting session" % client_session.client_id)
-                    await self._stop_handler(handler)
-                    client_session.transitions.disconnect()
-                    await self.plugins_manager.fire_event(EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client_session.client_id)
-                    connected = False
-                if unsubscribe_waiter in done:
+        async with anyio.create_task_group() as tg:
+            async def handle_disconnect():
+                result = await handler.wait_disconnect()
+                self.logger.debug("%s Result from wait_diconnect: %s" % (client_session.client_id, result))
+                if result is None:
+                    self.logger.debug("Will flag: %s" % client_session.will_flag)
+                    # Connection closed anormally, send will message
+                    if client_session.will_flag:
+                        self.logger.debug("Client %s disconnected abnormally, sending will message" %
+                                            format_client_message(client_session))
+                        await self._broadcast_message(
+                            client_session,
+                            client_session.will_topic,
+                            client_session.will_message,
+                            client_session.will_qos)
+                        if client_session.will_retain:
+                            self.retain_message(client_session,
+                                                client_session.will_topic,
+                                                client_session.will_message,
+                                                client_session.will_qos)
+                self.logger.debug("%s Disconnecting session" % client_session.client_id)
+                await self._stop_handler(handler)
+                client_session.transitions.disconnect()
+                await self.plugins_manager.fire_event(EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client_session.client_id)
+                await tg.cancel_scope.cancel()
+
+            async def handle_unsubscribe():
+                while True:
+                    unsubscription = await handler.get_next_pending_unsubscription()
                     self.logger.debug("%s handling unsubscription" % client_session.client_id)
-                    unsubscription = unsubscribe_waiter.result()
                     for topic in unsubscription['topics']:
                         self._del_subscription(topic, client_session)
                         await self.plugins_manager.fire_event(
@@ -446,10 +440,11 @@ class Broker:
                             client_id=client_session.client_id,
                             topic=topic)
                     await handler.mqtt_acknowledge_unsubscription(unsubscription['packet_id'])
-                    unsubscribe_waiter = asyncio.Task(handler.get_next_pending_unsubscription())
-                if subscribe_waiter in done:
+
+            async def handle_subscribe():
+                while True:
+                    subscriptions = await handler.get_next_pending_subscription()
                     self.logger.debug("%s handling subscription" % client_session.client_id)
-                    subscriptions = subscribe_waiter.result()
                     return_codes = []
                     for subscription in subscriptions['topics']:
                         result = await self.add_subscription(subscription, client_session)
@@ -463,12 +458,13 @@ class Broker:
                                 topic=subscription[0],
                                 qos=subscription[1])
                             await self.publish_retained_messages_for_subscription(subscription, client_session)
-                    subscribe_waiter = asyncio.Task(handler.get_next_pending_subscription())
                     self.logger.debug(repr(self._subscriptions))
-                if wait_deliver in done:
+
+            async def handle_deliver():
+                while True:
+                    app_message = await handler.mqtt_deliver_next_message()
                     if self.logger.isEnabledFor(logging.DEBUG):
                         self.logger.debug("%s handling message delivery" % client_session.client_id)
-                    app_message = wait_deliver.result()
                     if not app_message.topic:
                         self.logger.warning("[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message, closing connection" % client_session.client_id)
                         break
@@ -476,19 +472,16 @@ class Broker:
                         self.logger.warning("[MQTT-3.3.2-2] - %s invalid TOPIC sent in PUBLISH message, closing connection" % client_session.client_id)
                         break
                     await self.plugins_manager.fire_event(EVENT_BROKER_MESSAGE_RECEIVED,
-                                                               client_id=client_session.client_id,
-                                                               message=app_message)
+                                                            client_id=client_session.client_id,
+                                                            message=app_message)
                     await self._broadcast_message(client_session, app_message.topic, app_message.data)
                     if app_message.publish_packet.retain_flag:
                         self.retain_message(client_session, app_message.topic, app_message.data, app_message.qos)
-                    wait_deliver = asyncio.Task(handler.mqtt_deliver_next_message())
-            except asyncio.CancelledError:
-                self.logger.debug("Client loop cancelled")
-                break
-        disconnect_waiter.cancel()
-        subscribe_waiter.cancel()
-        unsubscribe_waiter.cancel()
-        wait_deliver.cancel()
+
+            await tg.spawn(handle_disconnect)
+            await tg.spawn(handle_unsubscribe)
+            await tg.spawn(handle_subscribe)
+            await tg.spawn(handle_deliver)
 
         self.logger.debug("%s Client disconnected" % client_session.client_id)
         server.release_connection()
@@ -511,7 +504,8 @@ class Broker:
         try:
             await handler.stop()
         except Exception as e:
-            self.logger.error(e)
+            #self.logger.exception("Stop handler")
+            raise
 
     async def authenticate(self, session: Session, listener):
         """
@@ -668,19 +662,15 @@ class Broker:
             return match_pattern.match(topic)
 
     async def _broadcast_loop(self):
-        running_tasks = deque()
-        try:
+        async with anyio.create_task_group() as tg:
             while True:
-                while running_tasks and running_tasks[0].done():
-                    running_tasks.popleft()
                 broadcast = await self._broadcast_queue.get()
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug("broadcasting %r" % broadcast)
-                for k_filter in self._subscriptions:
+                for k_filter,subscriptions in self._subscriptions.items():
                     if broadcast['topic'].startswith("$") and (k_filter.startswith("+") or k_filter.startswith("#")):
                         self.logger.debug("[MQTT-4.7.2-1] - ignoring brodcasting $ topic to subscriptions starting with + or #")
                     elif self.matches(broadcast['topic'], k_filter):
-                        subscriptions = self._subscriptions[k_filter]
                         for (target_session, qos) in subscriptions:
                             if 'qos' in broadcast:
                                 qos = broadcast['qos']
@@ -689,9 +679,7 @@ class Broker:
                                                   (format_client_message(session=broadcast['session']),
                                                    broadcast['topic'], format_client_message(session=target_session)))
                                 handler = self._get_handler(target_session)
-                                task = asyncio.ensure_future(
-                                    handler.mqtt_publish(broadcast['topic'], broadcast['data'], qos, retain=False))
-                                running_tasks.append(task)
+                                await tg.spawn(partial(handler.mqtt_publish,broadcast['topic'], broadcast['data'], qos, retain=False))
                             else:
                                 self.logger.debug("retaining application message from %s on topic '%s' to client '%s'" %
                                                   (format_client_message(session=broadcast['session']),
@@ -699,10 +687,6 @@ class Broker:
                                 retained_message = RetainedApplicationMessage(
                                     broadcast['session'], broadcast['topic'], broadcast['data'], qos)
                                 await target_session.retained_messages.put(retained_message)
-        except CancelledError:
-            # Wait until current broadcasting tasks end
-            if running_tasks:
-                await asyncio.wait(running_tasks)
 
     async def _broadcast_message(self, session, topic, data, force_qos=None):
         broadcast = {
@@ -718,31 +702,25 @@ class Broker:
         self.logger.debug("Publishing %d messages retained for session %s" %
                           (session.retained_messages.qsize(), format_client_message(session=session))
                           )
-        publish_tasks = []
         handler = self._get_handler(session)
-        while not session.retained_messages.empty():
-            retained = await session.retained_messages.get()
-            publish_tasks.append(asyncio.ensure_future(
-                handler.mqtt_publish(
-                    retained.topic, retained.data, retained.qos, True)))
-        if publish_tasks:
-            await asyncio.wait(publish_tasks)
+        async with anyio.create_task_group() as tg:
+            while not session.retained_messages.empty():
+                retained = await session.retained_messages.get()
+                await tg.spawn(handler.mqtt_publish,
+                    retained.topic, retained.data, retained.qos, True)
 
     async def publish_retained_messages_for_subscription(self, subscription, session):
         self.logger.debug("Begin broadcasting messages retained due to subscription on '%s' from %s" %
                           (subscription[0], format_client_message(session=session)))
-        publish_tasks = []
         handler = self._get_handler(session)
-        for d_topic in self._retained_messages:
-            self.logger.debug("matching : %s %s" % (d_topic, subscription[0]))
-            if self.matches(d_topic, subscription[0]):
-                self.logger.debug("%s and %s match" % (d_topic, subscription[0]))
-                retained = self._retained_messages[d_topic]
-                publish_tasks.append(asyncio.Task(
-                    handler.mqtt_publish(
-                        retained.topic, retained.data, subscription[1], True)))
-        if publish_tasks:
-            await asyncio.wait(publish_tasks)
+        async with anyio.create_task_group() as tg:
+            for d_topic in self._retained_messages:
+                self.logger.debug("matching : %s %s" % (d_topic, subscription[0]))
+                if self.matches(d_topic, subscription[0]):
+                    self.logger.debug("%s and %s match" % (d_topic, subscription[0]))
+                    retained = self._retained_messages[d_topic]
+                    await tg.spawn(handler.mqtt_publish,
+                            retained.topic, retained.data, subscription[1], True)
         self.logger.debug("End broadcasting messages retained due to subscription on '%s' from %s" %
                           (subscription[0], format_client_message(session=session)))
 

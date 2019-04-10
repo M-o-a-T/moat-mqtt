@@ -1,7 +1,7 @@
 import logging
 import anyio
 
-from hbmqtt.client import MQTTClient
+from hbmqtt.client import open_mqttclient
 from hbmqtt.mqtt.constants import QOS_1, QOS_2
 
 
@@ -20,20 +20,16 @@ config = {
         'retain': True,
     },
 }
-C = MQTTClient(config=config)
-#C = MQTTClient()
 
 
 async def test_coro():
-    await C.connect('mqtts://test.mosquitto.org/', cafile='mosquitto.org.crt')
-    try:
+    async with open_mqttclient(config=config) as C:
+        await C.connect('mqtts://test.mosquitto.org/', cafile='mosquitto.org.crt')
         async with anyio.create_task_group() as tg:
             await tg.spawn(C.publish('a/b', b'TEST MESSAGE WITH QOS_0')
             await tg.spawn(C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
             await tg.spawn(C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
         logger.info("messages published")
-    finally:
-        await C.disconnect()
 
 
 if __name__ == '__main__':

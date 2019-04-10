@@ -39,7 +39,7 @@ import logging
 import anyio
 import os
 import json
-from hbmqtt.client import MQTTClient, ConnectException
+from hbmqtt.client import open_mqttclient, ConnectException
 from hbmqtt.version import get_version
 from docopt import docopt
 from hbmqtt.utils import read_yaml_config
@@ -106,7 +106,7 @@ async def do_pub(client, arguments):
         qos = _get_qos(arguments)
         topic = arguments['-t']
         retain = arguments['-r']
-        async for anyio.open_task_group() as tg:
+        async for anyio.create_task_group() as tg:
             for message in _get_message(arguments):
                 logger.info("%s Publishing to '%s'" % (client.client_id, topic))
                 await tg.sspawn(client.publish, topic, message, qos, retain)
@@ -151,8 +151,8 @@ async def main(*args, **kwargs):
         config['will']['qos'] = int(arguments['--will-qos'])
         config['will']['retain'] = arguments['--will-retain']
 
-    client = MQTTClient(client_id=client_id, config=config)
-    await do_pub(client, arguments)
+    async with open_mqttclient(client_id=client_id, config=config) as C:
+        await do_pub(C, arguments)
 
 
 if __name__ == "__main__":

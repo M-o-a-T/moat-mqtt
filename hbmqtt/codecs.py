@@ -48,7 +48,10 @@ async def read_or_raise(reader, n=-1):
     :param n: number of bytes to read
     :return: bytes read
     """
-    data = await reader.read(n)
+    try:
+        data = await reader.read(n)
+    except asyncio.IncompleteReadError:
+        data = None
     if not data:
         raise NoDataException("No more data")
     return data

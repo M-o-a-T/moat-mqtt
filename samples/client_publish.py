@@ -1,7 +1,7 @@
 import logging
 import anyio
 
-from hbmqtt.client import MQTTClient, ConnectException
+from hbmqtt.client import open_mqttclient, ConnectException
 from hbmqtt.mqtt.constants import QOS_1, QOS_2
 
 
@@ -23,28 +23,22 @@ config = {
 
 
 async def test_coro():
-    C = MQTTClient()
-    await C.connect('mqtt://test.mosquitto.org/')
-    try:
-        async with anyio.open_task_group() as tg:
+    async with open_mqttclient() as C:
+        await C.connect('mqtt://test.mosquitto.org/')
+        async with anyio.create_task_group() as tg:
             await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_0')
             await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
             await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
         logger.info("messages published")
-    finally:
-        await C.disconnect()
 
 
 async def test_coro2():
-    try:
-        C = MQTTClient()
-        async with C.broker('mqtt://test.mosquitto.org:1883/'):
-            await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=0x00)
-            await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=0x01)
-            await C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=0x02)
-            logger.info("messages published")
-    except ConnectException as ce:
-        logger.error("Connection failed: %s" % ce)
+    async with open_mqttclient() as C:
+        await C.connect('mqtt://test.mosquitto.org:1883/')
+        await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=0x00)
+        await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=0x01)
+        await C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=0x02)
+        logger.info("messages published")
 
 
 if __name__ == '__main__':

@@ -32,22 +32,24 @@ def adapt(reader, writer):
 class ProtocolHandlerTest(unittest.TestCase):
     def run_(self, server_mock, test_coro):
         async def runner():
-            self.plugin_manager = PluginManager("hbmqtt.test.plugins", context=None)
-            server = await asyncio.start_server(server_mock, '127.0.0.1', 8888)
-            try:
-                await test_coro()
-            finally:
-                server.close()
-                await server.wait_closed()
-        anyio.run(runner)
+            async with anyio.create_task_group() as tg:
+                self.plugin_manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                server = await asyncio.start_server(server_mock, '127.0.0.1', 8888)
+                try:
+                    await test_coro()
+                finally:
+                    server.close()
+                    await server.wait_closed()
+            anyio.run(runner)
 
     def test_init_handler(self):
         async def coro():
-            plugin_manager = PluginManager("hbmqtt.test.plugins", context=None)
-            Session()
-            handler = ProtocolHandler(plugin_manager)
-            self.assertIsNone(handler.session)
-            self.check_empty_waiters(handler)
+            async with anyio.create_task_group() as tg:
+                plugin_manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                Session()
+                handler = ProtocolHandler(plugin_manager)
+                self.assertIsNone(handler.session)
+                self.check_empty_waiters(handler)
         anyio.run(coro)
 
     def test_start_stop(self):

@@ -162,9 +162,12 @@ class StreamWriterAdapter(WriterAdapter):
         return extra_info[0], extra_info[1]
 
     async def close(self):
-        await self._writer.drain()
-        if self._writer.can_write_eof():
-            self._writer.write_eof()
+        try:
+            await self._writer.drain()
+            if self._writer.can_write_eof():
+                self._writer.write_eof()
+        except ConnectionResetError:
+            pass
         self._writer.close()
 
 

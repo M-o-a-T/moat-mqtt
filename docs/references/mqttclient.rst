@@ -17,29 +17,25 @@ The example below shows how to write a simple MQTT client which subscribes a top
     import logging
     import anyio
 
-    from hbmqtt.client import MQTTClient, ClientException
+    from hbmqtt.client import open_mqttclient, ClientException
     from hbmqtt.mqtt.constants import QOS_1, QOS_2
     
     logger = logging.getLogger(__name__)
 
     async def uptime_coro():
-        C = MQTTClient()
-        await C.connect('mqtt://test.mosquitto.org/')
-        # Subscribe to '$SYS/broker/uptime' with QOS=1
-        # Subscribe to '$SYS/broker/load/#' with QOS=2
-        await C.subscribe([
-                ('$SYS/broker/uptime', QOS_1),
-                ('$SYS/broker/load/#', QOS_2),
-             ])
-        try:
+        async with open_mqttclient() as C:
+            await C.connect('mqtt://test.mosquitto.org/')
+            # Subscribe to '$SYS/broker/uptime' with QOS=1
+            # Subscribe to '$SYS/broker/load/#' with QOS=2
+            await C.subscribe([
+                    ('$SYS/broker/uptime', QOS_1),
+                    ('$SYS/broker/load/#', QOS_2),
+                 ])
             for i in range(1, 100):
                 message = await C.deliver_message()
                 packet = message.publish_packet
                 print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
             await C.unsubscribe(['$SYS/broker/uptime', '$SYS/broker/load/#'])
-            await C.disconnect()
-        except ClientException as ce:
-            logger.error("Client exception: %s" % ce)
 
     if __name__ == '__main__':
         formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
@@ -47,7 +43,8 @@ The example below shows how to write a simple MQTT client which subscribes a top
         anyio.run(uptime_coro)
 
 When executed, this script gets the default event loop and asks it to run the ``uptime_coro`` until it completes.
-``uptime_coro`` starts by initializing a :class:`~hbmqtt.client.MQTTClient` instance.
+``uptime_coro`` starts by opening an async context with :proc:`~hbmqtt.client.open_mqttclient`, which returns a
+:class:`~hbmqtt.client.MQTTClient` instance.
 The coroutine then call :meth:`~hbmqtt.client.MQTTClient.connect` to connect to the broker, here ``test.mosquitto.org``.
 Once connected, the coroutine subscribes to some topics, and then wait for 100 messages. Each message received is simply written to output.
 Finally, the coroutine unsubscribes from topics and disconnects from the broker.
@@ -71,22 +68,19 @@ This example also shows to method for publishing message asynchronously.
     logger = logging.getLogger(__name__)
     
     async def test_coro():
-        C = MQTTClient()
-        await C.connect('mqtt://test.mosquitto.org/')
-        try:
-            async with anyio.open_task_group() as tg:
+        async with open_mqttclient() as C:
+            await C.connect('mqtt://test.mosquitto.org/')
+            async with anyio.create_task_group() as tg:
                 await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_0')
                 await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)),
                 await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)),
             logger.info("messages published")
-        finally:
-            await C.disconnect()
 
 
     async def test_coro2():
         try:
-            C = MQTTClient()
-            async with C.broker('mqtt://test.mosquitto.org:1883/'):
+            async with open_mqttclient() as C:
+               await C.connect('mqtt://test.mosquitto.org:1883/')
                message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=QOS_0)
                message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
                message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
@@ -152,7 +146,9 @@ MQTTClient API
 MQTTClient configuration
 ........................
 
-The :class:`~hbmqtt.client.MQTTClient` ``__init__`` method accepts a ``config`` parameter which allow to setup some behaviour and defaults settings. This argument must be a Python dict object which may contain the following entries:
+Typically, you create a :class:`~hbmqtt.client.MQTTClient` instance by way of ``async with`` :proc:`~hbmqtt.client.open_mqttclient`. This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+
+:proc:`~hbmqtt.client.open_mqttclient` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dict object which may contain the following entries:
 
 * ``keep_alive``: keep alive (in seconds) to send when connecting to the broker (defaults to ``10`` seconds). :class:`~hbmqtt.client.MQTTClient` will *auto-ping* the broker if not message is sent within the keep-alive interval. This avoids disconnection from the broker.
 * ``ping_delay``: *auto-ping* delay before keep-alive times out (defaults to ``1`` seconds).

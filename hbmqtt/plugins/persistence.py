@@ -28,6 +28,7 @@ class SQLitePlugin:
                 self.context.logger.info("Database file '%s' opened" % self.db_file)
             except Exception as e:
                 self.context.logger.error("Error while initializing database '%s' : %s" % (self.db_file, e))
+                raise
         if self.cursor:
             self.cursor.execute("CREATE TABLE IF NOT EXISTS session(client_id TEXT PRIMARY KEY, data BLOB)")
 
@@ -40,6 +41,7 @@ class SQLitePlugin:
                 self.conn.commit()
             except Exception as e:
                 self.context.logger.error("Failed saving session '%s': %s" % (session, e))
+                raise
 
     async def find_session(self, client_id):
         if self.cursor:

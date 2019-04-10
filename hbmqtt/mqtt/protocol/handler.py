@@ -5,7 +5,7 @@ import logging
 import collections
 import itertools
 
-import asyncio
+import asyncio,anyio
 from asyncio import InvalidStateError
 
 from hbmqtt.mqtt import packet_class
@@ -56,6 +56,7 @@ class ProtocolHandler:
         self.reader = None
         self.writer = None
         self.plugins_manager = plugins_manager
+        self._tg = plugins_manager._tg
 
         self._reader_task = None
         self._keepalive_task = None
@@ -96,14 +97,23 @@ class ProtocolHandler:
         else:
             return False
 
+    async def _call_write_timeout(self, evt):
+        async with anyio.open_cancel_scope() as scope:
+            self._keepalive_task = scope
+            await evt.set()
+            await anyio.sleep(self.keepalive_timeout)
+        await self.handle_write_timeout()
+
     async def start(self):
         if not self._is_attached():
             raise ProtocolHandlerException("Handler is not attached to a stream")
         self._reader_ready = asyncio.Event()
-        self._reader_task = asyncio.Task(self._reader_loop())
+        await self._tg.spawn(self._reader_loop)
         await asyncio.wait([self._reader_ready.wait()])
         if self.keepalive_timeout:
-            self._keepalive_task = asyncio.get_running_loop().call_later(self.keepalive_timeout, self.handle_write_timeout)
+            evt = anyio.create_event()
+            await self._tg.spawn(self._call_write_timeout, evt)
+            await evt.wait()
 
         self.logger.debug("Handler tasks started")
         await self._retry_deliveries()
@@ -111,21 +121,20 @@ class ProtocolHandler:
 
     async def stop(self):
         # Stop messages flow waiter
-        self._stop_waiters()
-        if self._keepalive_task:
-            self._keepalive_task.cancel()
+        await self._stop_waiters()
+        t,self._keepalive_task = self._keepalive_task,None
+        if t:
+            await t.cancel()
         self.logger.debug("waiting for tasks to be stopped")
-        if not self._reader_task.done():
-            self._reader_task.cancel()
-            await asyncio.wait(
-                [self._reader_stopped.wait()])
+        t, self._reader_task = self._reader_task, None
+        if t:
+            await t.cancel()
+            await self._reader_stopped.wait()
         self.logger.debug("closing writer")
-        try:
+        if self.writer is not None:
             await self.writer.close()
-        except Exception as e:
-            self.logger.debug("Handler writer close failed: %s" % e)
 
-    def _stop_waiters(self):
+    async def _stop_waiters(self):
         self.logger.debug("Stopping %d puback waiters" % len(self._puback_waiters))
         self.logger.debug("Stopping %d pucomp waiters" % len(self._pubcomp_waiters))
         self.logger.debug("Stopping %d purec waiters" % len(self._pubrec_waiters))
@@ -341,98 +350,104 @@ class ProtocolHandler:
                 app_message.pubcomp_packet = pubcomp_packet
             except asyncio.CancelledError:
                 self.logger.debug("Message flow cancelled")
+                raise
 
     async def _reader_loop(self):
         self.logger.debug("%s Starting reader coro" % self.session.client_id)
-        running_tasks = collections.deque()
         keepalive_timeout = self.session.keep_alive
         if keepalive_timeout <= 0:
             keepalive_timeout = None
-        while True:
-            try:
-                self._reader_ready.set()
-                while running_tasks and running_tasks[0].done():
-                    running_tasks.popleft()
-                if len(running_tasks) > 1:
-                    self.logger.debug("handler running tasks: %d" % len(running_tasks))
+        try:
+            async with anyio.create_task_group() as tg:
+                self._reader_task = tg.cancel_scope
+                while True:
+                    try:
+                        self._reader_ready.set()
+                        try:
+                            running_tasks = tg.cancel_scope._tasks
+                        except AttributeError:
+                            running_tasks = ()
+                        if len(running_tasks):
+                            self.logger.debug("handler running tasks: %d" % len(running_tasks))
 
-                fixed_header = await asyncio.wait_for(
-                    MQTTFixedHeader.from_stream(self.reader),
-                    keepalive_timeout)
-                if fixed_header:
-                    if fixed_header.packet_type == RESERVED_0 or fixed_header.packet_type == RESERVED_15:
-                        self.logger.warning("%s Received reserved packet, which is forbidden: closing connection" %
-                                            (self.session.client_id))
-                        await self.handle_connection_closed()
-                    else:
+                        async with anyio.fail_after(keepalive_timeout):
+                            fixed_header = await MQTTFixedHeader.from_stream(self.reader)
+                        if fixed_header is None:
+                            self.logger.debug("%s No more data (EOF received), stopping reader coro" % self.session.client_id)
+                            break
+
+                        if fixed_header.packet_type == RESERVED_0 or fixed_header.packet_type == RESERVED_15:
+                            self.logger.warning("%s Received reserved packet, which is forbidden: closing connection" %
+                                                (self.session.client_id))
+                            await self.handle_connection_closed()
+                            break
                         cls = packet_class(fixed_header)
                         packet = await cls.from_stream(self.reader, fixed_header=fixed_header)
                         await self.plugins_manager.fire_event(
                             EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session)
-                        task = None
                         if packet.fixed_header.packet_type == CONNACK:
-                            task = asyncio.ensure_future(self.handle_connack(packet))
+                            await tg.spawn(self.handle_connack, packet)
                         elif packet.fixed_header.packet_type == SUBSCRIBE:
-                            task = asyncio.ensure_future(self.handle_subscribe(packet))
+                            await tg.spawn(self.handle_subscribe, packet)
                         elif packet.fixed_header.packet_type == UNSUBSCRIBE:
-                            task = asyncio.ensure_future(self.handle_unsubscribe(packet))
+                            await tg.spawn(self.handle_unsubscribe, packet)
                         elif packet.fixed_header.packet_type == SUBACK:
-                            task = asyncio.ensure_future(self.handle_suback(packet))
+                            await tg.spawn(self.handle_suback, packet)
                         elif packet.fixed_header.packet_type == UNSUBACK:
-                            task = asyncio.ensure_future(self.handle_unsuback(packet))
+                            await tg.spawn(self.handle_unsuback, packet)
                         elif packet.fixed_header.packet_type == PUBACK:
-                            task = asyncio.ensure_future(self.handle_puback(packet))
+                            await tg.spawn(self.handle_puback, packet)
                         elif packet.fixed_header.packet_type == PUBREC:
-                            task = asyncio.ensure_future(self.handle_pubrec(packet))
+                            await tg.spawn(self.handle_pubrec, packet)
                         elif packet.fixed_header.packet_type == PUBREL:
-                            task = asyncio.ensure_future(self.handle_pubrel(packet))
+                            await tg.spawn(self.handle_pubrel, packet)
                         elif packet.fixed_header.packet_type == PUBCOMP:
-                            task = asyncio.ensure_future(self.handle_pubcomp(packet))
+                            await tg.spawn(self.handle_pubcomp, packet)
                         elif packet.fixed_header.packet_type == PINGREQ:
-                            task = asyncio.ensure_future(self.handle_pingreq(packet))
+                            await tg.spawn(self.handle_pingreq, packet)
                         elif packet.fixed_header.packet_type == PINGRESP:
-                            task = asyncio.ensure_future(self.handle_pingresp(packet))
+                            await tg.spawn(self.handle_pingresp, packet)
                         elif packet.fixed_header.packet_type == PUBLISH:
-                            task = asyncio.ensure_future(self.handle_publish(packet))
+                            await tg.spawn(self.handle_publish, packet)
                         elif packet.fixed_header.packet_type == DISCONNECT:
-                            task = asyncio.ensure_future(self.handle_disconnect(packet))
+                            await tg.spawn(self.handle_disconnect, packet)
                         elif packet.fixed_header.packet_type == CONNECT:
                             self.handle_connect(packet)
                         else:
                             self.logger.warning("%s Unhandled packet type: %s" %
                                                 (self.session.client_id, packet.fixed_header.packet_type))
-                        if task:
-                            running_tasks.append(task)
-                else:
-                    self.logger.debug("%s No more data (EOF received), stopping reader coro" % self.session.client_id)
-                    break
-            except MQTTException:
-                self.logger.debug("Message discarded")
-            except asyncio.CancelledError:
-                self.logger.debug("Task cancelled, reader loop ending")
-                break
-            except asyncio.TimeoutError:
-                self.logger.debug("%s Input stream read timeout" % self.session.client_id)
-                self.handle_read_timeout()
-            except NoDataException:
-                self.logger.debug("%s No data available" % self.session.client_id)
-            except BaseException as e:
-                self.logger.warning("%s Unhandled exception in reader coro: %r" % (type(self).__name__, e))
-                break
-        while running_tasks:
-            running_tasks.popleft().cancel()
-        await self.handle_connection_closed()
-        self._reader_stopped.set()
-        self.logger.debug("%s Reader coro stopped" % self.session.client_id)
-        await self.stop()
+                    except MQTTException:
+                        self.logger.debug("Message discarded")
+                    except asyncio.CancelledError:
+                        self.logger.debug("Task cancelled, reader loop ending")
+                        raise
+                    except TimeoutError:
+                        self.logger.debug("%s Input stream read timeout", self.session.client_id if self.session else '?')
+                        await self.handle_read_timeout()
+                    except NoDataException:
+                        self.logger.debug("%s No data available" % self.session.client_id)
+                    except BaseException as e:
+                        self.logger.warning("%s Unhandled exception in reader coro: %r" % (type(self).__name__, e))
+                        raise
+                await tg.cancel_scope.cancel()
+        finally:
+            async with anyio.open_cancel_scope(shield=True):
+                self.logger.debug("%s Reader coro stopped", self.session.client_id if self.session else '?')
+                self._reader_stopped.set()
+                await self.handle_connection_closed()
+                await self.stop()
 
     async def _send_packet(self, packet):
         try:
             async with self._write_lock:
+                if self.writer is None:
+                    return
                 await packet.to_stream(self.writer)
             if self._keepalive_task:
-                self._keepalive_task.cancel()
-                self._keepalive_task = asyncio.get_running_loop().call_later(self.keepalive_timeout, self.handle_write_timeout)
+                await self._keepalive_task.cancel()
+                evt = anyio.create_event()
+                await self._tg.spawn(self._call_write_timeout, evt)
+                await evt.wait()
 
             await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session)
         except ConnectionResetError as cre:
@@ -445,18 +460,15 @@ class ProtocolHandler:
     async def mqtt_deliver_next_message(self):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug("%d message(s) available for delivery" % self.session.delivered_message_queue.qsize())
-        try:
-            message = await self.session.delivered_message_queue.get()
-        except asyncio.CancelledError:
-            message = None
+        message = await self.session.delivered_message_queue.get()
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug("Delivering message %s" % message)
         return message
 
-    def handle_write_timeout(self):
+    async def handle_write_timeout(self):
         self.logger.debug('%s write timeout unhandled' % self.session.client_id)
 
-    def handle_read_timeout(self):
+    async def handle_read_timeout(self):
         self.logger.debug('%s read timeout unhandled' % self.session.client_id)
 
     async def handle_connack(self, connack: ConnackPacket):
@@ -536,4 +548,5 @@ class ProtocolHandler:
         incoming_message = IncomingApplicationMessage(packet_id, publish_packet.topic_name, qos, publish_packet.data, publish_packet.retain_flag)
         incoming_message.publish_packet = publish_packet
         await self._handle_message_flow(incoming_message)
-        self.logger.debug("Message queue size: %d" % self.session.delivered_message_queue.qsize())
+        if self.session is not None:
+            self.logger.debug("Message queue size: %d" % self.session.delivered_message_queue.qsize())
