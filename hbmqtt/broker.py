@@ -69,31 +69,38 @@ class Server:
 
         self.max_connections = max_connections
         if self.max_connections > 0:
-            self.semaphore = asyncio.Semaphore(self.max_connections)
+            self.semaphore = anyio.create_semaphore(self.max_connections)
         else:
             self.semaphore = None
 
-    async def acquire_connection(self):
+    @asynccontextmanager
+    async def _client_limit_(self):
         if self.semaphore:
-            await self.semaphore.acquire()
-        self.conn_count += 1
-        if self.max_connections > 0:
-            self.logger.info("Listener '%s': %d/%d connections acquired" %
-                             (self.listener_name, self.conn_count, self.max_connections))
+            async with self.semaphore:
+                yield self
         else:
-            self.logger.info("Listener '%s': %d connections acquired" %
-                             (self.listener_name, self.conn_count))
+            yield self
 
-    def release_connection(self):
-        if self.semaphore:
-            self.semaphore.release()
-        self.conn_count -= 1
-        if self.max_connections > 0:
-            self.logger.info("Listener '%s': %d/%d connections acquired" %
-                             (self.listener_name, self.conn_count, self.max_connections))
-        else:
-            self.logger.info("Listener '%s': %d connections acquired" %
-                             (self.listener_name, self.conn_count))
+    @asynccontextmanager
+    async def _client_limit(self):
+        async with self._client_limit_():
+
+            self.conn_count += 1
+            if self.max_connections > 0:
+                self.logger.info("Listener '%s': %d/%d connections acquired" %
+                                (self.listener_name, self.conn_count, self.max_connections))
+            else:
+                self.logger.info("Listener '%s': %d connections acquired" %
+                                (self.listener_name, self.conn_count))
+            yield self
+
+            self.conn_count -= 1
+            if self.max_connections > 0:
+                self.logger.info("Listener '%s': %d/%d connections acquired" %
+                                (self.listener_name, self.conn_count, self.max_connections))
+            else:
+                self.logger.info("Listener '%s': %d connections acquired" %
+                                (self.listener_name, self.conn_count))
 
     async def close_instance(self):
         if self.instance:
@@ -331,11 +338,15 @@ class Broker:
         await self.client_connected(listener_name, StreamReaderAdapter(reader), StreamWriterAdapter(writer))
 
     async def client_connected(self, listener_name, reader: ReaderAdapter, writer: WriterAdapter):
-        # Wait for connection available on listener
         server = self._servers.get(listener_name, None)
         if not server:
             raise BrokerException("Invalid listener name '%s'" % listener_name)
-        await server.acquire_connection()
+
+        async with server._client_limit():
+            return await self.client_connected_(server, listener_name, reader, writer)
+
+    async def client_connected_(self, server, listener_name, reader: ReaderAdapter, writer: WriterAdapter):
+        # Wait for connection available on listener
 
         remote_address, remote_port = writer.get_peer_info()
         self.logger.info("Connection from %s:%d on listener '%s'" % (remote_address, remote_port, listener_name))
@@ -381,7 +392,6 @@ class Broker:
         authenticated = await self.authenticate(client_session, self.listeners_config[listener_name])
         if not authenticated:
             await writer.close()
-            server.release_connection()  # Delete client from connections list
             return
 
         while True:
@@ -484,7 +494,6 @@ class Broker:
             await tg.spawn(handle_deliver)
 
         self.logger.debug("%s Client disconnected" % client_session.client_id)
-        server.release_connection()
 
     def _init_handler(self, session, reader, writer):
         """
