@@ -61,7 +61,7 @@ class ProtocolHandler:
         self._reader_task = None
         self._keepalive_task = None
         self._reader_ready = None
-        self._reader_stopped = asyncio.Event()
+        self._reader_stopped = anyio.create_event()
 
         self._puback_waiters = dict()
         self._pubrec_waiters = dict()
@@ -107,9 +107,9 @@ class ProtocolHandler:
     async def start(self):
         if not self._is_attached():
             raise ProtocolHandlerException("Handler is not attached to a stream")
-        self._reader_ready = asyncio.Event()
+        self._reader_ready = anyio.create_event()
         await self._tg.spawn(self._reader_loop)
-        await asyncio.wait([self._reader_ready.wait()])
+        await self._reader_ready.wait()
         if self.keepalive_timeout:
             evt = anyio.create_event()
             await self._tg.spawn(self._call_write_timeout, evt)
@@ -364,7 +364,7 @@ class ProtocolHandler:
                 self._reader_task = tg.cancel_scope
                 while True:
                     try:
-                        self._reader_ready.set()
+                        await self._reader_ready.set()
                         try:
                             running_tasks = tg.cancel_scope._tasks
                         except AttributeError:
@@ -435,7 +435,7 @@ class ProtocolHandler:
         finally:
             async with anyio.open_cancel_scope(shield=True):
                 self.logger.debug("%s Reader coro stopped", self.session.client_id if self.session else '?')
-                self._reader_stopped.set()
+                await self._reader_stopped.set()
                 await self.handle_connection_closed()
                 await self.stop()
 

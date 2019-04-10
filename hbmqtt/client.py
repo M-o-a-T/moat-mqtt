@@ -117,8 +117,8 @@ class MQTTClient:
         self._tg = tg
         self._handler = None
         self._disconnect_task = None
-        self._connected_state = asyncio.Event()
-        self._no_more_connections = asyncio.Event()
+        self._connected_state = anyio.create_event()
+        self._no_more_connections = anyio.create_event()
         self.extra_headers = {}
 
         # Init plugins manager
@@ -415,7 +415,7 @@ class MQTTClient:
                 # Handle MQTT protocol
                 await self._handler.start()
                 self.session.transitions.connect()
-                self._connected_state.set()
+                await self._connected_state.set()
                 self.logger.debug("connected to %s:%s" % (self.session.remote_address, self.session.remote_port))
             return return_code
         except InvalidURI as iuri:
@@ -434,7 +434,7 @@ class MQTTClient:
     async def handle_connection_close(self, evt):
 
         async def cancel_tasks():
-            self._no_more_connections.set()
+            await self._no_more_connections.set()
             while self.client_tasks:
                 task = self.client_tasks.pop()
                 await task.cancel()
