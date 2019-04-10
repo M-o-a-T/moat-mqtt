@@ -6,7 +6,6 @@ import collections
 import itertools
 
 import asyncio,anyio
-from asyncio import InvalidStateError
 
 from hbmqtt.mqtt import packet_class
 from hbmqtt.mqtt.connack import ConnackPacket
@@ -31,7 +30,8 @@ from hbmqtt.adapters import ReaderAdapter, WriterAdapter
 from hbmqtt.session import Session, OutgoingApplicationMessage, IncomingApplicationMessage, INCOMING, OUTGOING
 from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 from hbmqtt.plugins.manager import PluginManager
-from hbmqtt.errors import HBMQTTException, MQTTException, NoDataException
+from hbmqtt.errors import HBMQTTException, MQTTException, NoDataException, InvalidStateError
+from hbmqtt.utils import Future
 
 
 EVENT_MQTT_PACKET_SENT = 'mqtt_packet_sent'
@@ -144,7 +144,7 @@ class ProtocolHandler:
                 self._pubcomp_waiters.values(),
                 self._pubrec_waiters.values(),
                 self._pubrel_waiters.values()):
-            waiter.cancel()
+            await waiter.cancel()
 
     async def _retry_deliveries(self):
         """
@@ -251,14 +251,15 @@ class ProtocolHandler:
                 publish_packet = app_message.build_publish_packet()
 
             # Wait for puback
-            waiter = asyncio.Future()
+            waiter = Future()
             self._puback_waiters[app_message.packet_id] = waiter
             # Send PUBLISH packet
-            await self._send_packet(publish_packet)
-            app_message.publish_packet = publish_packet
-            await waiter
-            del self._puback_waiters[app_message.packet_id]
-            app_message.puback_packet = waiter.result()
+            try:
+                await self._send_packet(publish_packet)
+                app_message.publish_packet = publish_packet
+                app_message.puback_packet = await waiter.get()
+            finally:
+                del self._puback_waiters[app_message.packet_id]
 
             # Discard inflight message
             del self.session.inflight_out[app_message.packet_id]
@@ -302,24 +303,27 @@ class ProtocolHandler:
                               % app_message.packet_id
                     self.logger.warning(message)
                     raise HBMQTTException(message)
-                waiter = asyncio.Future()
+                waiter = Future()
                 self._pubrec_waiters[app_message.packet_id] = waiter
                 # Send PUBLISH packet
-                await self._send_packet(publish_packet)
-                app_message.publish_packet = publish_packet
-                await waiter
-                del self._pubrec_waiters[app_message.packet_id]
-                app_message.pubrec_packet = waiter.result()
+                try:
+                    await self._send_packet(publish_packet)
+                    app_message.publish_packet = publish_packet
+                    app_message.pubrec_packet = await waiter.get()
+                finally:
+                    del self._pubrec_waiters[app_message.packet_id]
+
             if not app_message.pubcomp_packet:
                 # Wait for PUBCOMP
-                waiter = asyncio.Future()
+                waiter = Future()
                 self._pubcomp_waiters[app_message.packet_id] = waiter
                 # Send pubrel
-                app_message.pubrel_packet = PubrelPacket.build(app_message.packet_id)
-                await self._send_packet(app_message.pubrel_packet)
-                await waiter
-                del self._pubcomp_waiters[app_message.packet_id]
-                app_message.pubcomp_packet = waiter.result()
+                try:
+                    app_message.pubrel_packet = PubrelPacket.build(app_message.packet_id)
+                    await self._send_packet(app_message.pubrel_packet)
+                    app_message.pubcomp_packet = await waiter.get()
+                finally:
+                    del self._pubcomp_waiters[app_message.packet_id]
             # Discard inflight message
             del self.session.inflight_out[app_message.packet_id]
         elif app_message.direction == INCOMING:
@@ -330,16 +334,18 @@ class ProtocolHandler:
                 message = "A waiter already exists for message Id '%s', canceling it" \
                           % app_message.packet_id
                 self.logger.warning(message)
-                self._pubrel_waiters[app_message.packet_id].cancel()
-            waiter = asyncio.Future()
+                await self._pubrel_waiters[app_message.packet_id].cancel()
+            waiter = Future()
             self._pubrel_waiters[app_message.packet_id] = waiter
             # Send pubrec
-            pubrec_packet = PubrecPacket.build(app_message.packet_id)
-            await self._send_packet(pubrec_packet)
-            app_message.pubrec_packet = pubrec_packet
-            await waiter
-            del self._pubrel_waiters[app_message.packet_id]
-            app_message.pubrel_packet = waiter.result()
+            try:
+                pubrec_packet = PubrecPacket.build(app_message.packet_id)
+                await self._send_packet(pubrec_packet)
+                app_message.pubrec_packet = pubrec_packet
+                app_message.pubrel_packet = await waiter.get()
+            finally:
+                if self._pubrel_waiters.get(app_message.packet_id) is waiter:
+                    del self._pubrel_waiters[app_message.packet_id]
             # Initiate delivery and discard message
             await self.session.delivered_message_queue.put(app_message)
             del self.session.inflight_in[app_message.packet_id]
@@ -501,7 +507,7 @@ class ProtocolHandler:
         packet_id = puback.variable_header.packet_id
         try:
             waiter = self._puback_waiters[packet_id]
-            waiter.set_result(puback)
+            await waiter.set(puback)
         except KeyError:
             self.logger.warning("Received PUBACK for unknown pending message Id: '%d'" % packet_id)
         except InvalidStateError:
@@ -511,7 +517,7 @@ class ProtocolHandler:
         packet_id = pubrec.packet_id
         try:
             waiter = self._pubrec_waiters[packet_id]
-            waiter.set_result(pubrec)
+            await waiter.set(pubrec)
         except KeyError:
             self.logger.warning("Received PUBREC for unknown pending message with Id: %d" % packet_id)
         except InvalidStateError:
@@ -521,7 +527,7 @@ class ProtocolHandler:
         packet_id = pubcomp.packet_id
         try:
             waiter = self._pubcomp_waiters[packet_id]
-            waiter.set_result(pubcomp)
+            await waiter.set(pubcomp)
         except KeyError:
             self.logger.warning("Received PUBCOMP for unknown pending message with Id: %d" % packet_id)
         except InvalidStateError:
@@ -531,7 +537,7 @@ class ProtocolHandler:
         packet_id = pubrel.packet_id
         try:
             waiter = self._pubrel_waiters[packet_id]
-            waiter.set_result(pubrel)
+            await waiter.set(pubrel)
         except KeyError:
             self.logger.warning("Received PUBREL for unknown pending message with Id: %d" % packet_id)
         except InvalidStateError:

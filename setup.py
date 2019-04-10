@@ -24,6 +24,7 @@ setup(
         'docopt',
         'pyyaml',
         'anyio',
+        'attrs',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

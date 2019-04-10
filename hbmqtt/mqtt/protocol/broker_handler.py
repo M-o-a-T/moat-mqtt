@@ -2,7 +2,6 @@
 #
 # See the file license.txt for copying permission.
 import anyio
-from asyncio import futures
 from hbmqtt.mqtt.protocol.handler import ProtocolHandler
 from hbmqtt.mqtt.connack import (
     CONNECTION_ACCEPTED, UNACCEPTABLE_PROTOCOL_VERSION, IDENTIFIER_REJECTED,
@@ -19,6 +18,7 @@ from hbmqtt.session import Session
 from hbmqtt.plugins.manager import PluginManager
 from hbmqtt.adapters import ReaderAdapter, WriterAdapter
 from hbmqtt.errors import MQTTException
+from hbmqtt.utils import Future
 from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT
 
 
@@ -31,7 +31,7 @@ class BrokerProtocolHandler(ProtocolHandler):
 
     async def start(self):
         if self._disconnect_waiter is None:
-            self._disconnect_waiter = futures.Future()
+            self._disconnect_waiter = Future()
         await super().start()
 
     async def stop(self):
@@ -39,23 +39,23 @@ class BrokerProtocolHandler(ProtocolHandler):
             await super().stop()
         finally:
             if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
-                self._disconnect_waiter.set_result(None)
+                await self._disconnect_waiter.set(None)
 
     async def wait_disconnect(self):
-        return await self._disconnect_waiter
+        return await self._disconnect_waiter.get()
 
     async def handle_write_timeout(self):
         pass
 
     async def handle_read_timeout(self):
         if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
-            self._disconnect_waiter.set_result(None)
+            await self._disconnect_waiter.set(None)
 
     async def handle_disconnect(self, disconnect):
         self.logger.debug("Client disconnecting")
         if self._disconnect_waiter and not self._disconnect_waiter.done():
             self.logger.debug("Setting waiter result to %r" % disconnect)
-            self._disconnect_waiter.set_result(disconnect)
+            await self._disconnect_waiter.set(disconnect)
 
     async def handle_connection_closed(self):
         await self.handle_disconnect(None)
@@ -66,7 +66,7 @@ class BrokerProtocolHandler(ProtocolHandler):
         self.logger.error('%s [MQTT-3.1.0-2] %s : CONNECT message received during messages handling' %
                           (self.session.client_id, format_client_message(self.session)))
         if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
-            self._disconnect_waiter.set_result(None)
+            await self._disconnect_waiter.set(None)
 
     async def handle_pingreq(self, pingreq: PingReqPacket):
         await self._send_packet(PingRespPacket.build())

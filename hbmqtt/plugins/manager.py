@@ -6,7 +6,7 @@ __all__ = ['BaseContext', 'PluginManager']
 
 import pkg_resources
 import logging
-import asyncio,anyio
+import anyio
 import copy
 import sys
 

@@ -2,7 +2,6 @@
 #
 # See the file license.txt for copying permission.
 import anyio
-from asyncio import futures
 import sys
 from hbmqtt.mqtt.protocol.handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
 from hbmqtt.mqtt.disconnect import DisconnectPacket
@@ -16,6 +15,7 @@ from hbmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload, ConnectPa
 from hbmqtt.mqtt.connack import ConnackPacket
 from hbmqtt.session import Session
 from hbmqtt.plugins.manager import PluginManager
+from hbmqtt.utils import Future
 
 
 class ClientProtocolHandler(ProtocolHandler):
@@ -29,7 +29,7 @@ class ClientProtocolHandler(ProtocolHandler):
 
     async def start(self):
         if self._disconnect_waiter is None:
-            self._disconnect_waiter = futures.Future()
+            self._disconnect_waiter = Future()
         await super().start()
 
     async def stop(self):
@@ -41,7 +41,7 @@ class ClientProtocolHandler(ProtocolHandler):
                 self.logger.debug("Cancel ping task")
                 await t.cancel()
             if self._disconnect_waiter and not self._disconnect_waiter.done():
-                self._disconnect_waiter.cancel()
+                await self._disconnect_waiter.cancel()
             self._disconnect_waiter = None
 
     def _build_connect_packet(self):
@@ -102,23 +102,25 @@ class ClientProtocolHandler(ProtocolHandler):
         :return:
         """
 
-        # Build and send SUBSCRIBE message
-        subscribe = SubscribePacket.build(topics, packet_id)
-        await self._send_packet(subscribe)
+        waiter = Future()
+        self._subscriptions_waiter[packet_id] = waiter
+        try:
+            # Build and send SUBSCRIBE message
+            subscribe = SubscribePacket.build(topics, packet_id)
+            await self._send_packet(subscribe)
 
-        # Wait for SUBACK is received
-        waiter = futures.Future()
-        self._subscriptions_waiter[subscribe.variable_header.packet_id] = waiter
-        return_codes = await waiter
+            # Wait for SUBACK is received
+            return_codes = await waiter.get()
 
-        del self._subscriptions_waiter[subscribe.variable_header.packet_id]
+        finally:
+            del self._subscriptions_waiter[packet_id]
         return return_codes
 
     async def handle_suback(self, suback: SubackPacket):
         packet_id = suback.variable_header.packet_id
         try:
             waiter = self._subscriptions_waiter.get(packet_id)
-            waiter.set_result(suback.payload.return_codes)
+            await waiter.set(suback.payload.return_codes)
         except KeyError as ke:
             self.logger.warning("Received SUBACK for unknown pending subscription with Id: %s" % packet_id)
 
@@ -128,18 +130,21 @@ class ClientProtocolHandler(ProtocolHandler):
         :param topics: array of topics ['/a/b', ...]
         :return:
         """
-        unsubscribe = UnsubscribePacket.build(topics, packet_id)
-        await self._send_packet(unsubscribe)
-        waiter = futures.Future()
-        self._unsubscriptions_waiter[unsubscribe.variable_header.packet_id] = waiter
-        await waiter
-        del self._unsubscriptions_waiter[unsubscribe.variable_header.packet_id]
+        waiter = Future()
+        self._unsubscriptions_waiter[packet_id] = waiter
+        try:
+            unsubscribe = UnsubscribePacket.build(topics, packet_id)
+            await self._send_packet(unsubscribe)
+
+            await waiter.get()
+        finally:
+            del self._unsubscriptions_waiter[packet_id]
 
     async def handle_unsuback(self, unsuback: UnsubackPacket):
         packet_id = unsuback.variable_header.packet_id
         try:
             waiter = self._unsubscriptions_waiter.get(packet_id)
-            waiter.set_result(None)
+            await waiter.set(None)
         except KeyError as ke:
             self.logger.warning("Received UNSUBACK for unknown pending subscription with Id: %s" % packet_id)
 
@@ -166,8 +171,8 @@ class ClientProtocolHandler(ProtocolHandler):
     async def handle_connection_closed(self):
         self.logger.debug("Broker closed connection")
         if self._disconnect_waiter and not self._disconnect_waiter.done():
-            self._disconnect_waiter.set_result(None)
+            await self._disconnect_waiter.set(None)
 
     async def wait_disconnect(self):
         if self._disconnect_waiter:
-            await self._disconnect_waiter
+            await self._disconnect_waiter.get()

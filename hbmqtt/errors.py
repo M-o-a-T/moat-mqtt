@@ -29,3 +29,10 @@ class NoDataException(Exception):
     Exceptions thrown by packet encode/decode functions
     """
     pass
+
+
+class InvalidStateError(Exception):
+    """
+    Exception thrown by Future.
+    """
+    pass

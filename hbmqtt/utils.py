@@ -5,7 +5,6 @@ import logging
 
 import yaml
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -52,3 +51,76 @@ def read_yaml_config(config_file):
     except yaml.YAMLError as exc:
         logger.error("Invalid config_file %s: %s" % (config_file, exc))
     return config
+
+
+# utility code
+
+import attr
+import outcome
+import anyio
+from .errors import InvalidStateError
+
+
+try:
+    from concurrent.futures import CancelledError
+except ImportError:
+    class CancelledError(RuntimeError):
+        pass
+
+
+@attr.s
+class Future:
+    """A waitable value useful for inter-task synchronization,
+    inspired by :class:`threading.Event` and :class:`asyncio.Future`.
+
+    An event object manages an internal value, which is initially
+    unset, and a task can wait for it to become True.
+
+    Note that the value can only be read once.
+    """
+
+    event = attr.ib(factory=anyio.create_event, init=False)
+    value = attr.ib(default=None, init=False)
+
+    async def set(self, value):
+        """Set the result to return this value, and wake any waiting task.
+        """
+        if self.event.is_set():
+            raise InvalidStateError("Value already set")
+        self.value = value
+        await self.event.set()
+
+    async def set_error(self, exc):
+        """Set the result to raise this exceptio, and wake any waiting task.
+        """
+        if self.event.is_set():
+            raise InvalidStateError("Value already set")
+        self.value = exc
+        await self.event.set()
+
+    def is_set(self):
+        """Check whether the event has occurred.
+        """
+        return self.value is not None
+
+    async def cancel(self):
+        """Send a cancelation to the recipient.
+        """
+        await self.set_error(CancelledError())
+
+    async def get(self):
+        """Block until the value is set.
+
+        If it's already set, then this method returns immediately.
+
+        The value can only be read once.
+        """
+        await self.event.wait()
+        if isinstance(self.value, BaseException):
+            raise self.value
+        return self.value
+
+    def done(self):
+        """Report whether this Future has been set.
+        """
+        return self.event.is_set()
