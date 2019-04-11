@@ -56,7 +56,6 @@ def read_yaml_config(config_file):
 # utility code
 
 import attr
-import outcome
 import anyio
 from .errors import InvalidStateError
 
