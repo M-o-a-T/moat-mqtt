@@ -31,7 +31,7 @@ from hbmqtt.session import Session, OutgoingApplicationMessage, IncomingApplicat
 from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 from hbmqtt.plugins.manager import PluginManager
 from hbmqtt.errors import HBMQTTException, MQTTException, NoDataException, InvalidStateError
-from hbmqtt.utils import Future
+from hbmqtt.utils import Future, CancelledError
 
 
 EVENT_MQTT_PACKET_SENT = 'mqtt_packet_sent'
@@ -159,7 +159,10 @@ class ProtocolHandler:
 
         async def process_one(message):
             async with anyio.move_on_after(10):
-                await self._handle_message_flow(message)
+                try:
+                    await self._handle_message_flow(message)
+                except CancelledError:
+                    pass
 
                 nonlocal done
                 done += 1
@@ -377,9 +380,9 @@ class ProtocolHandler:
         try:
             async with anyio.create_task_group() as tg:
                 self._reader_task = tg.cancel_scope
+                await self._reader_ready.set()
                 while True:
                     try:
-                        await self._reader_ready.set()
                         try:
                             running_tasks = tg.cancel_scope._tasks
                         except AttributeError:
@@ -559,11 +562,14 @@ class ProtocolHandler:
             self.logger.warning("PUBREL waiter with Id '%d' already done" % packet_id)
 
     async def handle_publish(self, publish_packet: PublishPacket):
-        packet_id = publish_packet.variable_header.packet_id
-        qos = publish_packet.qos
+        try:
+            packet_id = publish_packet.variable_header.packet_id
+            qos = publish_packet.qos
 
-        incoming_message = IncomingApplicationMessage(packet_id, publish_packet.topic_name, qos, publish_packet.data, publish_packet.retain_flag)
-        incoming_message.publish_packet = publish_packet
-        await self._handle_message_flow(incoming_message)
-        if self.session is not None:
-            self.logger.debug("Message queue size: %d" % self.session.delivered_message_queue.qsize())
+            incoming_message = IncomingApplicationMessage(packet_id, publish_packet.topic_name, qos, publish_packet.data, publish_packet.retain_flag)
+            incoming_message.publish_packet = publish_packet
+            await self._handle_message_flow(incoming_message)
+            if self.session is not None:
+                self.logger.debug("Message queue size: %d" % self.session.delivered_message_queue.qsize())
+        except CancelledError:
+            pass

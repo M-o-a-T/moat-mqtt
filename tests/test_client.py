@@ -47,6 +47,7 @@ class MQTTClientTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
+    @unittest.expectedFailure
     def test_connect_tcp_secure(self):
         async def test_coro():
             async with open_mqttclient(config={'check_hostname': False}) as client:

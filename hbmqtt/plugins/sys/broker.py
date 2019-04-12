@@ -62,7 +62,7 @@ class BrokerSysPlugin:
             if sys_interval > 0:
                 self.context.logger.debug("Setup $SYS broadcasting every %d secondes" % sys_interval)
                 evt = anyio.create_event()
-                await self.context._tg.spawn(self.broadcast_dollar_sys_topics_loop, sys_interval, evt)
+                await self.context._broker_instance._tg.spawn(self.broadcast_dollar_sys_topics_loop, sys_interval, evt)
                 await evt.wait()
             else:
                 self.context.logger.debug("$SYS disabled")

@@ -59,12 +59,10 @@ import attr
 import anyio
 from .errors import InvalidStateError
 
-
-try:
-    from concurrent.futures import CancelledError
-except ImportError:
-    class CancelledError(RuntimeError):
-        pass
+class CancelledError(RuntimeError):
+    ## This intentionally does not descend from any toolkit's cancellation exception
+    ## (much less from ll of them)
+    pass
 
 
 @attr.s

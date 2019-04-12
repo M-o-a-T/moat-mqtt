@@ -1,5 +1,6 @@
 import logging
 import anyio
+from functools import partial
 
 from hbmqtt.client import open_mqttclient, ConnectException
 from hbmqtt.mqtt.constants import QOS_1, QOS_2
@@ -23,17 +24,17 @@ config = {
 
 
 async def test_coro():
-    async with open_mqttclient() as C:
+    async with open_mqttclient(config=config) as C:
         await C.connect('mqtt://test.mosquitto.org/')
         async with anyio.create_task_group() as tg:
             await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_0')
-            await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
-            await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
+            await tg.spawn(partial(C.publish,'a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1))
+            await tg.spawn(partial(C.publish,'a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2))
         logger.info("messages published")
 
 
 async def test_coro2():
-    async with open_mqttclient() as C:
+    async with open_mqttclient(config=config) as C:
         await C.connect('mqtt://test.mosquitto.org:1883/')
         await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=0x00)
         await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=0x01)

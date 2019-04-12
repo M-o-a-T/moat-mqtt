@@ -84,7 +84,7 @@ class ClientProtocolHandler(ProtocolHandler):
 
     async def handle_write_timeout(self):
         try:
-            if not self._ping_task:
+            if self.session is not None and not self._ping_task:
                 self.logger.debug("Scheduling Ping")
                 evt = anyio.create_event()
                 await self._tg.spawn(self.mqtt_ping, evt)

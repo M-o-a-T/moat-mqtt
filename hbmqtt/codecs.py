@@ -50,7 +50,7 @@ async def read_or_raise(reader, n=-1):
     """
     try:
         data = await reader.read(n)
-    except anyio.exceptions.IncompleteRead:
+    except (anyio.exceptions.IncompleteRead, ConnectionResetError):
         data = None
     if not data:
         raise NoDataException("No more data")

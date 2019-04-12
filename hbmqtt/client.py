@@ -441,7 +441,7 @@ class MQTTClient:
         async with anyio.open_cancel_scope() as scope:
             self._disconnect_task = scope
             await evt.set()
-            self.logger.debug("Watch broker disconnection")
+            self.logger.debug("Wait for broker disconnection")
             # Wait for disconnection from broker (like connection lost)
             await self._handler.wait_disconnect()
         self.logger.warning("Disconnected from broker")
@@ -449,8 +449,8 @@ class MQTTClient:
         # Block client API
         self._connected_state.clear()
 
-        # stop an clean handler
-        #await self._handler.stop()
+        # stop and clean handler
+        await self._handler.stop()
         self._handler.detach()
         self.session.transitions.disconnect()
 
