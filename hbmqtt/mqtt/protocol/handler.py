@@ -471,8 +471,7 @@ class ProtocolHandler:
             await self.handle_connection_closed()
             raise
         except BaseException as e:
-            import pdb;pdb.set_trace()
-            self.logger.warning("Unhandled exception %d", sp, exc_info=e)
+            self.logger.warning("Unhandled exception", exc_info=e)
             raise
 
     async def mqtt_deliver_next_message(self):
