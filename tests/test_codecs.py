@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 import unittest
-import asyncio,anyio
+import anyio
 
 from hbmqtt.codecs import (
     bytes_to_hex_str,
@@ -10,6 +10,7 @@ from hbmqtt.codecs import (
     decode_string,
     encode_string,
 )
+from hbmqtt.adapters import BufferReader
 
 
 class TestCodecs(unittest.TestCase):
@@ -25,8 +26,7 @@ class TestCodecs(unittest.TestCase):
 
     def test_decode_string(self):
         async def test_coro():
-            stream = asyncio.StreamReader()
-            stream.feed_data(b'\x00\x02AA')
+            stream = BufferReader(b'\x00\x02AA')
             ret = await decode_string(stream)
             self.assertEqual(ret, 'AA')
         anyio.run(test_coro)
