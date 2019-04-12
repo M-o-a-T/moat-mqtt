@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio,anyio
+import anyio
 import logging
 import unittest
 from unittest.mock import patch, call, MagicMock
@@ -98,32 +98,31 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
 
-                conn_reader, conn_writer = \
-                    await asyncio.open_connection('127.0.0.1', 1883)
-                reader = StreamReaderAdapter(conn_reader)
-                writer = StreamWriterAdapter(conn_writer)
+                async with await anyio.connect_tcp("127.0.0.1", 1883) as conn:
+                    reader = StreamReaderAdapter(conn)
+                    writer = StreamWriterAdapter(conn)
 
-                vh = ConnectVariableHeader()
-                payload = ConnectPayload()
+                    vh = ConnectVariableHeader()
+                    payload = ConnectPayload()
 
-                vh.keep_alive = 10
-                vh.clean_session_flag = False
-                vh.will_retain_flag = False
-                vh.will_flag = True
-                vh.will_qos = QOS_0
-                payload.client_id = 'test_id'
-                payload.will_message = b'test'
-                payload.will_topic = '/topic'
-                connect = ConnectPacket(vh=vh, payload=payload)
-                await connect.to_stream(writer)
-                await ConnackPacket.from_stream(reader)
+                    vh.keep_alive = 10
+                    vh.clean_session_flag = False
+                    vh.will_retain_flag = False
+                    vh.will_flag = True
+                    vh.will_qos = QOS_0
+                    payload.client_id = 'test_id'
+                    payload.will_message = b'test'
+                    payload.will_topic = '/topic'
+                    connect = ConnectPacket(vh=vh, payload=payload)
+                    await connect.to_stream(writer)
+                    await ConnackPacket.from_stream(reader)
 
-                await anyio.sleep(0.1)
+                    await anyio.sleep(0.1)
 
-                disconnect = DisconnectPacket()
-                await disconnect.to_stream(writer)
+                    disconnect = DisconnectPacket()
+                    await disconnect.to_stream(writer)
 
-                await anyio.sleep(0.1)
+                    await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
 
@@ -276,39 +275,37 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
 
-                conn_reader, conn_writer = \
-                    await asyncio.open_connection('127.0.0.1', 1883)
-                reader = StreamReaderAdapter(conn_reader)
-                writer = StreamWriterAdapter(conn_writer)
+                async with await anyio.connect_tcp("127.0.0.1", 1883) as conn:
+                    reader = StreamReaderAdapter(conn)
+                    writer = StreamWriterAdapter(conn)
 
-                vh = ConnectVariableHeader()
-                payload = ConnectPayload()
+                    vh = ConnectVariableHeader()
+                    payload = ConnectPayload()
 
-                vh.keep_alive = 10
-                vh.clean_session_flag = False
-                vh.will_retain_flag = False
-                payload.client_id = 'test_id'
-                connect = ConnectPacket(vh=vh, payload=payload)
-                await connect.to_stream(writer)
-                await ConnackPacket.from_stream(reader)
+                    vh.keep_alive = 10
+                    vh.clean_session_flag = False
+                    vh.will_retain_flag = False
+                    payload.client_id = 'test_id'
+                    connect = ConnectPacket(vh=vh, payload=payload)
+                    await connect.to_stream(writer)
+                    await ConnackPacket.from_stream(reader)
 
-                publish_1 = PublishPacket.build('/test', b'data', 1, False, QOS_2, False)
-                await publish_1.to_stream(writer)
-                await broker._tg.spawn(PubrecPacket.from_stream, reader)
+                    publish_1 = PublishPacket.build('/test', b'data', 1, False, QOS_2, False)
+                    await publish_1.to_stream(writer)
+                    await broker._tg.spawn(PubrecPacket.from_stream, reader)
 
-                await anyio.sleep(0.2)
+                    await anyio.sleep(0.2)
 
-                publish_dup = PublishPacket.build('/test', b'data', 1, True, QOS_2, False)
-                await publish_dup.to_stream(writer)
-                await PubrecPacket.from_stream(reader)
-                pubrel = PubrelPacket.build(1)
-                await pubrel.to_stream(writer)
-                #await PubcompPacket.from_stream(reader)
+                    publish_dup = PublishPacket.build('/test', b'data', 1, True, QOS_2, False)
+                    await publish_dup.to_stream(writer)
+                    await PubrecPacket.from_stream(reader)
+                    pubrel = PubrelPacket.build(1)
+                    await pubrel.to_stream(writer)
+                    #await PubcompPacket.from_stream(reader)
 
-                disconnect = DisconnectPacket()
-                await disconnect.to_stream(writer)
-
-                await anyio.sleep(0.1)
+                    await anyio.sleep(2)
+                    disconnect = DisconnectPacket()
+                    await disconnect.to_stream(writer)
 
         anyio.run(test_coro)
 

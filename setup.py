@@ -19,7 +19,7 @@ setup(
     python_requires=">=3.5",
     install_requires=[
         'transitions',
-        'websockets',
+        'asyncwebsockets',
         'passlib',
         'docopt',
         'pyyaml',

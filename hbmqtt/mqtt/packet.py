@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
+import anyio
 
 from hbmqtt.codecs import bytes_to_hex_str, decode_packet_id, int_to_bytes, read_or_raise
 from hbmqtt.errors import CodecException, MQTTException, NoDataException
@@ -64,7 +64,7 @@ class MQTTFixedHeader:
         return out
 
     async def to_stream(self, writer: WriterAdapter):
-        writer.write(self.to_bytes())
+        await writer.write(self.to_bytes())
 
     @property
     def bytes_length(self):
@@ -117,8 +117,8 @@ class MQTTVariableHeader:
     def __init__(self):
         pass
 
-    async def to_stream(self, writer: asyncio.StreamWriter):
-        writer.write(self.to_bytes())
+    async def to_stream(self, writer: anyio.abc.Stream):
+        await writer.write(self.to_bytes())
         await writer.drain()
 
     def to_bytes(self) -> bytes:
@@ -132,7 +132,7 @@ class MQTTVariableHeader:
         return len(self.to_bytes())
 
     @classmethod
-    async def from_stream(cls, reader: asyncio.StreamReader, fixed_header: MQTTFixedHeader):
+    async def from_stream(cls, reader: anyio.abc.Stream, fixed_header: MQTTFixedHeader):
         pass
 
 
@@ -162,15 +162,15 @@ class MQTTPayload:
     def __init__(self):
         pass
 
-    async def to_stream(self, writer: asyncio.StreamWriter):
-        writer.write(self.to_bytes())
+    async def to_stream(self, writer: anyio.abc.Stream):
+        await writer.write(self.to_bytes())
         await writer.drain()
 
     def to_bytes(self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader):
         pass
 
     @classmethod
-    async def from_stream(cls, reader: asyncio.StreamReader, fixed_header: MQTTFixedHeader,
+    async def from_stream(cls, reader: anyio.abc.Stream, fixed_header: MQTTFixedHeader,
                     variable_header: MQTTVariableHeader):
         pass
 
@@ -189,8 +189,8 @@ class MQTTPacket:
         self.payload = payload
         self.protocol_ts = None
 
-    async def to_stream(self, writer: asyncio.StreamWriter):
-        writer.write(self.to_bytes())
+    async def to_stream(self, writer: anyio.abc.Stream):
+        await writer.write(self.to_bytes())
         await writer.drain()
         self.protocol_ts = datetime.now()
 

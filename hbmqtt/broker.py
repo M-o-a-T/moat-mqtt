@@ -3,8 +3,8 @@
 # See the file license.txt for copying permission.
 import logging
 import ssl
-import websockets
-import asyncio,anyio
+import asyncwebsockets
+import anyio
 import sys
 import re
 from collections import deque
@@ -15,7 +15,7 @@ from transitions import Machine, MachineError
 from hbmqtt.session import Session
 from hbmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
 from hbmqtt.errors import HBMQTTException, MQTTException
-from hbmqtt.utils import format_client_message, gen_client_id
+from hbmqtt.utils import format_client_message, gen_client_id, Future
 from hbmqtt.adapters import (
     StreamReaderAdapter,
     StreamWriterAdapter,
@@ -24,6 +24,7 @@ from hbmqtt.adapters import (
     WebSocketsReader,
     WebSocketsWriter)
 from .plugins.manager import PluginManager, BaseContext
+from asyncwebsockets import create_websocket_server
 
 
 _defaults = {
@@ -103,9 +104,7 @@ class Server:
                                 (self.listener_name, self.conn_count))
 
     async def close_instance(self):
-        if self.instance:
-            self.instance.close()
-            await self.instance.wait_closed()
+        await self.instance.cancel()
 
 
 class BrokerContext(BaseContext):
@@ -271,18 +270,24 @@ class Broker:
                     except ValueError as ve:
                         raise BrokerException("Invalid port value in bind value: %s" % listener['bind'])
 
+                    async def server_task(evt, cb, address,port,ssl):
+                        async with anyio.open_cancel_scope() as scope:
+                            await evt.set(scope)
+                            async with await anyio.create_tcp_server(port, interface=address, ssl_context=ssl) as server:
+                                async for conn in server.accept_connections():
+                                    await self._tg.spawn(cb, conn)
+
                     if listener['type'] == 'tcp':
                         cb_partial = partial(self.stream_connected, listener_name=listener_name)
-                        instance = await asyncio.start_server(cb_partial,
-                                                                   address,
-                                                                   port,
-                                                                   ssl=sc)
-                        self._servers[listener_name] = Server(listener_name, instance, max_connections)
                     elif listener['type'] == 'ws':
                         cb_partial = partial(self.ws_connected, listener_name=listener_name)
-                        instance = await websockets.serve(cb_partial, address, port, ssl=sc,
-                                                               subprotocols=['mqtt'])
-                        self._servers[listener_name] = Server(listener_name, instance, max_connections)
+                    else:
+                        self.logger.error("Listener '%s': unknown type '%s'", listener_name, listener['type'])
+                        continue
+                    fut = Future()
+                    await self._tg.spawn(server_task, fut, cb_partial, address,port,sc,name=listener_name)
+                    instance = await fut.get()
+                    self._servers[listener_name] = Server(listener_name, instance, max_connections)
 
                     self.logger.info("Listener '%s' bind to %s (max_connections=%d)" %
                                      (listener_name, listener['bind'], max_connections))
@@ -295,6 +300,8 @@ class Broker:
 
             self.logger.debug("Broker started")
         except Exception as e:
+            if "Cancel" in repr(e):
+                raise  # bah
             self.logger.error("Broker startup failed: %s" % e)
             self.transitions.starting_fail()
             raise BrokerException("Broker instance can't be started") from e
@@ -305,12 +312,12 @@ class Broker:
 
             Closes all connected session, stop listening on network socket and free resources.
         """
+        self._sessions = dict()
+        self._subscriptions = dict()
+        self._retained_messages = dict()
         try:
-            self._sessions = dict()
-            self._subscriptions = dict()
-            self._retained_messages = dict()
             self.transitions.shutdown()
-        except (MachineError, ValueError) as exc:
+        except MachineError as exc:
             # Backwards compat: MachineError is raised by transitions < 0.5.0.
             raise BrokerException("Broker instance can't be stopped") from exc
 
@@ -332,11 +339,16 @@ class Broker:
     async def internal_message_broadcast(self, topic, data, qos=None):
         return await self._broadcast_message(None, topic, data)
 
-    async def ws_connected(self, websocket, uri, listener_name):
+    async def ws_connected(self, conn, listener_name):
+        async def subpro(req):
+            if "mqtt" not in req.subprotocols:
+                return False
+            return "mqtt"
+        websocket = await create_websocket_server(conn, filter=subpro)
         await self.client_connected(listener_name, WebSocketsReader(websocket), WebSocketsWriter(websocket))
 
-    async def stream_connected(self, reader, writer, listener_name):
-        await self.client_connected(listener_name, StreamReaderAdapter(reader), StreamWriterAdapter(writer))
+    async def stream_connected(self, conn, listener_name):
+        await self.client_connected(listener_name, StreamReaderAdapter(conn), StreamWriterAdapter(conn))
 
     async def client_connected(self, listener_name, reader: ReaderAdapter, writer: WriterAdapter):
         server = self._servers.get(listener_name, None)

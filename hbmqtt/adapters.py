@@ -2,9 +2,9 @@
 #
 # See the file license.txt for copying permission.
 import io
-from websockets.protocol import WebSocketCommonProtocol
-from websockets.exceptions import ConnectionClosed
-from asyncio import StreamReader, StreamWriter
+from asyncwebsockets import Websocket
+from wsproto.events import CloseConnection, BytesMessage
+import anyio
 import logging
 
 
@@ -59,9 +59,8 @@ class WriterAdapter:
 class WebSocketsReader(ReaderAdapter):
     """
     WebSockets API reader adapter
-    This adapter relies on WebSocketCommonProtocol to read from a WebSocket.
     """
-    def __init__(self, protocol: WebSocketCommonProtocol):
+    def __init__(self, protocol: Websocket):
         self._protocol = protocol
         self._stream = io.BytesIO(b'')
 
@@ -78,43 +77,42 @@ class WebSocketsReader(ReaderAdapter):
         buffer = bytearray(self._stream.read())
         while len(buffer) < n:
             try:
-                message = await self._protocol.recv()
-            except ConnectionClosed:
+                message = await self._protocol._next_event()
+            except anyio.exceptions.ClosedResourceError:
+                message = None
+            if isinstance(message, CloseConnection):
                 message = None
             if message is None:
+                self._stream = None
                 break
-            if not isinstance(message, bytes):
+            if not isinstance(message, BytesMessage):
                 raise TypeError("message must be bytes")
-            buffer.extend(message)
+            buffer.extend(message.data)
         self._stream = io.BytesIO(buffer)
 
 
 class WebSocketsWriter(WriterAdapter):
     """
     WebSockets API writer adapter
-    This adapter relies on WebSocketCommonProtocol to read from a WebSocket.
     """
-    def __init__(self, protocol: WebSocketCommonProtocol):
+    def __init__(self, protocol: Websocket):
         self._protocol = protocol
-        self._stream = io.BytesIO(b'')
 
-    def write(self, data):
+    async def write(self, data):
         """
         write some data to the protocol layer
         """
-        self._stream.write(data)
+        await self._protocol.send(data)
 
     async def drain(self):
         """
         Let the write buffer of the underlying transport a chance to be flushed.
         """
-        data = self._stream.getvalue()
-        if len(data):
-            await self._protocol.send(data)
-        self._stream = io.BytesIO(b'')
+        pass
 
     def get_peer_info(self):
-        extra_info = self._protocol.writer.get_extra_info('peername')
+        sock = self._protocol._sock._socket._raw_socket
+        extra_info = sock.getpeername()
         return extra_info[0], extra_info[1]
 
     async def close(self):
@@ -124,21 +122,18 @@ class WebSocketsWriter(WriterAdapter):
 class StreamReaderAdapter(ReaderAdapter):
     """
     Asyncio Streams API protocol adapter
-    This adapter relies on StreamReader to read from a TCP socket.
+    This adapter relies on anyio.Stream to read from a TCP socket.
     Because API is very close, this class is trivial
     """
-    def __init__(self, reader: StreamReader):
+    def __init__(self, reader: anyio.abc.Stream):
         self._reader = reader
 
     async def read(self, n=-1) -> bytes:
         if n == -1:
-            data = await self._reader.read(n)
+            data = await self._reader.receive_some(4096)
         else:
-            data = await self._reader.readexactly(n)
+            data = await self._reader.receive_exactly(n)
         return data
-
-    def feed_eof(self):
-        return self._reader.feed_eof()
 
 
 class StreamWriterAdapter(WriterAdapter):
@@ -147,28 +142,23 @@ class StreamWriterAdapter(WriterAdapter):
     This adapter relies on StreamWriter to write to a TCP socket.
     Because API is very close, this class is trivial
     """
-    def __init__(self, writer: StreamWriter):
+    def __init__(self, writer: anyio.abc.Stream):
         self.logger = logging.getLogger(__name__)
         self._writer = writer
 
-    def write(self, data):
-        self._writer.write(data)
+    async def write(self, data):
+        await self._writer.send_all(data)
 
     async def drain(self):
-        await self._writer.drain()
+        pass
 
     def get_peer_info(self):
-        extra_info = self._writer.get_extra_info('peername')
+        sock = self._writer._socket._raw_socket
+        extra_info = sock.getpeername()
         return extra_info[0], extra_info[1]
 
     async def close(self):
-        try:
-            await self._writer.drain()
-            if self._writer.can_write_eof():
-                self._writer.write_eof()
-        except ConnectionResetError:
-            pass
-        self._writer.close()
+        await self._writer.close()
 
 
 class BufferReader(ReaderAdapter):
@@ -191,11 +181,11 @@ class BufferWriter(WriterAdapter):
     def __init__(self, buffer=b''):
         self._stream = io.BytesIO(buffer)
 
-    def write(self, data):
+    async def write(self, data):
         """
         write some data to the protocol layer
         """
-        self._stream.write(data)
+        await self._stream.write(data)
 
     async def drain(self):
         pass

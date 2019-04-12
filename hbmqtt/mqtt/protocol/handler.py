@@ -37,6 +37,7 @@ from hbmqtt.utils import Future
 EVENT_MQTT_PACKET_SENT = 'mqtt_packet_sent'
 EVENT_MQTT_PACKET_RECEIVED = 'mqtt_packet_received'
 
+_spi=0
 
 class ProtocolHandlerException(Exception):
     pass
@@ -44,7 +45,7 @@ class ProtocolHandlerException(Exception):
 
 class ProtocolHandler:
     """
-    Class implementing the MQTT communication protocol using asyncio features
+    Class implementing the MQTT communication protocol using async features
     """
 
     def __init__(self, plugins_manager: PluginManager, session: Session=None):
@@ -102,6 +103,8 @@ class ProtocolHandler:
             self._keepalive_task = scope
             await evt.set()
             await anyio.sleep(self.keepalive_timeout)
+            if self._keepalive_task is scope:
+                self._keepalive_task = None
         await self.handle_write_timeout()
 
     async def start(self):
@@ -440,7 +443,7 @@ class ProtocolHandler:
                         # break # XXX
 
                     except BaseException as e:
-                        self.logger.warning("%s Unhandled exception in reader coro: %r" % (type(self).__name__, e))
+                        self.logger.warning("%s Unhandled exception in reader coro", type(self).__name__, exc_info=e)
                         raise
                 await tg.cancel_scope.cancel()
         finally:
@@ -456,8 +459,9 @@ class ProtocolHandler:
                 if self.writer is None:
                     return
                 await packet.to_stream(self.writer)
-            if self._keepalive_task:
-                await self._keepalive_task.cancel()
+            t,self._keepalive_task = self._keepalive_task,None
+            if t:
+                await t.cancel()
                 evt = anyio.create_event()
                 await self._tg.spawn(self._call_write_timeout, evt)
                 await evt.wait()
@@ -467,7 +471,8 @@ class ProtocolHandler:
             await self.handle_connection_closed()
             raise
         except BaseException as e:
-            self.logger.warning("Unhandled exception: %s" % e)
+            import pdb;pdb.set_trace()
+            self.logger.warning("Unhandled exception %d", sp, exc_info=e)
             raise
 
     async def mqtt_deliver_next_message(self):

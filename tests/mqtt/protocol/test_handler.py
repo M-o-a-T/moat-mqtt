@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 import unittest
-import asyncio,anyio
+import anyio
 import logging
 import random
 from hbmqtt.plugins.manager import PluginManager
@@ -30,16 +30,20 @@ def adapt(reader, writer):
 
 
 class ProtocolHandlerTest(unittest.TestCase):
+    async def listen_(self, server_mock, server):
+        while True:
+            sock = await server.accept()
+            server_mock(sock, sock)
+
     def run_(self, server_mock, test_coro):
         async def runner():
             async with anyio.create_task_group() as tg:
                 self.plugin_manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
-                server = await asyncio.start_server(server_mock, '127.0.0.1', 8888)
-                try:
-                    await test_coro()
-                finally:
-                    server.close()
-                    await server.wait_closed()
+                async with await anyio.create_tcp_server(port=8888, interface="127.0.0.1") as server:
+                    await tg.spawn(self.listen_, server_mock, server)
+                    async with await anyio.connect_tcp("127.0.0.1", server.port) as conn:
+                        sr,sw = adapt(conn,conn)
+                        await test_coro(sr,sw)
             anyio.run(runner)
 
     def test_init_handler(self):
@@ -56,11 +60,9 @@ class ProtocolHandlerTest(unittest.TestCase):
         async def server_mock(reader, writer):
             pass
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             try:
                 s = Session()
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 handler = ProtocolHandler(self.plugin_manager)
                 handler.attach(s, reader_adapted, writer_adapted)
                 await self.start_handler(handler, s)
@@ -80,11 +82,9 @@ class ProtocolHandlerTest(unittest.TestCase):
             except Exception as ae:
                 raise
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             try:
                 s = Session()
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 handler = ProtocolHandler(self.plugin_manager)
                 handler.attach(s, reader_adapted, writer_adapted)
                 await self.start_handler(handler, s)
@@ -115,11 +115,9 @@ class ProtocolHandlerTest(unittest.TestCase):
             except Exception as ae:
                 raise
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             try:
                 self.session = Session()
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
@@ -155,11 +153,9 @@ class ProtocolHandlerTest(unittest.TestCase):
             except Exception as ae:
                 raise
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             self.session = Session()
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
@@ -182,11 +178,9 @@ class ProtocolHandlerTest(unittest.TestCase):
             packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_0, False)
             await packet.to_stream(writer)
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             self.session = Session()
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
@@ -216,11 +210,9 @@ class ProtocolHandlerTest(unittest.TestCase):
                 print(ae)
                 raise
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             self.session = Session()
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
@@ -255,11 +247,9 @@ class ProtocolHandlerTest(unittest.TestCase):
             except Exception as ae:
                 raise
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             self.session = Session()
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
@@ -313,14 +303,12 @@ class ProtocolHandlerTest(unittest.TestCase):
             except Exception as ae:
                 raise
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             self.session = Session()
             message = OutgoingApplicationMessage(1, '/topic', QOS_1, b'test_data', False)
             message.publish_packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_1, False)
             self.session.inflight_out[1] = message
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.handler.start()
@@ -350,14 +338,12 @@ class ProtocolHandlerTest(unittest.TestCase):
             except Exception as ae:
                 raise
 
-        async def test_coro():
+        async def test_coro(reader_adapted, writer_adapted):
             self.session = Session()
             message = OutgoingApplicationMessage(1, '/topic', QOS_2, b'test_data', False)
             message.publish_packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_2, False)
             self.session.inflight_out[1] = message
             try:
-                reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
-                reader_adapted, writer_adapted = adapt(reader, writer)
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.handler.start()

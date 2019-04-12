@@ -2,13 +2,15 @@
 #
 # See the file license.txt for copying permission.
 
-import asyncio,anyio
+import anyio
 import logging
 import ssl
 import copy
 from urllib.parse import urlparse, urlunparse
 from functools import wraps
 from async_generator import asynccontextmanager
+from wsproto.utilities import ProtocolError
+from asyncwebsockets import create_websocket
 
 from hbmqtt.utils import not_in_dict_or_none
 from hbmqtt.session import Session
@@ -18,9 +20,6 @@ from hbmqtt.adapters import StreamReaderAdapter, StreamWriterAdapter, WebSockets
 from hbmqtt.plugins.manager import PluginManager, BaseContext
 from hbmqtt.mqtt.protocol.handler import ProtocolHandlerException
 from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
-import websockets
-from websockets.uri import InvalidURI
-from websockets.exceptions import InvalidHandshake
 from collections import deque
 
 
@@ -336,7 +335,7 @@ class MQTTClient:
 
             :param timeout: maximum number of seconds to wait before returning. If timeout is not specified or None, there is no limit to the wait time until next message arrives.
             :return: instance of :class:`hbmqtt.session.ApplicationMessage` containing received message information flow.
-            :raises: :class:`asyncio.TimeoutError` if timeout occurs before a message is delivered
+            :raises: :class:`TimeoutError` if timeout occurs before a message is delivered
         """
         self.logger.debug("Waiting message delivery")
         async with anyio.fail_after(timeout) as scope:
@@ -380,7 +379,8 @@ class MQTTClient:
                 sc.load_cert_chain(self.config['certfile'], self.config['keyfile'])
             if 'check_hostname' in self.config and isinstance(self.config['check_hostname'], bool):
                 sc.check_hostname = self.config['check_hostname']
-            kwargs['ssl'] = sc
+            kwargs['ssl_context'] = sc
+            kwargs['autostart_tls'] = True
 
         try:
             reader = None
@@ -388,17 +388,20 @@ class MQTTClient:
             self._connected_state.clear()
             # Open connection
             if scheme in ('mqtt', 'mqtts'):
-                conn_reader, conn_writer = \
-                    await asyncio.open_connection(
+                conn = \
+                    await anyio.connect_tcp(
                         self.session.remote_address,
                         self.session.remote_port, **kwargs)
-                reader = StreamReaderAdapter(conn_reader)
-                writer = StreamWriterAdapter(conn_writer)
+                if secure:
+                    await conn.start_tls()
+                reader = StreamReaderAdapter(conn)
+                writer = StreamWriterAdapter(conn)
             elif scheme in ('ws', 'wss'):
-                websocket = await websockets.connect(
-                    self.session.broker_uri,
+                if kwargs.pop('autostart_tls', False):
+                    kwargs['ssl'] = kwargs.pop('ssl_context')
+                websocket = await create_websocket(self.session.broker_uri, 
                     subprotocols=['mqtt'],
-                    extra_headers=self.extra_headers,
+                    headers=self.extra_headers,
                     **kwargs)
                 reader = WebSocketsReader(websocket)
                 writer = WebSocketsWriter(websocket)
@@ -418,18 +421,14 @@ class MQTTClient:
                 await self._connected_state.set()
                 self.logger.debug("connected to %s:%s" % (self.session.remote_address, self.session.remote_port))
             return return_code
-        except InvalidURI as iuri:
-            self.logger.warning("connection failed: invalid URI '%s'" % self.session.broker_uri)
-            self.session.transitions.disconnect()
-            raise ConnectException("connection failed: invalid URI '%s'" % self.session.broker_uri, iuri)
-        except InvalidHandshake as ihs:
+        except ProtocolError as exc:
             self.logger.warning("connection failed: invalid websocket handshake")
             self.session.transitions.disconnect()
-            raise ConnectException("connection failed: invalid websocket handshake", ihs)
-        except (ProtocolHandlerException, ConnectionError, OSError) as e:
-            self.logger.warning("MQTT connection failed: %r" % e)
+            raise ConnectException("connection failed: invalid websocket handshake") from exc
+        except (ProtocolHandlerException, ConnectionError, OSError) as exc:
+            self.logger.warning("MQTT connection failed")
             self.session.transitions.disconnect()
-            raise ConnectException(e)
+            raise ConnectException from exc
 
     async def handle_connection_close(self, evt):
 

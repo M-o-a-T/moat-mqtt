@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
+import anyio
 
 from hbmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PUBLISH, MQTTVariableHeader, MQTTPayload
 from hbmqtt.errors import HBMQTTException, MQTTException
@@ -30,7 +30,7 @@ class PublishVariableHeader(MQTTVariableHeader):
         return out
 
     @classmethod
-    async def from_stream(cls, reader: asyncio.StreamReader, fixed_header: MQTTFixedHeader):
+    async def from_stream(cls, reader: anyio.abc.Stream, fixed_header: MQTTFixedHeader):
         topic_name = await decode_string(reader)
         has_qos = (fixed_header.flags >> 1) & 0x03
         if has_qos:
@@ -52,7 +52,7 @@ class PublishPayload(MQTTPayload):
         return self.data
 
     @classmethod
-    async def from_stream(cls, reader: asyncio.StreamReader, fixed_header: MQTTFixedHeader,
+    async def from_stream(cls, reader: anyio.abc.Stream, fixed_header: MQTTFixedHeader,
                     variable_header: MQTTVariableHeader):
         data = bytearray()
         data_length = fixed_header.remaining_length - variable_header.bytes_length

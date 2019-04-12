@@ -1,7 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import asyncio
+import anyio
 from struct import pack, unpack
 from hbmqtt.errors import NoDataException
 
@@ -50,7 +50,7 @@ async def read_or_raise(reader, n=-1):
     """
     try:
         data = await reader.read(n)
-    except asyncio.IncompleteReadError:
+    except anyio.exceptions.IncompleteRead:
         data = None
     if not data:
         raise NoDataException("No more data")
