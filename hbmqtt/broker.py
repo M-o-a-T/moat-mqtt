@@ -192,7 +192,7 @@ class Broker:
                 config.update(listeners_config[listener])
                 self.listeners_config[listener] = config
         except KeyError as ke:
-            raise BrokerException("Listener config not found invalid: %s" % ke)
+            raise BrokerException("Listener config not found or invalid") from ke
 
     def _init_states(self):
         self.transitions = Machine(states=Broker.states, initial='new')
@@ -411,9 +411,9 @@ class Broker:
             try:
                 client_session.transitions.connect()
                 break
-            except (MachineError, ValueError):
+            except (MachineError, ValueError) as exc:
                 # Backwards compat: MachineError is raised by transitions < 0.5.0.
-                self.logger.warning("Client %s is reconnecting too quickly, make it wait" % client_session.client_id)
+                self.logger.warning("Client %s is reconnecting too quickly, make it wait", client_session.client_id, exc_info=exc)
                 # Wait a bit may be client is reconnecting too fast
                 await anyio.sleep(1)
         await handler.mqtt_connack_authorize(authenticated)
