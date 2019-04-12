@@ -5,7 +5,7 @@ import logging
 import collections
 import itertools
 
-import asyncio,anyio
+import anyio
 
 from hbmqtt.mqtt import packet_class
 from hbmqtt.mqtt.connack import ConnackPacket
@@ -68,7 +68,7 @@ class ProtocolHandler:
         self._pubrel_waiters = dict()
         self._pubcomp_waiters = dict()
 
-        self._write_lock = asyncio.Lock()
+        self._write_lock = anyio.create_lock()
 
     def _init_session(self, session: Session):
         assert session
@@ -432,14 +432,13 @@ class ProtocolHandler:
                                                 (self.session.client_id, packet.fixed_header.packet_type))
                     except MQTTException:
                         self.logger.debug("Message discarded")
-                    except asyncio.CancelledError:
-                        self.logger.debug("Task cancelled, reader loop ending")
-                        raise
                     except TimeoutError:
                         self.logger.debug("%s Input stream read timeout", self.session.client_id if self.session else '?')
                         await self.handle_read_timeout()
                     except NoDataException:
                         self.logger.debug("%s No data available" % self.session.client_id)
+                        # break # XXX
+
                     except BaseException as e:
                         self.logger.warning("%s Unhandled exception in reader coro: %r" % (type(self).__name__, e))
                         raise
