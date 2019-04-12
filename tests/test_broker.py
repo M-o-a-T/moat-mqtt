@@ -47,8 +47,9 @@ test_config = {
 
 class AsyncMock(MagicMock):
     def __await__(self):
-        yield None
-        return self
+        async def foo():
+            return self
+        return foo().__await__()
 
 class BrokerTest(unittest.TestCase):
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
