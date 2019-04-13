@@ -69,13 +69,14 @@ class TopicAccessControlListPlugin(BaseTopicPlugin):
                 username = session.username
                 if username is None:
                     username = 'anonymous'
-                allowed_topics = self.topic_config['acl'].get(username, None)
-                if allowed_topics:
+                try:
+                    allowed_topics = self.topic_config['acl'].get(username, [])
+                except KeyError:
+                    return True
+                else:
                     for allowed_topic in allowed_topics:
                         if self.topic_ac(req_topic, allowed_topic):
                             return True
-                    return False
-                else:
                     return False
             else:
                 return False
