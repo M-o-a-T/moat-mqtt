@@ -406,7 +406,7 @@ class MQTTClient:
                 reader = WebSocketsReader(websocket)
                 writer = WebSocketsWriter(websocket)
             # Start MQTT protocol
-            self._handler.attach(self.session, reader, writer)
+            await self._handler.attach(self.session, reader, writer)
             return_code = await self._handler.mqtt_connect()
             if return_code is not CONNECTION_ACCEPTED:
                 self.session.transitions.disconnect()
@@ -451,7 +451,7 @@ class MQTTClient:
 
         # stop and clean handler
         await self._handler.stop()
-        self._handler.detach()
+        await self._handler.detach()
         self.session.transitions.disconnect()
 
         if self.config.get('auto_reconnect', False):

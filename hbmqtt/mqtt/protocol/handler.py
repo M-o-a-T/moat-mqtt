@@ -37,6 +37,21 @@ from hbmqtt.utils import Future, CancelledError
 EVENT_MQTT_PACKET_SENT = 'mqtt_packet_sent'
 EVENT_MQTT_PACKET_RECEIVED = 'mqtt_packet_received'
 
+PACKET_TYPES = {
+    CONNACK: "connack",
+    SUBSCRIBE: "subscribe",
+    UNSUBSCRIBE: "unsubscribe",
+    SUBACK: "suback",
+    UNSUBACK: "unsuback",
+    PUBACK: "puback",
+    PUBREC: "pubrec",
+    PUBREL: "pubrel",
+    PUBCOMP: "pubcomp",
+    PINGREQ: "pingreq",
+    PINGRESP: "pingresp",
+    PUBLISH: "publish",
+    DISCONNECT: "disconnect",
+}
 _spi=0
 
 class ProtocolHandlerException(Exception):
@@ -60,15 +75,17 @@ class ProtocolHandler:
         self._tg = plugins_manager._tg
 
         self._reader_task = None
-        self._keepalive_task = None
-        self._reader_ready = None
+        self._sender_task = None
         self._reader_stopped = anyio.create_event()
+        self._sender_stopped = anyio.create_event()
+        self._send_q = anyio.create_queue(10)
 
         self._puback_waiters = dict()
         self._pubrec_waiters = dict()
         self._pubrel_waiters = dict()
         self._pubcomp_waiters = dict()
 
+        self._disconnect_waiter = None
         self._write_lock = anyio.create_lock()
 
     def _init_session(self, session: Session):
@@ -80,14 +97,15 @@ class ProtocolHandler:
         if self.keepalive_timeout <= 0:
             self.keepalive_timeout = None
 
-    def attach(self, session, reader: ReaderAdapter, writer: WriterAdapter):
+    async def attach(self, session, reader: ReaderAdapter, writer: WriterAdapter):
         if self.session:
             raise ProtocolHandlerException("Handler is already attached to a session")
         self._init_session(session)
         self.reader = reader
         self.writer = writer
+        await self._tg.spawn(self._sender_loop)
 
-    def detach(self):
+    async def detach(self):
         self.session = None
         self.reader = None
         self.writer = None
@@ -98,25 +116,11 @@ class ProtocolHandler:
         else:
             return False
 
-    async def _call_write_timeout(self, evt):
-        async with anyio.open_cancel_scope() as scope:
-            self._keepalive_task = scope
-            await evt.set()
-            await anyio.sleep(self.keepalive_timeout)
-            if self._keepalive_task is scope:
-                self._keepalive_task = None
-        await self.handle_write_timeout()
-
     async def start(self):
+        self._disconnect_waiter = anyio.create_event()
         if not self._is_attached():
             raise ProtocolHandlerException("Handler is not attached to a stream")
-        self._reader_ready = anyio.create_event()
         await self._tg.spawn(self._reader_loop)
-        await self._reader_ready.wait()
-        if self.keepalive_timeout:
-            evt = anyio.create_event()
-            await self._tg.spawn(self._call_write_timeout, evt)
-            await evt.wait()
 
         self.logger.debug("Handler tasks started")
         await self._retry_deliveries()
@@ -124,18 +128,23 @@ class ProtocolHandler:
 
     async def stop(self):
         # Stop messages flow waiter
+
         await self._stop_waiters()
-        t,self._keepalive_task = self._keepalive_task,None
-        if t:
-            await t.cancel()
-        self.logger.debug("waiting for tasks to be stopped")
+        self.logger.debug("waiting for reader %s to be stopped", self._reader_task)
         t, self._reader_task = self._reader_task, None
         if t:
             await t.cancel()
             await self._reader_stopped.wait()
+        self.logger.debug("waiting for sender %s to be stopped", self._sender_task)
+        t, self._sender_task = self._sender_task, None
+        if t:
+            await self._send_q.put(None)
+            await self._sender_stopped.wait()
         self.logger.debug("closing writer")
         if self.writer is not None:
             await self.writer.close()
+        if self._disconnect_waiter is not None:
+            await self._disconnect_waiter.set()
 
     async def _stop_waiters(self):
         self.logger.debug("Stopping %d puback waiters" % len(self._puback_waiters))
@@ -377,19 +386,12 @@ class ProtocolHandler:
         keepalive_timeout = self.session.keep_alive
         if keepalive_timeout <= 0:
             keepalive_timeout = None
+
         try:
             async with anyio.create_task_group() as tg:
                 self._reader_task = tg.cancel_scope
-                await self._reader_ready.set()
                 while True:
                     try:
-                        try:
-                            running_tasks = tg.cancel_scope._tasks
-                        except AttributeError:
-                            running_tasks = ()
-                        if len(running_tasks):
-                            self.logger.debug("handler running tasks: %d" % len(running_tasks))
-
                         async with anyio.fail_after(keepalive_timeout):
                             fixed_header = await MQTTFixedHeader.from_stream(self.reader)
                         if fixed_header is None:
@@ -405,37 +407,19 @@ class ProtocolHandler:
                         packet = await cls.from_stream(self.reader, fixed_header=fixed_header)
                         await self.plugins_manager.fire_event(
                             EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session)
-                        if packet.fixed_header.packet_type == CONNACK:
-                            await tg.spawn(self.handle_connack, packet)
-                        elif packet.fixed_header.packet_type == SUBSCRIBE:
-                            await tg.spawn(self.handle_subscribe, packet)
-                        elif packet.fixed_header.packet_type == UNSUBSCRIBE:
-                            await tg.spawn(self.handle_unsubscribe, packet)
-                        elif packet.fixed_header.packet_type == SUBACK:
-                            await tg.spawn(self.handle_suback, packet)
-                        elif packet.fixed_header.packet_type == UNSUBACK:
-                            await tg.spawn(self.handle_unsuback, packet)
-                        elif packet.fixed_header.packet_type == PUBACK:
-                            await tg.spawn(self.handle_puback, packet)
-                        elif packet.fixed_header.packet_type == PUBREC:
-                            await tg.spawn(self.handle_pubrec, packet)
-                        elif packet.fixed_header.packet_type == PUBREL:
-                            await tg.spawn(self.handle_pubrel, packet)
-                        elif packet.fixed_header.packet_type == PUBCOMP:
-                            await tg.spawn(self.handle_pubcomp, packet)
-                        elif packet.fixed_header.packet_type == PINGREQ:
-                            await tg.spawn(self.handle_pingreq, packet)
-                        elif packet.fixed_header.packet_type == PINGRESP:
-                            await tg.spawn(self.handle_pingresp, packet)
-                        elif packet.fixed_header.packet_type == PUBLISH:
-                            await tg.spawn(self.handle_publish, packet)
-                        elif packet.fixed_header.packet_type == DISCONNECT:
-                            await tg.spawn(self.handle_disconnect, packet)
-                        elif packet.fixed_header.packet_type == CONNECT:
+                        if packet.fixed_header.packet_type == CONNECT:
                             self.handle_connect(packet)
+                        elif packet.fixed_header.packet_type == DISCONNECT:
+                            self._tg.spawn(self.handle_disconnect,packet)
                         else:
-                            self.logger.warning("%s Unhandled packet type: %s" %
+                            try:
+                                fn = getattr(self,'handle_'+PACKET_TYPES[packet.fixed_header.packet_type])
+                            except AttributeError:
+                                self.logger.warning("%s Unhandled packet type: %s" %
                                                 (self.session.client_id, packet.fixed_header.packet_type))
+                            else:
+                                await tg.spawn(fn, packet)
+
                     except MQTTException:
                         self.logger.debug("Message discarded")
                     except TimeoutError:
@@ -443,39 +427,52 @@ class ProtocolHandler:
                         await self.handle_read_timeout()
                     except NoDataException:
                         self.logger.debug("%s No data available" % self.session.client_id)
-                        # break # XXX
+                        break # XXX
 
                     except BaseException as e:
-                        self.logger.warning("%s Unhandled exception in reader coro", type(self).__name__, exc_info=e)
+                        if 'Cancel' not in repr(e):
+                            self.logger.warning("%s Unhandled exception in reader coro", type(self).__name__, exc_info=e)
                         raise
                 await tg.cancel_scope.cancel()
         finally:
             async with anyio.open_cancel_scope(shield=True):
                 self.logger.debug("%s Reader coro stopped", self.session.client_id if self.session else '?')
                 await self._reader_stopped.set()
-                await self.handle_connection_closed()
-                await self.stop()
+                if self._reader_task is not None:
+                    self._reader_task = None
+                    await self.handle_connection_closed()
 
     async def _send_packet(self, packet):
-        try:
-            async with self._write_lock:
-                if self.writer is None:
-                    return
-                await packet.to_stream(self.writer)
-            t,self._keepalive_task = self._keepalive_task,None
-            if t:
-                await t.cancel()
-                evt = anyio.create_event()
-                await self._tg.spawn(self._call_write_timeout, evt)
-                await evt.wait()
+        await self._send_q.put(packet)
 
-            await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session)
+    async def _sender_loop(self):
+        keepalive_timeout = self.session.keep_alive
+        if keepalive_timeout <= 0:
+            keepalive_timeout = None
+
+        try:
+            async with anyio.open_cancel_scope() as scope:
+                self._sender_task = scope
+                while True:
+                    packet = None
+                    async with anyio.move_on_after(keepalive_timeout):
+                        packet = await self._send_q.get()
+                        if packet is None:  # closing
+                            break
+                    if packet is None:  # timeout
+                        await self.handle_write_timeout()
+                        continue
+                    await packet.to_stream(self.writer)
+                    await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session)
         except ConnectionResetError as cre:
             await self.handle_connection_closed()
-            raise
         except BaseException as e:
             self.logger.warning("Unhandled exception", exc_info=e)
             raise
+        finally:
+            async with anyio.open_cancel_scope(shield=True):
+                await self._sender_stopped.set()
+            self._sender_task = None
 
     async def mqtt_deliver_next_message(self):
         if self.logger.isEnabledFor(logging.DEBUG):
@@ -573,3 +570,7 @@ class ProtocolHandler:
                 self.logger.debug("Message queue size: %d" % self.session.delivered_message_queue.qsize())
         except CancelledError:
             pass
+
+    async def wait_disconnect(self):
+        if self._disconnect_waiter is not None:
+            return await self._disconnect_waiter.wait()

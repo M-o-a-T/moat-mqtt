@@ -27,11 +27,6 @@ class ClientProtocolHandler(ProtocolHandler):
         self._unsubscriptions_waiter = dict()
         self._disconnect_waiter = None
 
-    async def start(self):
-        if self._disconnect_waiter is None:
-            self._disconnect_waiter = Future()
-        await super().start()
-
     async def stop(self):
         try:
             await super().stop()
@@ -40,9 +35,6 @@ class ClientProtocolHandler(ProtocolHandler):
             if t:
                 self.logger.debug("Cancel ping task")
                 await t.cancel()
-            if self._disconnect_waiter and not self._disconnect_waiter.done():
-                await self._disconnect_waiter.cancel()
-            self._disconnect_waiter = None
 
     def _build_connect_packet(self):
         vh = ConnectVariableHeader()
@@ -170,9 +162,5 @@ class ClientProtocolHandler(ProtocolHandler):
 
     async def handle_connection_closed(self):
         self.logger.debug("Broker closed connection")
-        if self._disconnect_waiter and not self._disconnect_waiter.done():
-            await self._disconnect_waiter.set(None)
-
-    async def wait_disconnect(self):
         if self._disconnect_waiter:
-            await self._disconnect_waiter.get()
+            await self._disconnect_waiter.set()

@@ -399,7 +399,7 @@ class Broker:
             client_session.keep_alive += self.config['timeout-disconnect-delay']
         self.logger.debug("Keep-alive timeout=%d" % client_session.keep_alive)
 
-        handler.attach(client_session, reader, writer)
+        await handler.attach(client_session, reader, writer)
         self._sessions[client_session.client_id] = (client_session, handler)
 
         authenticated = await self.authenticate(client_session, self.listeners_config[listener_name])
@@ -428,11 +428,12 @@ class Broker:
         # Init and start loop for handling client messages (publish, subscribe/unsubscribe, disconnect)
         async with anyio.create_task_group() as tg:
             async def handle_disconnect():
-                result = await handler.wait_disconnect()
-                self.logger.debug("%s Result from wait_diconnect: %s" % (client_session.client_id, result))
-                if result is None:
-                    self.logger.debug("Will flag: %s" % client_session.will_flag)
+                await handler.wait_disconnect()
+                self.logger.debug("%s wait_diconnect: %sclean", client_session.client_id, "" if handler.clean_disconnect else "un")
+
+                if not handler.clean_disconnect:
                     # Connection closed anormally, send will message
+                    self.logger.debug("Will flag: %s" % client_session.will_flag)
                     if client_session.will_flag:
                         self.logger.debug("Client %s disconnected abnormally, sending will message" %
                                             format_client_message(client_session))
@@ -515,6 +516,7 @@ class Broker:
         :return:
         """
         try:
+            await handler.detach()
             await handler.stop()
         except Exception as e:
             #self.logger.exception("Stop handler")
@@ -574,6 +576,7 @@ class Broker:
             session=session,
             topic=topic,
             filter_plugins=topic_plugins)
+
         topic_result = True
         if returns:
             for plugin in returns:

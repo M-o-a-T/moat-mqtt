@@ -7,6 +7,7 @@ from hbmqtt.mqtt.connack import (
     CONNECTION_ACCEPTED, UNACCEPTABLE_PROTOCOL_VERSION, IDENTIFIER_REJECTED,
     BAD_USERNAME_PASSWORD, NOT_AUTHORIZED, ConnackPacket)
 from hbmqtt.mqtt.connect import ConnectPacket
+from hbmqtt.mqtt.disconnect import DisconnectPacket
 from hbmqtt.mqtt.pingreq import PingReqPacket
 from hbmqtt.mqtt.pingresp import PingRespPacket
 from hbmqtt.mqtt.subscribe import SubscribePacket
@@ -17,45 +18,30 @@ from hbmqtt.utils import format_client_message
 from hbmqtt.session import Session
 from hbmqtt.plugins.manager import PluginManager
 from hbmqtt.adapters import ReaderAdapter, WriterAdapter
-from hbmqtt.errors import MQTTException
+from hbmqtt.errors import MQTTException, NoDataException
 from hbmqtt.utils import Future
 from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT
 
 
 class BrokerProtocolHandler(ProtocolHandler):
+    clean_disconnect = False
+
     def __init__(self, plugins_manager: PluginManager, session: Session=None):
         super().__init__(plugins_manager, session)
-        self._disconnect_waiter = None
         self._pending_subscriptions = anyio.create_queue(9999)
         self._pending_unsubscriptions = anyio.create_queue(9999)
-
-    async def start(self):
-        if self._disconnect_waiter is None:
-            self._disconnect_waiter = Future()
-        await super().start()
-
-    async def stop(self):
-        try:
-            await super().stop()
-        finally:
-            if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
-                await self._disconnect_waiter.set(None)
-
-    async def wait_disconnect(self):
-        return await self._disconnect_waiter.get()
 
     async def handle_write_timeout(self):
         pass
 
     async def handle_read_timeout(self):
-        if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
-            await self._disconnect_waiter.set(None)
+        await self.stop()
 
     async def handle_disconnect(self, disconnect):
         self.logger.debug("Client disconnecting")
-        if self._disconnect_waiter and not self._disconnect_waiter.done():
-            self.logger.debug("Setting waiter result to %r" % disconnect)
-            await self._disconnect_waiter.set(disconnect)
+        self.clean_disconnect = False # depending on 'disconnect' (if set)
+        async with anyio.open_cancel_scope(shield=True):
+            await self.stop()
 
     async def handle_connection_closed(self):
         await self.handle_disconnect(None)
@@ -65,8 +51,7 @@ class BrokerProtocolHandler(ProtocolHandler):
         # as CONNECT messages are managed by the broker on client connection
         self.logger.error('%s [MQTT-3.1.0-2] %s : CONNECT message received during messages handling' %
                           (self.session.client_id, format_client_message(self.session)))
-        if self._disconnect_waiter is not None and not self._disconnect_waiter.done():
-            await self._disconnect_waiter.set(None)
+        await self.stop()
 
     async def handle_pingreq(self, pingreq: PingReqPacket):
         await self._send_packet(PingRespPacket.build())
@@ -112,7 +97,10 @@ class BrokerProtocolHandler(ProtocolHandler):
         :return:
         """
         remote_address, remote_port = writer.get_peer_info()
-        connect = await ConnectPacket.from_stream(reader)
+        try:
+            connect = await ConnectPacket.from_stream(reader)
+        except NoDataException:
+            raise MQTTException('Client closed the connection')
         await plugins_manager.fire_event(EVENT_MQTT_PACKET_RECEIVED, packet=connect)
         #this shouldn't be required anymore since broker generates for each client a random client_id if not provided
         #[MQTT-3.1.3-6]
