@@ -85,6 +85,7 @@ class ProtocolHandler:
         self._pubrel_waiters = dict()
         self._pubcomp_waiters = dict()
 
+        self._disconnecting = False
         self._disconnect_waiter = None
         self._write_lock = anyio.create_lock()
 
@@ -410,7 +411,9 @@ class ProtocolHandler:
                         if packet.fixed_header.packet_type == CONNECT:
                             self.handle_connect(packet)
                         elif packet.fixed_header.packet_type == DISCONNECT:
-                            self._tg.spawn(self.handle_disconnect,packet)
+                            if not self._disconnecting:
+                                self._disconnecting = True
+                                await self._tg.spawn(self.handle_disconnect,packet)
                         else:
                             try:
                                 fn = getattr(self,'handle_'+PACKET_TYPES[packet.fixed_header.packet_type])

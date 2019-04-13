@@ -44,7 +44,9 @@ class BrokerProtocolHandler(ProtocolHandler):
             await self.stop()
 
     async def handle_connection_closed(self):
-        await self.handle_disconnect(None)
+        if not self._disconnecting:
+            self._disconnecting = True
+            await self.handle_disconnect(None)
 
     async def handle_connect(self, connect: ConnectPacket):
         # Broker handler shouldn't received CONNECT message during messages handling
