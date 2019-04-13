@@ -132,7 +132,7 @@ class MQTTVariableHeader:
         return len(self.to_bytes())
 
     @classmethod
-    async def from_stream(cls, reader: anyio.abc.Stream, fixed_header: MQTTFixedHeader):
+    async def from_stream(cls, reader: ReaderAdapter, fixed_header: MQTTFixedHeader):
         pass
 
 
