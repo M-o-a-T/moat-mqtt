@@ -32,7 +32,7 @@ config = {
 
 
 async def test_coro():
-    async with create_broker() as broker:
+    async with create_broker(config=config) as broker:
         while True:
             await anyio.sleep(99999)
     #await anyio.sleep(5)
@@ -42,5 +42,5 @@ async def test_coro():
 if __name__ == '__main__':
     formatter = "[%(asctime)s] :: %(levelname)s :: %(name)s :: %(message)s"
     #formatter = "%(asctime)s :: %(levelname)s :: %(message)s"
-    logging.basicConfig(level=logging.INFO, format=formatter)
-    anyio.run(test_coro)
+    logging.basicConfig(level=logging.DEBUG, format=formatter)
+    anyio.run(test_coro, backend="trio")

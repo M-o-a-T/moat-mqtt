@@ -49,7 +49,7 @@ default_config = {
 logger = logging.getLogger(__name__)
 
 
-def main(*args, **kwargs):
+async def main(*args, **kwargs):
     arguments = docopt(__doc__, version=get_version())
     formatter = "[%(asctime)s] :: %(levelname)s - %(message)s"
 
