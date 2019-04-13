@@ -508,15 +508,6 @@ class Broker:
 
         self.logger.debug("%s Client disconnected" % client_session.client_id)
 
-    def _init_handler(self, session, reader, writer):
-        """
-        Create a BrokerProtocolHandler and attach to a session
-        :return:
-        """
-        handler = BrokerProtocolHandler(self.plugins_manager)
-        handler.attach(session, reader, writer)
-        return handler
-
     async def _stop_handler(self, handler):
         """
         Stop a running handler and detach if from the session

@@ -46,16 +46,6 @@ class ProtocolHandlerTest(unittest.TestCase):
                         await test_coro(sr,sw)
             anyio.run(runner)
 
-    def test_init_handler(self):
-        async def coro():
-            async with anyio.create_task_group() as tg:
-                plugin_manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
-                Session()
-                handler = ProtocolHandler(plugin_manager)
-                self.assertIsNone(handler.session)
-                self.check_empty_waiters(handler)
-        anyio.run(coro)
-
     def test_start_stop(self):
         async def server_mock(reader, writer):
             pass
