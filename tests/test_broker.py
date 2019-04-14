@@ -26,7 +26,7 @@ from hbmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload
 from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
 
-formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
+formatter = "%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)
 log = logging.getLogger(__name__)
 
@@ -85,6 +85,7 @@ class BrokerTest(unittest.TestCase):
                 await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
+            await anyio.sleep(0.2)
             MockPluginManager.assert_has_calls(
                 [call().fire_event(EVENT_BROKER_CLIENT_CONNECTED, client_id=client.session.client_id),
                     call().fire_event(EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client.session.client_id)],

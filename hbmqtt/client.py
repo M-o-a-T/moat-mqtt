@@ -88,6 +88,7 @@ async def open_mqttclient(client_id=None, config=None):
                 await C.disconnect()
                 await tg.cancel_scope.cancel()
 
+
 class MQTTClient:
     """
         MQTT client implementation.

@@ -71,6 +71,7 @@ class ClientProtocolHandler(ProtocolHandler):
         connect_packet = self._build_connect_packet()
         await self._send_packet(connect_packet)
         connack = await ConnackPacket.from_stream(self.reader)
+        self.logger.debug("< C %r", connack)
         await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_RECEIVED, packet=connack, session=self.session)
         return connack.return_code
 
@@ -149,6 +150,7 @@ class ClientProtocolHandler(ProtocolHandler):
             self._ping_task = scope
             if evt is not None:
                 await evt.set()
+
             try:
                 ping_packet = PingReqPacket()
                 await self._send_packet(ping_packet)

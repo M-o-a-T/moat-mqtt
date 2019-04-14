@@ -6,6 +6,7 @@ import collections
 import itertools
 
 import anyio
+import trio
 
 from hbmqtt.mqtt import packet_class
 from hbmqtt.mqtt.connack import ConnackPacket
@@ -125,11 +126,15 @@ class ProtocolHandler:
 
         self.logger.debug("Handler tasks started")
         await self._retry_deliveries()
-        self.logger.debug("Handler ready")
+        self.logger.debug("%s %s ready",
+                'Broker' if 'Broker' in type(self).__name__ else 'Client',
+                self.session.client_id if self.session else '?')
 
     async def stop(self):
         # Stop messages flow waiter
-
+        self.logger.debug("%s %s stopping",
+                'Broker' if 'Broker' in type(self).__name__ else 'Client',
+                self.session.client_id if self.session else '?')
         await self._stop_waiters()
         t, self._reader_task = self._reader_task, None
         if t:
@@ -410,6 +415,7 @@ class ProtocolHandler:
                             break
                         cls = packet_class(fixed_header)
                         packet = await cls.from_stream(self.reader, fixed_header=fixed_header)
+                        self.logger.info("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
                         await self.plugins_manager.fire_event(
                             EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session)
                         if packet.fixed_header.packet_type == CONNECT:
@@ -435,7 +441,6 @@ class ProtocolHandler:
                     except NoDataException:
                         self.logger.debug("%s No data available" % self.session.client_id)
                         break # XXX
-
                     except BaseException as e:
                         if 'Cancel' not in repr(e):
                             self.logger.warning("%s Unhandled exception in reader coro", type(self).__name__, exc_info=e)
@@ -443,7 +448,9 @@ class ProtocolHandler:
                 await tg.cancel_scope.cancel()
         finally:
             async with anyio.open_cancel_scope(shield=True):
-                self.logger.debug("%s Reader coro stopped", self.session.client_id if self.session else '?')
+                self.logger.debug("%s %s coro stopped",
+                        'Broker' if 'Broker' in type(self).__name__ else 'Client',
+                        self.session.client_id if self.session else '?')
                 await self._reader_stopped.set()
                 if self._reader_task is not None:
                     self._reader_task = None
@@ -469,6 +476,7 @@ class ProtocolHandler:
                     if packet is None:  # timeout
                         await self.handle_write_timeout()
                         continue
+                    self.logger.info("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
                     await packet.to_stream(self.writer)
                     await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session)
         except ConnectionResetError as cre:

@@ -22,6 +22,8 @@ from hbmqtt.errors import MQTTException, NoDataException
 from hbmqtt.utils import Future
 from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT
 
+import logging
+logger = logging.getLogger(__name__)
 
 class BrokerProtocolHandler(ProtocolHandler):
     clean_disconnect = False
@@ -103,6 +105,7 @@ class BrokerProtocolHandler(ProtocolHandler):
             connect = await ConnectPacket.from_stream(reader)
         except NoDataException:
             raise MQTTException('Client closed the connection')
+        logger.debug("< B %r", connect)
         await plugins_manager.fire_event(EVENT_MQTT_PACKET_RECEIVED, packet=connect)
         #this shouldn't be required anymore since broker generates for each client a random client_id if not provided
         #[MQTT-3.1.3-6]
@@ -141,8 +144,10 @@ class BrokerProtocolHandler(ProtocolHandler):
                 format_client_message(address=remote_address, port=remote_port))
             connack = ConnackPacket.build(0, IDENTIFIER_REJECTED)
         if connack is not None:
+            logger.debug("B > %r", connack)
             await plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=connack)
             await connack.to_stream(writer)
+
             await writer.close()
             raise MQTTException(error_msg)
 
