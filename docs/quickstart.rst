@@ -60,9 +60,9 @@ URL Scheme
 HBMQTT command line tools use the ``--url`` to establish a network connection with the broker. The ``--url`` parameter value must conform to the `MQTT URL scheme`_. The general accepted form is :
 ::
 
-    [mqtt|ws][s]://[username][:password]@host.domain[:port]
+    {mqtt,ws}[s]://[username][:password]@host.domain[:port]
 
-Here are some examples of URL:
+Here are some examples of valid URLs:
 ::
 
     mqtt://localhost

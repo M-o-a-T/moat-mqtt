@@ -42,11 +42,11 @@ The example below shows how to write a simple MQTT client which subscribes a top
         logging.basicConfig(level=logging.DEBUG, format=formatter)
         anyio.run(uptime_coro)
 
-When executed, this script gets the default event loop and asks it to run the ``uptime_coro`` until it completes.
+When executed, this script runs the ``uptime_coro`` until it completes.
 ``uptime_coro`` starts by opening an async context with :proc:`~hbmqtt.client.open_mqttclient`, which returns a
 :class:`~hbmqtt.client.MQTTClient` instance.
-The coroutine then call :meth:`~hbmqtt.client.MQTTClient.connect` to connect to the broker, here ``test.mosquitto.org``.
-Once connected, the coroutine subscribes to some topics, and then wait for 100 messages. Each message received is simply written to output.
+The coroutine then calls :meth:`~hbmqtt.client.MQTTClient.connect` to connect to the broker, in this case ``test.mosquitto.org``.
+Once connected, the coroutine subscribes to some topics, and then waits for 100 messages. Each message received is simply written to output.
 Finally, the coroutine unsubscribes from topics and disconnects from the broker.
 
 Publisher
@@ -96,9 +96,9 @@ This example also shows to method for publishing message asynchronously.
         anyio.run(test_coro)
         anyio.run(test_coro2)
 
-As usual, the script runs the publish code through the async loop. ``test_coro()`` and ``test_coro()`` are ran in sequence.
-Both do the same job. ``test_coro()`` publish 3 messages in sequence. ``test_coro2()`` publishes the same message asynchronously.
-The difference appears the looking at the sequence of MQTT messages sent.
+``test_coro()`` and ``test_coro()`` are executed in sequence.
+Both do the same job. ``test_coro()`` publishes 3 messages in sequence. ``test_coro2()`` publishes the same message asynchronously.
+The difference appears when looking at the sequence of MQTT messages sent.
 
 ``test_coro()`` achieves:
 ::
@@ -130,6 +130,8 @@ Reference
 MQTTClient API
 ..............
 
+.. autofunction:: hbmqtt.client.open_mqttclient
+
 .. automodule:: hbmqtt.client
 
     .. autoclass:: MQTTClient
@@ -146,18 +148,19 @@ MQTTClient API
 MQTTClient configuration
 ........................
 
-Typically, you create a :class:`~hbmqtt.client.MQTTClient` instance by way of ``async with`` :proc:`~hbmqtt.client.open_mqttclient`. This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+Typically, you create a :class:`~hbmqtt.client.MQTTClient` instance by way of ``async with`` :proc:`~hbmqtt.client.open_mqttclient`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
 
-:proc:`~hbmqtt.client.open_mqttclient` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dict object which may contain the following entries:
+:proc:`~hbmqtt.client.open_mqttclient` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary which may contain the following entries:
 
-* ``keep_alive``: keep alive (in seconds) to send when connecting to the broker (defaults to ``10`` seconds). :class:`~hbmqtt.client.MQTTClient` will *auto-ping* the broker if not message is sent within the keep-alive interval. This avoids disconnection from the broker.
-* ``ping_delay``: *auto-ping* delay before keep-alive times out (defaults to ``1`` seconds).
+* ``keep_alive``: keep alive interval (in seconds) to send when connecting to the broker (defaults to ``10`` seconds). :class:`~hbmqtt.client.MQTTClient` will *auto-ping* the broker if no message is sent within the keep-alive interval. This avoids disconnection from the broker.
+* ``ping_delay``: *auto-ping* delay before keep-alive times out (defaults to ``1`` seconds). This should be larger than twice the worst-case roundtrip between your client and the broker.
 * ``default_qos``: Default QoS (``0``) used by :meth:`~hbmqtt.client.MQTTClient.publish` if ``qos`` argument is not given.
-* ``default_retain``: Default retain (``False``) used by :meth:`~hbmqtt.client.MQTTClient.publish` if ``qos`` argument is not given.,
+* ``default_retain``: Default retain (``False``) used by :meth:`~hbmqtt.client.MQTTClient.publish` if ``retain`` argument is not given.
 * ``auto_reconnect``: enable or disable auto-reconnect feature (defaults to ``True``).
 * ``reconnect_max_interval``: maximum interval (in seconds) to wait before two connection retries (defaults to ``10``).
 * ``reconnect_retries``: maximum number of connect retries (defaults to ``2``). Negative value will cause client to reconnect infinietly.
-Default QoS and default retain can also be overriden by adding a ``topics`` with may contain QoS and retain values for specific topics. See the following example:
+
+Default QoS and default retain can also be overriden by adding a ``topics`` entry with may contain QoS and retain values for specific topics. See the following example:
 
 .. code-block:: python
 
@@ -175,9 +178,9 @@ Default QoS and default retain can also be overriden by adding a ``topics`` with
         }
     }
 
-With this setting any message published will set with QOS_0 and retain flag unset except for :
+With this setting any message published will set with QOS_0 and retain flag unset except for
 
-* messages sent to ``/test`` topic : they will be sent with QOS_1
-* messages sent to ``/some_topic`` topic : they will be sent with QOS_2 and retain flag set
+* messages sent to ``/test`` topic will be sent with QOS_1
+* messages sent to ``/some_topic`` topic will be sent with QOS_2 and retained
 
-In any case, the ``qos`` and ``retain`` argument values passed to method :meth:`~hbmqtt.client.MQTTClient.publish` will override these settings.
+In any case, any ``qos`` and ``retain`` arguments passed to method :meth:`~hbmqtt.client.MQTTClient.publish` will override these settings.

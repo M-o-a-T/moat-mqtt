@@ -138,6 +138,17 @@ class BrokerContext(BaseContext):
 
 @asynccontextmanager
 async def create_broker(config=None, plugin_namespace=None):
+    """MQTT 3.1.1 compliant broker implementation 
+    :param config: Example Yaml config
+    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``hbmqtt.broker.plugins``
+
+    This is an async context manager::
+
+        async with create_broker() as broker:
+            while True:
+                anyio.sleep(99999)
+    """
+
     async with anyio.create_task_group() as tg:
         b = Broker(tg, config, plugin_namespace)
         try:
@@ -151,9 +162,23 @@ class Broker:
     """
     MQTT 3.1.1 compliant broker implementation
 
+    :param tg: The task group used to run the broker's tasks.
     :param config: Example Yaml config
     :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``hbmqtt.broker.plugins``
 
+    Usage::
+
+        async with anyio.create_task_group() as tg: 
+            b = Broker(tg, config, plugin_namespace)
+            try:
+                await b.start()
+                pass ## do something with the broker
+            finally:
+                await b.shutdown()
+                await tg.cancel_scope.cancel()
+
+    Typically, though, you'll want to use :func:`create_broker`, which does
+    this for you.
     """
     states = ['new', 'starting', 'started', 'not_started', 'stopping', 'stopped', 'not_stopped', 'stopped']
 

@@ -27,8 +27,8 @@ The following example shows how to start a broker using the default configuratio
         logging.basicConfig(level=logging.INFO, format=formatter)
         anyio.run(broker_coro)
 
-When executed, this script gets the default event loop and asks it to run the ``broker_coro`` until it completes.
-``broker_coro`` creates a running :class:`~hbmqtt.broker.Broker` instance
+When executed, this script runs the ``broker_coro`` until it completes.
+``broker_coro`` creates a :class:`~hbmqtt.broker.Broker` instance.
 Once completed, the loop is ran forever, making this script never stop ...
 
 Reference
@@ -37,21 +37,23 @@ Reference
 Broker API
 ..........
 
+Typically, you create a :class:`~hbmqtt.broker.Broker` instance by way of ``async with`` :proc:`~hbmqtt.broker.create_broker`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+
+.. function:: hbmqtt.broker.create_broker
+
+If using an async context manager doesn't fit your code, you can pass your own taskgroup
+and explicitly start (and stop) the broker. However, the broker may leak some tasks, thus using :proc:`~hbmqtt.broker.create_broker` is strongly recommended.
+
 .. automodule:: hbmqtt.broker
 
     .. autoclass:: Broker
 
-        .. automethod:: start
-        .. automethod:: shutdown
-
 Broker configuration
 ....................
 
-Typically, you create a :class:`~hbmqtt.broker.Broker` instance by way of ``async with`` :proc:`~hbmqtt.broker.create_broker`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+`~hbmqtt.broker.create_broker` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary. For convenience, it is presented below as a YAML file [1]_.
 
-The :class:`~hbmqtt.broker.Broker` ``__init__`` method accepts a ``config`` parameter which allow to setup some behaviour and defaults settings. This argument must be a Python dict object. For convinience, it is presented below as a YAML file [1]_.
-
-.. code-block:: python
+.. code-block:: yaml
 
     listeners:
         default:
@@ -77,7 +79,7 @@ The :class:`~hbmqtt.broker.Broker` ``__init__`` method accepts a ``config`` para
     auth:
         plugins: ['auth.anonymous'] #List of plugins to activate for authentication among all registered plugins
         allow-anonymous: true / false
-        password-file: /some/passwd_file
+        password-file: "/some/passwd_file"
     topic-check:
         enabled: true / false  # Set to False if topic filtering is not needed
         plugins: ['topic_acl'] #List of plugins to activate for topic filtering among all registered plugins

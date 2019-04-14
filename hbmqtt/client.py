@@ -79,6 +79,30 @@ def mqtt_connected(func):
 
 @asynccontextmanager
 async def open_mqttclient(client_id=None, config=None):
+    """
+        MQTT client implementation.
+
+        MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
+
+        :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`hbmqtt.utils.gen_client_id`
+        :param config: Client configuration
+        :return: class instance
+
+        This is an async context manager.
+        
+        Example usage::
+
+            async with open_mqttclient() as client:
+                await client.connect("mqtt://my-broker.example")
+                await C.subscribe([
+                        ('$SYS/broker/uptime', QOS_1),
+                        ('$SYS/broker/load/#', QOS_2),
+                    ])
+                async for msg in client:
+                    packet = message.publish_packet
+                    print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
+
+    """
     async with anyio.create_task_group() as tg:
         C = MQTTClient(tg, client_id, config)
         try:
@@ -99,6 +123,9 @@ class MQTTClient:
         :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`hbmqtt.utils.gen_client_id`
         :param config: Client configuration
         :return: class instance
+
+        You should use :func:`open_mqttclient` to create an instance of
+        this class.
     """
 
     def __init__(self, tg: anyio.abc.TaskGroup, client_id=None, config=None):
