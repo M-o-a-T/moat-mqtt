@@ -2,14 +2,19 @@
 #
 # See the file license.txt for copying permission.
 import anyio
+import logging
 
 from transitions import Machine
 from collections import OrderedDict
+
 from hbmqtt.mqtt.publish import PublishPacket
-from hbmqtt.errors import HBMQTTException
+from hbmqtt.errors import HBMQTTException, MQTTException
+from hbmqtt.mqtt.constants import QOS_0
 
 OUTGOING = 0
 INCOMING = 1
+
+EVENT_BROKER_MESSAGE_RECEIVED = 'broker_message_received'
 
 
 class ApplicationMessage:
@@ -96,8 +101,9 @@ class OutgoingApplicationMessage(ApplicationMessage):
 class Session:
     states = ['new', 'connected', 'disconnected']
 
-    def __init__(self):
+    def __init__(self, plugins_manager):
         self._init_states()
+        self._plugins_manager = plugins_manager
         self.remote_address = None
         self.remote_port = None
         self.client_id = None
@@ -118,6 +124,8 @@ class Session:
         self._packet_id = 0
         self.parent = 0
 
+        self.logger = logging.getLogger(__name__)
+
         # Used to store outgoing ApplicationMessage while publish protocol flows
         self.inflight_out = OrderedDict()
 
@@ -128,7 +136,14 @@ class Session:
         self.retained_messages = anyio.create_queue(9999)
 
         # Stores PUBLISH messages ID received in order and ready for application process
-        self.delivered_message_queue = anyio.create_queue(9999)
+        self._delivered_message_queue = anyio.create_queue(9999)
+
+        # The actual delivery process
+        self._delivery_task = None
+        self._delivery_stopped = anyio.create_event()
+
+        # The broker we're attached to
+        self._broker = None
 
     def _init_states(self):
         self.transitions = Machine(states=Session.states, initial='new')
@@ -137,6 +152,56 @@ class Session:
         self.transitions.add_transition(trigger='disconnect', source='connected', dest='disconnected')
         self.transitions.add_transition(trigger='disconnect', source='new', dest='disconnected')
         self.transitions.add_transition(trigger='disconnect', source='disconnected', dest='disconnected')
+
+    async def start(self, broker=None):
+        if broker is not None:
+            self._broker = broker
+            if self._delivery_task is not None:
+                raise RuntimeError("Already running")
+            await broker._tg.spawn(self._delivery_loop)
+
+    async def stop(self):
+        if self._delivery_task is not None:
+            await self._delivery_task.cancel()
+            await self._delivery_stopped.wait()
+        self._broker = None  # break ref loop
+
+    async def put_message(self, app_message):
+        if not app_message.topic:
+            self.logger.warning("[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection", self.client_id)
+            raise MQTTException("[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection" % self.client_id)
+        if "#" in app_message.topic or "+" in app_message.topic:
+            self.logger.warning("[MQTT-3.3.2-2] - %s invalid TOPIC sent in PUBLISH message, closing connection", self.client_id)
+            raise MQTTException("[MQTT-3.3.2-2] - %s invalid TOPIC sent in PUBLISH message, closing connection" % self.client_id)
+        if app_message.qos == QOS_0 and self._delivered_message_queue.qsize() >= 9999:
+            self.logger.warning("delivered messages queue full. QOS_0 message discarded")
+        else:
+            await self._delivered_message_queue.put(app_message)
+
+    async def get_next_message(self):
+        """Client: get the next message"""
+        return await self._delivered_message_queue.get()
+
+    async def _delivery_loop(self):
+        """Server: process incoming messages"""
+        try:
+            async with anyio.open_cancel_scope() as scope:
+                self._delivery_task = scope
+                broker = self._broker
+                broker.logger.debug("%s handling message delivery", self.client_id)
+                while True:
+                    app_message = await self.get_next_message()
+                    await self._plugins_manager.fire_event(EVENT_BROKER_MESSAGE_RECEIVED,
+                                                client_id=self.client_id,      
+                                                message=app_message)
+
+                    await broker.broadcast_message(self, app_message.topic, app_message.data)
+                    if app_message.publish_packet.retain_flag:
+                        broker.retain_message(self, app_message.topic, app_message.data, app_message.qos)
+        finally:
+            broker.logger.debug("%s finished message delivery", self.client_id)
+            self._delivery_task = None
+            await self._delivery_stopped.set()
 
     @property
     def next_packet_id(self):
@@ -170,13 +235,16 @@ class Session:
         # Remove the unpicklable entries.
         # del state['transitions']
         del state['retained_messages']
-        del state['delivered_message_queue']
+        del state['_delivered_message_queue']
+        del state['_delivery_task']
+        del state['_delivery_stopped']
+        del state['_broker']
         return state
 
     def __setstate(self, state):
         self.__dict__.update(state)
         self.retained_messages = anyio.create_queue(9999)
-        self.delivered_message_queue = anyio.create_queue(9999)
+        self._delivered_message_queue = anyio.create_queue(9999)
 
     def __eq__(self, other):
         return self.client_id == other.client_id

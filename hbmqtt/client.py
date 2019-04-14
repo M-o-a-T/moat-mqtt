@@ -342,7 +342,8 @@ class MQTTClient:
         async with anyio.fail_after(timeout) as scope:
             self.client_tasks.add(scope)
             try:
-                return await self._handler.mqtt_deliver_next_message()
+                return await self.session.get_next_message()
+
             finally:
                 self.client_tasks.remove(scope)
 
@@ -498,7 +499,7 @@ class MQTTClient:
             if not_in_dict_or_none(broker_conf, key):
                 raise ClientException("Missing connection parameter '%s'" % key)
 
-        s = Session()
+        s = Session(self.plugins_manager)
         s.broker_uri = uri
         s.client_id = self.client_id
         s.cafile = broker_conf['cafile']

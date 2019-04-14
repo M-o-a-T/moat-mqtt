@@ -39,21 +39,20 @@ EVENT_MQTT_PACKET_SENT = 'mqtt_packet_sent'
 EVENT_MQTT_PACKET_RECEIVED = 'mqtt_packet_received'
 
 PACKET_TYPES = {
-    CONNACK: "connack",
-    SUBSCRIBE: "subscribe",
-    UNSUBSCRIBE: "unsubscribe",
-    SUBACK: "suback",
-    UNSUBACK: "unsuback",
-    PUBACK: "puback",
-    PUBREC: "pubrec",
-    PUBREL: "pubrel",
-    PUBCOMP: "pubcomp",
-    PINGREQ: "pingreq",
-    PINGRESP: "pingresp",
-    PUBLISH: "publish",
-    DISCONNECT: "disconnect",
+    CONNACK: ("connack", False),
+    SUBSCRIBE: ("subscribe", True),
+    UNSUBSCRIBE: ("unsubscribe", True),
+    SUBACK: ("suback", False),
+    UNSUBACK: ("unsuback", False),
+    PUBACK: ("puback", False),
+    PUBREC: ("pubrec", False),
+    PUBREL: ("pubrel", False),
+    PUBCOMP: ("pubcomp", False),
+    PINGREQ: ("pingreq", False),
+    PINGRESP: ("pingresp", False),
+    PUBLISH: ("publish", True),
+    DISCONNECT: ("disconnect", True),
 }
-_spi=0
 
 class ProtocolHandlerException(Exception):
     pass
@@ -139,7 +138,7 @@ class ProtocolHandler:
         t, self._reader_task = self._reader_task, None
         if t:
             self.logger.debug("waiting for reader %s to be stopped", t)
-            await t.cancel()
+            await t.cancel_scope.cancel()
             await self._reader_stopped.wait()
         t, self._sender_task = self._sender_task, None
         if t:
@@ -232,14 +231,17 @@ class ProtocolHandler:
         :param app_message: PublishMessage to handle
         :return: nothing.
         """
-        if app_message.qos == QOS_0:
-            await self._handle_qos0_message_flow(app_message)
-        elif app_message.qos == QOS_1:
-            await self._handle_qos1_message_flow(app_message)
-        elif app_message.qos == QOS_2:
-            await self._handle_qos2_message_flow(app_message)
-        else:
-            raise HBMQTTException("Unexcepted QOS value '%d" % str(app_message.qos))
+        try:
+            if app_message.qos == QOS_0:
+                await self._handle_qos0_message_flow(app_message)
+            elif app_message.qos == QOS_1:
+                await self._handle_qos1_message_flow(app_message)
+            elif app_message.qos == QOS_2:
+                await self._handle_qos2_message_flow(app_message)
+            else:
+                raise HBMQTTException("Unexcepted QOS value '%d" % str(app_message.qos))
+        except CancelledError:
+            pass
 
     async def _handle_qos0_message_flow(self, app_message):
         """
@@ -260,10 +262,7 @@ class ProtocolHandler:
                 self.logger.warning("[MQTT-3.3.1-2] DUP flag must set to 0 for QOS 0 message. Message ignored: %s" %
                                     repr(app_message.publish_packet))
             else:
-                if self.session.delivered_message_queue.qsize() < 9999:
-                    await self.session.delivered_message_queue.put(app_message)
-                else:
-                    self.logger.warning("delivered messages queue full. QOS_0 message discarded")
+                await self.session.put_message(app_message)
 
     async def _handle_qos1_message_flow(self, app_message):
         """
@@ -302,7 +301,7 @@ class ProtocolHandler:
         elif app_message.direction == INCOMING:
             # Initiate delivery
             self.logger.debug("Add message to delivery")
-            await self.session.delivered_message_queue.put(app_message)
+            await self.session.put_message(app_message)
             # Send PUBACK
             puback = PubackPacket.build(app_message.packet_id)
             await self._send_packet(puback)
@@ -384,7 +383,7 @@ class ProtocolHandler:
                 if self._pubrel_waiters.get(app_message.packet_id) is waiter:
                     del self._pubrel_waiters[app_message.packet_id]
             # Initiate delivery and discard message
-            await self.session.delivered_message_queue.put(app_message)
+            await self.session.put_message(app_message)
             del self.session.inflight_in[app_message.packet_id]
             # Send pubcomp
             pubcomp_packet = PubcompPacket.build(app_message.packet_id)
@@ -399,7 +398,7 @@ class ProtocolHandler:
 
         try:
             async with anyio.create_task_group() as tg:
-                self._reader_task = tg.cancel_scope
+                self._reader_task = tg
                 while True:
                     try:
                         async with anyio.fail_after(keepalive_timeout):
@@ -418,20 +417,20 @@ class ProtocolHandler:
                         self.logger.info("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
                         await self.plugins_manager.fire_event(
                             EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session)
-                        if packet.fixed_header.packet_type == CONNECT:
-                            self.handle_connect(packet)
-                        elif packet.fixed_header.packet_type == DISCONNECT:
-                            if not self._disconnecting:
-                                self._disconnecting = True
-                                await self._tg.spawn(self.handle_disconnect,packet)
+                        try:
+                            pt,direct = PACKET_TYPES[packet.fixed_header.packet_type]
+                            fn = getattr(self,'handle_'+pt)
+                        except (KeyError,AttributeError):
+                            self.logger.warning("%s Unhandled packet type: %s" %
+                                            (self.session.client_id, packet.fixed_header.packet_type))
                         else:
                             try:
-                                fn = getattr(self,'handle_'+PACKET_TYPES[packet.fixed_header.packet_type])
-                            except AttributeError:
-                                self.logger.warning("%s Unhandled packet type: %s" %
-                                                (self.session.client_id, packet.fixed_header.packet_type))
-                            else:
-                                await tg.spawn(fn, packet)
+                                if direct:
+                                    await fn(packet)
+                                else:
+                                    await tg.spawn(fn, packet)
+                            except StopAsyncIteration:
+                                break
 
                     except MQTTException:
                         self.logger.debug("Message discarded")
@@ -489,14 +488,6 @@ class ProtocolHandler:
                 await self._sender_stopped.set()
             self._sender_task = None
 
-    async def mqtt_deliver_next_message(self):
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug("%d message(s) available for delivery" % self.session.delivered_message_queue.qsize())
-        message = await self.session.delivered_message_queue.get()
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug("Delivering message %s" % message)
-        return message
-
     async def handle_write_timeout(self):
         self.logger.debug('%s write timeout unhandled' % self.session.client_id)
 
@@ -527,8 +518,16 @@ class ProtocolHandler:
     async def handle_pingreq(self, pingreq: PingReqPacket):
         self.logger.debug('%s PINGREQ unhandled' % self.session.client_id)
 
-    async def handle_disconnect(self, disconnect: DisconnectPacket):
+    async def _handle_disconnet(self, disconnect: DisconnectPacket):
         self.logger.debug('%s DISCONNECT unhandled' % self.session.client_id)
+
+    async def handle_disconnect(self, disconnect: DisconnectPacket):
+        if not self._disconnecting:
+            self._disconnecting = True
+            await self._tg.spawn(self._handle_disconnect, disconnect)
+        else:
+            self.logger.debug('%s DISCONNECT ignored' % self.session.client_id)
+        raise StopAsyncIteration  # end of the line
 
     async def handle_connection_closed(self):
         self.logger.debug('%s Connection closed unhandled' % self.session.client_id)
@@ -580,9 +579,13 @@ class ProtocolHandler:
 
             incoming_message = IncomingApplicationMessage(packet_id, publish_packet.topic_name, qos, publish_packet.data, publish_packet.retain_flag)
             incoming_message.publish_packet = publish_packet
-            await self._handle_message_flow(incoming_message)
+            if incoming_message.qos == QOS_0:
+                await self._handle_message_flow(incoming_message)
+            else:
+                await self._reader_task.spawn(self._handle_message_flow, incoming_message)
+
             if self.session is not None:
-                self.logger.debug("Message queue size: %d" % self.session.delivered_message_queue.qsize())
+                self.logger.debug("Message queue size: %d" % self.session._delivered_message_queue.qsize())
         except CancelledError:
             pass
 

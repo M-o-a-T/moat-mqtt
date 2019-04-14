@@ -24,7 +24,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             }
         }
         async def coro():
-            s = Session()
+            s = Session(None)
             s.username = ""
             auth_plugin = AnonymousAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
@@ -40,7 +40,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             }
         }
         async def coro():
-            s = Session()
+            s = Session(None)
             s.username = ""
             auth_plugin = AnonymousAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
@@ -56,7 +56,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             }
         }
         async def coro():
-            s = Session()
+            s = Session(None)
             s.username = "test"
             auth_plugin = AnonymousAuthPlugin(context)
             ret = await auth_plugin.authenticate(session=s)
@@ -74,7 +74,7 @@ class TestFileAuthPlugin(unittest.TestCase):
             }
         }
         async def coro():
-            s = Session()
+            s = Session(None)
             s.username = "user"
             s.password = "test"
             auth_plugin = FileAuthPlugin(context)
@@ -91,7 +91,7 @@ class TestFileAuthPlugin(unittest.TestCase):
             }
         }
         async def coro():
-            s = Session()
+            s = Session(None)
             s.username = "user"
             s.password = "wrong password"
             auth_plugin = FileAuthPlugin(context)
@@ -108,7 +108,7 @@ class TestFileAuthPlugin(unittest.TestCase):
             }
         }
         async def coro():
-            s = Session()
+            s = Session(None)
             s.username = "some user"
             s.password = "some password"
             auth_plugin = FileAuthPlugin(context)

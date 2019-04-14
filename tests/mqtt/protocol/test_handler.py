@@ -52,7 +52,7 @@ class ProtocolHandlerTest(unittest.TestCase):
 
         async def test_coro(reader_adapted, writer_adapted):
             try:
-                s = Session()
+                s = Session(None)
                 handler = ProtocolHandler(self.plugin_manager)
                 handler.attach(s, reader_adapted, writer_adapted)
                 await self.start_handler(handler, s)
@@ -74,7 +74,7 @@ class ProtocolHandlerTest(unittest.TestCase):
 
         async def test_coro(reader_adapted, writer_adapted):
             try:
-                s = Session()
+                s = Session(None)
                 handler = ProtocolHandler(self.plugin_manager)
                 handler.attach(s, reader_adapted, writer_adapted)
                 await self.start_handler(handler, s)
@@ -107,7 +107,7 @@ class ProtocolHandlerTest(unittest.TestCase):
 
         async def test_coro(reader_adapted, writer_adapted):
             try:
-                self.session = Session()
+                self.session = Session(None)
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
                 await self.start_handler(self.handler, self.session)
@@ -144,7 +144,7 @@ class ProtocolHandlerTest(unittest.TestCase):
                 raise
 
         async def test_coro(reader_adapted, writer_adapted):
-            self.session = Session()
+            self.session = Session(None)
             try:
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
@@ -169,7 +169,7 @@ class ProtocolHandlerTest(unittest.TestCase):
             await packet.to_stream(writer)
 
         async def test_coro(reader_adapted, writer_adapted):
-            self.session = Session()
+            self.session = Session(None)
             try:
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
@@ -201,7 +201,7 @@ class ProtocolHandlerTest(unittest.TestCase):
                 raise
 
         async def test_coro(reader_adapted, writer_adapted):
-            self.session = Session()
+            self.session = Session(None)
             try:
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
@@ -238,7 +238,7 @@ class ProtocolHandlerTest(unittest.TestCase):
                 raise
 
         async def test_coro(reader_adapted, writer_adapted):
-            self.session = Session()
+            self.session = Session(None)
             try:
                 self.handler = ProtocolHandler(self.plugin_manager)
                 self.handler.attach(self.session, reader_adapted, writer_adapted)
@@ -294,7 +294,7 @@ class ProtocolHandlerTest(unittest.TestCase):
                 raise
 
         async def test_coro(reader_adapted, writer_adapted):
-            self.session = Session()
+            self.session = Session(None)
             message = OutgoingApplicationMessage(1, '/topic', QOS_1, b'test_data', False)
             message.publish_packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_1, False)
             self.session.inflight_out[1] = message
@@ -329,7 +329,7 @@ class ProtocolHandlerTest(unittest.TestCase):
                 raise
 
         async def test_coro(reader_adapted, writer_adapted):
-            self.session = Session()
+            self.session = Session(None)
             message = OutgoingApplicationMessage(1, '/topic', QOS_2, b'test_data', False)
             message.publish_packet = PublishPacket.build('/topic', b'test_data', rand_packet_id(), False, QOS_2, False)
             self.session.inflight_out[1] = message

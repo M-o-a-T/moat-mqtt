@@ -39,16 +39,19 @@ class BrokerProtocolHandler(ProtocolHandler):
     async def handle_read_timeout(self):
         await self.stop()
 
-    async def handle_disconnect(self, disconnect):
+    async def _handle_disconnect(self, disconnect, wait=True):
         self.logger.debug("Client disconnecting")
         self.clean_disconnect = False # depending on 'disconnect' (if set)
         async with anyio.open_cancel_scope(shield=True):
+            if wait:
+                async with anyio.move_on_after(self.session.keep_alive):
+                    await self._reader_stopped.wait()
             await self.stop()
 
     async def handle_connection_closed(self):
         if not self._disconnecting:
             self._disconnecting = True
-            await self.handle_disconnect(None)
+            await self._handle_disconnect(None, wait=False)
 
     async def handle_connect(self, connect: ConnectPacket):
         # Broker handler shouldn't received CONNECT message during messages handling
@@ -151,7 +154,7 @@ class BrokerProtocolHandler(ProtocolHandler):
             await writer.close()
             raise MQTTException(error_msg)
 
-        incoming_session = Session()
+        incoming_session = Session(plugins_manager)
         incoming_session.client_id = connect.client_id
         incoming_session.clean_session = connect.clean_session_flag
         incoming_session.will_flag = connect.will_flag

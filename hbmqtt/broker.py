@@ -12,7 +12,7 @@ from async_generator import asynccontextmanager
 
 from functools import partial
 from transitions import Machine, MachineError
-from hbmqtt.session import Session
+from hbmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED
 from hbmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
 from hbmqtt.errors import HBMQTTException, MQTTException
 from hbmqtt.utils import format_client_message, gen_client_id, Future
@@ -43,7 +43,6 @@ EVENT_BROKER_CLIENT_CONNECTED = 'broker_client_connected'
 EVENT_BROKER_CLIENT_DISCONNECTED = 'broker_client_disconnected'
 EVENT_BROKER_CLIENT_SUBSCRIBED = 'broker_client_subscribed'
 EVENT_BROKER_CLIENT_UNSUBSCRIBED = 'broker_client_unsubscribed'
-EVENT_BROKER_MESSAGE_RECEIVED = 'broker_message_received'
 
 
 class BrokerException(Exception):
@@ -312,6 +311,9 @@ class Broker:
 
             Closes all connected session, stop listening on network socket and free resources.
         """
+        for s in self._sessions.values():
+            await s[0].stop()
+
         self._sessions = dict()
         self._subscriptions = dict()
         self._retained_messages = dict()
@@ -337,7 +339,7 @@ class Broker:
         self.transitions.stopping_success()
 
     async def internal_message_broadcast(self, topic, data, qos=None):
-        return await self._broadcast_message(None, topic, data)
+        return await self.broadcast_message(None, topic, data)
 
     async def ws_connected(self, conn, listener_name):
         async def subpro(req):
@@ -383,7 +385,7 @@ class Broker:
         if client_session.clean_session:
             # Delete existing session and create a new one
             if client_session.client_id is not None and client_session.client_id != "":
-                self.delete_session(client_session.client_id)
+                await self.delete_session(client_session.client_id)
             else:
                 client_session.client_id = gen_client_id()
             client_session.parent = 0
@@ -395,6 +397,8 @@ class Broker:
                 client_session.parent = 1
             else:
                 client_session.parent = 0
+        if not client_session.parent:
+            await client_session.start(self)
         if client_session.keep_alive > 0:
             client_session.keep_alive += self.config['timeout-disconnect-delay']
         self.logger.debug("Keep-alive timeout=%d" % client_session.keep_alive)
@@ -427,31 +431,6 @@ class Broker:
 
         # Init and start loop for handling client messages (publish, subscribe/unsubscribe, disconnect)
         async with anyio.create_task_group() as tg:
-            async def handle_disconnect():
-                await handler.wait_disconnect()
-                self.logger.debug("%s wait_diconnect: %sclean", client_session.client_id, "" if handler.clean_disconnect else "un")
-
-                if not handler.clean_disconnect:
-                    # Connection closed anormally, send will message
-                    self.logger.debug("Will flag: %s" % client_session.will_flag)
-                    if client_session.will_flag:
-                        self.logger.debug("Client %s disconnected abnormally, sending will message" %
-                                            format_client_message(client_session))
-                        await self._broadcast_message(
-                            client_session,
-                            client_session.will_topic,
-                            client_session.will_message,
-                            client_session.will_qos)
-                        if client_session.will_retain:
-                            self.retain_message(client_session,
-                                                client_session.will_topic,
-                                                client_session.will_message,
-                                                client_session.will_qos)
-                self.logger.debug("%s Disconnecting session" % client_session.client_id)
-                await self._stop_handler(handler)
-                client_session.transitions.disconnect()
-                await self.plugins_manager.fire_event(EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client_session.client_id)
-                await tg.cancel_scope.cancel()
 
             async def handle_unsubscribe():
                 while True:
@@ -484,28 +463,36 @@ class Broker:
                             await self.publish_retained_messages_for_subscription(subscription, client_session)
                     self.logger.debug(repr(self._subscriptions))
 
-            async def handle_deliver():
-                while True:
-                    app_message = await handler.mqtt_deliver_next_message()
-                    if self.logger.isEnabledFor(logging.DEBUG):
-                        self.logger.debug("%s handling message delivery" % client_session.client_id)
-                    if not app_message.topic:
-                        self.logger.warning("[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message, closing connection" % client_session.client_id)
-                        break
-                    if "#" in app_message.topic or "+" in app_message.topic:
-                        self.logger.warning("[MQTT-3.3.2-2] - %s invalid TOPIC sent in PUBLISH message, closing connection" % client_session.client_id)
-                        break
-                    await self.plugins_manager.fire_event(EVENT_BROKER_MESSAGE_RECEIVED,
-                                                            client_id=client_session.client_id,
-                                                            message=app_message)
-                    await self._broadcast_message(client_session, app_message.topic, app_message.data)
-                    if app_message.publish_packet.retain_flag:
-                        self.retain_message(client_session, app_message.topic, app_message.data, app_message.qos)
-
-            await tg.spawn(handle_disconnect)
             await tg.spawn(handle_unsubscribe)
             await tg.spawn(handle_subscribe)
-            await tg.spawn(handle_deliver)
+
+            try:
+                await handler.wait_disconnect()
+                self.logger.debug("%s wait_diconnect: %sclean", client_session.client_id, "" if handler.clean_disconnect else "un")
+
+                if not handler.clean_disconnect:
+                    # Connection closed anormally, send will message
+                    self.logger.debug("Will flag: %s" % client_session.will_flag)
+                    if client_session.will_flag:
+                        self.logger.debug("Client %s disconnected abnormally, sending will message" %
+                                            format_client_message(client_session))
+                        await self.broadcast_message(
+                            client_session,
+                            client_session.will_topic,
+                            client_session.will_message,
+                            client_session.will_qos)
+                        if client_session.will_retain:
+                            self.retain_message(client_session,
+                                                client_session.will_topic,
+                                                client_session.will_message,
+                                                client_session.will_qos)
+                self.logger.debug("%s Disconnecting session" % client_session.client_id)
+                await self._stop_handler(handler)
+                client_session.transitions.disconnect()
+                await self.plugins_manager.fire_event(EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client_session.client_id)
+            finally:
+                async with anyio.open_cancel_scope(shield=True):
+                    await tg.cancel_scope.cancel()
 
         self.logger.debug("%s Client disconnected" % client_session.client_id)
 
@@ -701,11 +688,11 @@ class Broker:
                                     broadcast['session'], broadcast['topic'], broadcast['data'], qos)
                                 await target_session.retained_messages.put(retained_message)
 
-    async def _broadcast_message(self, session, topic, data, force_qos=None):
+    async def broadcast_message(self, session, topic, data, force_qos=None):
         broadcast = {
             'session': session,
             'topic': topic,
-            'data': data
+            'data': data,
         }
         if force_qos:
             broadcast['qos'] = force_qos
@@ -737,7 +724,7 @@ class Broker:
         self.logger.debug("End broadcasting messages retained due to subscription on '%s' from %s" %
                           (subscription[0], format_client_message(session=session)))
 
-    def delete_session(self, client_id):
+    async def delete_session(self, client_id):
         """
         Delete an existing session data, for example due to clean session set in CONNECT
         :param client_id:
@@ -756,6 +743,7 @@ class Broker:
         self._del_all_subscriptions(session)
 
         self.logger.debug("deleting existing session %s" % repr(self._sessions[client_id]))
+        await session.stop()
         del self._sessions[client_id]
 
     def _get_handler(self, session):
