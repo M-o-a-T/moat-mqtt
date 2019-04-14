@@ -131,14 +131,14 @@ class ProtocolHandler:
         # Stop messages flow waiter
 
         await self._stop_waiters()
-        self.logger.debug("waiting for reader %s to be stopped", self._reader_task)
         t, self._reader_task = self._reader_task, None
         if t:
+            self.logger.debug("waiting for reader %s to be stopped", t)
             await t.cancel()
             await self._reader_stopped.wait()
-        self.logger.debug("waiting for sender %s to be stopped", self._sender_task)
         t, self._sender_task = self._sender_task, None
         if t:
+            self.logger.debug("waiting for sender %s to be stopped", t)
             await self._send_q.put(None)
             await self._sender_stopped.wait()
         self.logger.debug("closing writer")
@@ -148,10 +148,14 @@ class ProtocolHandler:
             await self._disconnect_waiter.set()
 
     async def _stop_waiters(self):
-        self.logger.debug("Stopping %d puback waiters" % len(self._puback_waiters))
-        self.logger.debug("Stopping %d pucomp waiters" % len(self._pubcomp_waiters))
-        self.logger.debug("Stopping %d purec waiters" % len(self._pubrec_waiters))
-        self.logger.debug("Stopping %d purel waiters" % len(self._pubrel_waiters))
+        if len(self._puback_waiters):
+            self.logger.debug("Stopping %d puback waiters", len(self._puback_waiters))
+        if len(self._pubcomp_waiters):
+            self.logger.debug("Stopping %d pucomp waiters", len(self._pubcomp_waiters))
+        if len(self._pubrec_waiters):
+            self.logger.debug("Stopping %d purec waiters", len(self._pubrec_waiters))
+        if len(self._pubrel_waiters):
+            self.logger.debug("Stopping %d purel waiters", len(self._pubrel_waiters))
         for waiter in itertools.chain(
                 self._puback_waiters.values(),
                 self._pubcomp_waiters.values(),
