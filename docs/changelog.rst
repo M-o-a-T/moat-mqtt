@@ -1,6 +1,12 @@
 Changelog
 ---------
 
+0.10
+....
+
+* Ported to anyio, thus works with asyncio+trio+curio.
+* Refactored so that closed connections don't affect message delivery.
+
 0.9.5
 .....
 
