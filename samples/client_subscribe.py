@@ -30,7 +30,7 @@ async def uptime_coro():
             await C.unsubscribe(['$SYS/broker/uptime', '$SYS/broker/load/#'])
             logger.info("UnSubscribed")
         except ClientException as ce:
-            logger.error("Client exception: %s" % ce)
+            logger.error("Client exception: %r", ce)
 
 
 if __name__ == '__main__':

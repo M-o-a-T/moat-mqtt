@@ -24,7 +24,7 @@ async def test_coro():
             await C.publish('calendar/hbmqtt/releases', b'NEW RELEASE', qos=0x01)
             logger.info("messages published")
     except ConnectException as ce:
-        logger.error("Connection failed: %s" % ce)
+        logger.error("Connection failed: %r", ce)
 
 
 if __name__ == '__main__':

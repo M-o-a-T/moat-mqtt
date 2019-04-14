@@ -29,7 +29,7 @@ async def test_coro():
         import pdb;pdb.set_trace()
         await sub_client.reconnect()
         for qos in [QOS_0, QOS_1, QOS_2]:
-            logger.debug("TEST QOS: %d" % qos)
+            logger.debug("TEST QOS: %d", qos)
             message = await sub_client.deliver_message()
             logger.debug("Message: " + repr(message.publish_packet))
     await anyio.sleep(0.1)

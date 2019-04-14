@@ -49,7 +49,7 @@ def read_yaml_config(config_file):
         with open(config_file, 'r') as stream:
             config = yaml.load(stream)
     except yaml.YAMLError as exc:
-        logger.error("Invalid config_file %s: %s" % (config_file, exc))
+        logger.error("Invalid config_file %s: %r", config_file, exc)
     return config
 
 

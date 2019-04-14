@@ -99,7 +99,7 @@ async def do_sub(client, arguments):
     except KeyboardInterrupt:
         pass
     except ConnectException as ce:
-        logger.fatal("connection to '%s' failed: %r" % (arguments['--url'], ce))
+        logger.fatal("connection to '%s' failed: %r", arguments['--url'], ce)
     finally:
         await client.disconnect()
 

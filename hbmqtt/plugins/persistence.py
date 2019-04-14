@@ -25,9 +25,9 @@ class SQLitePlugin:
             try:
                 self.conn = sqlite3.connect(self.db_file)
                 self.cursor = self.conn.cursor()
-                self.context.logger.info("Database file '%s' opened" % self.db_file)
+                self.context.logger.info("Database file '%s' opened", self.db_file)
             except Exception as e:
-                self.context.logger.error("Error while initializing database '%s' : %s" % (self.db_file, e))
+                self.context.logger.error("Error while initializing database '%s' : %s", self.db_file, e)
                 raise
         if self.cursor:
             self.cursor.execute("CREATE TABLE IF NOT EXISTS session(client_id TEXT PRIMARY KEY, data BLOB)")
@@ -40,7 +40,7 @@ class SQLitePlugin:
                     "INSERT OR REPLACE INTO session (client_id, data) VALUES (?,?)", (session.client_id, dump))
                 self.conn.commit()
             except Exception as e:
-                self.context.logger.error("Failed saving session '%s': %s" % (session, e))
+                self.context.logger.error("Failed saving session '%s': %s", session, e)
                 raise
 
     async def find_session(self, client_id):
@@ -59,4 +59,4 @@ class SQLitePlugin:
     async def on_broker_post_shutdown(self):
         if self.conn:
             self.conn.close()
-            self.context.logger.info("Database file '%s' closed" % self.db_file)
+            self.context.logger.info("Database file '%s' closed", self.db_file)

@@ -58,17 +58,17 @@ class FileAuthPlugin(BaseAuthPlugin):
         if password_file:
             try:
                 with open(password_file) as f:
-                    self.context.logger.debug("Reading user database from %s" % password_file)
+                    self.context.logger.debug("Reading user database from '%s'", password_file)
                     for l in f:
                         line = l.strip()
                         if not line.startswith('#'):    # Allow comments in files
                             (username, pwd_hash) = line.split(sep=":", maxsplit=3)
                             if username:
                                 self._users[username] = pwd_hash
-                                self.context.logger.debug("user %s , hash=%s" % (username, pwd_hash))
-                self.context.logger.debug("%d user(s) read from file %s" % (len(self._users), password_file))
+                                self.context.logger.debug("user %s , hash=%s", username, pwd_hash)
+                self.context.logger.debug("%d user(s) read from file '%s'", len(self._users), password_file)
             except FileNotFoundError:
-                self.context.logger.warning("Password file %s not found" % password_file)
+                self.context.logger.warning("Password file '%s' not found", password_file)
         else:
             self.context.logger.debug("Configuration parameter 'password_file' not found")
 
@@ -80,7 +80,7 @@ class FileAuthPlugin(BaseAuthPlugin):
                 hash = self._users.get(session.username, None)
                 if not hash:
                     authenticated = False
-                    self.context.logger.debug("No hash found for user '%s'" % session.username)
+                    self.context.logger.debug("No hash found for user '%s'", session.username)
                 else:
                     authenticated = pwd_context.verify(session.password, hash)
             else:

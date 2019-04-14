@@ -87,7 +87,7 @@ This example also shows to method for publishing message asynchronously.
                #print(message)
                logger.info("messages published")
         except ConnectException as ce:
-            logger.error("Connection failed: %s" % ce)
+            logger.error("Connection failed: %s", ce)
 
 
     if __name__ == '__main__':

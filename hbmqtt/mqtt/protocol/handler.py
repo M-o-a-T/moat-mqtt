@@ -191,8 +191,8 @@ class ProtocolHandler:
                 await tg.spawn(process_one, message)
         pending -= done
 
-        self.logger.debug("%d messages redelivered" % done)
-        self.logger.debug("%d messages not redelivered due to timeout" % pending)
+        self.logger.debug("%d messages redelivered", done)
+        self.logger.debug("%d messages not redelivered due to timeout", pending)
         self.logger.debug("End messages delivery retries")
 
     async def mqtt_publish(self, topic, data, qos, retain, ack_timeout=None):
@@ -259,8 +259,8 @@ class ProtocolHandler:
             app_message.publish_packet = packet
         elif app_message.direction == INCOMING:
             if app_message.publish_packet.dup_flag:
-                self.logger.warning("[MQTT-3.3.1-2] DUP flag must set to 0 for QOS 0 message. Message ignored: %s" %
-                                    repr(app_message.publish_packet))
+                self.logger.warning("[MQTT-3.3.1-2] DUP flag must set to 0 for QOS 0 message. Message ignored: %r",
+                                    app_message.publish_packet)
             else:
                 await self.session.put_message(app_message)
 
@@ -391,7 +391,7 @@ class ProtocolHandler:
             app_message.pubcomp_packet = pubcomp_packet
 
     async def _reader_loop(self):
-        self.logger.debug("%s Starting reader coro" % self.session.client_id)
+        self.logger.debug("%s Starting reader coro", self.session.client_id)
         keepalive_timeout = self.session.keep_alive
         if keepalive_timeout <= 0:
             keepalive_timeout = None
@@ -404,12 +404,12 @@ class ProtocolHandler:
                         async with anyio.fail_after(keepalive_timeout):
                             fixed_header = await MQTTFixedHeader.from_stream(self.reader)
                         if fixed_header is None:
-                            self.logger.debug("%s No more data (EOF received), stopping reader coro" % self.session.client_id)
+                            self.logger.debug("%s No more data (EOF received), stopping reader coro", self.session.client_id)
                             break
 
                         if fixed_header.packet_type == RESERVED_0 or fixed_header.packet_type == RESERVED_15:
-                            self.logger.warning("%s Received reserved packet, which is forbidden: closing connection" %
-                                                (self.session.client_id))
+                            self.logger.warning("%s Received reserved packet, which is forbidden: closing connection",
+                                                self.session.client_id)
                             await self.handle_connection_closed()
                             break
                         cls = packet_class(fixed_header)
@@ -421,8 +421,8 @@ class ProtocolHandler:
                             pt,direct = PACKET_TYPES[packet.fixed_header.packet_type]
                             fn = getattr(self,'handle_'+pt)
                         except (KeyError,AttributeError):
-                            self.logger.warning("%s Unhandled packet type: %s" %
-                                            (self.session.client_id, packet.fixed_header.packet_type))
+                            self.logger.warning("%s Unhandled packet type: %s",
+                                            self.session.client_id, packet.fixed_header.packet_type)
                         else:
                             try:
                                 if direct:
@@ -438,7 +438,7 @@ class ProtocolHandler:
                         self.logger.debug("%s Input stream read timeout", self.session.client_id if self.session else '?')
                         await self.handle_read_timeout()
                     except NoDataException:
-                        self.logger.debug("%s No data available" % self.session.client_id)
+                        self.logger.debug("%s No data available", self.session.client_id)
                         break # XXX
                     except BaseException as e:
                         if 'Cancel' not in repr(e):
@@ -538,9 +538,9 @@ class ProtocolHandler:
             waiter = self._puback_waiters[packet_id]
             await waiter.set(puback)
         except KeyError:
-            self.logger.warning("Received PUBACK for unknown pending message Id: '%d'" % packet_id)
+            self.logger.warning("Received PUBACK for unknown pending message Id: '%d'", packet_id)
         except InvalidStateError:
-            self.logger.warning("PUBACK waiter with Id '%d' already done" % packet_id)
+            self.logger.warning("PUBACK waiter with Id '%d' already done", packet_id)
 
     async def handle_pubrec(self, pubrec: PubrecPacket):
         packet_id = pubrec.packet_id
@@ -548,9 +548,9 @@ class ProtocolHandler:
             waiter = self._pubrec_waiters[packet_id]
             await waiter.set(pubrec)
         except KeyError:
-            self.logger.warning("Received PUBREC for unknown pending message with Id: %d" % packet_id)
+            self.logger.warning("Received PUBREC for unknown pending message with Id: %d", packet_id)
         except InvalidStateError:
-            self.logger.warning("PUBREC waiter with Id '%d' already done" % packet_id)
+            self.logger.warning("PUBREC waiter with Id '%d' already done", packet_id)
 
     async def handle_pubcomp(self, pubcomp: PubcompPacket):
         packet_id = pubcomp.packet_id
@@ -558,9 +558,9 @@ class ProtocolHandler:
             waiter = self._pubcomp_waiters[packet_id]
             await waiter.set(pubcomp)
         except KeyError:
-            self.logger.warning("Received PUBCOMP for unknown pending message with Id: %d" % packet_id)
+            self.logger.warning("Received PUBCOMP for unknown pending message with Id: %d", packet_id)
         except InvalidStateError:
-            self.logger.warning("PUBCOMP waiter with Id '%d' already done" % packet_id)
+            self.logger.warning("PUBCOMP waiter with Id '%d' already done", packet_id)
 
     async def handle_pubrel(self, pubrel: PubrelPacket):
         packet_id = pubrel.packet_id
@@ -568,9 +568,9 @@ class ProtocolHandler:
             waiter = self._pubrel_waiters[packet_id]
             await waiter.set(pubrel)
         except KeyError:
-            self.logger.warning("Received PUBREL for unknown pending message with Id: %d" % packet_id)
+            self.logger.warning("Received PUBREL for unknown pending message with Id: %d", packet_id)
         except InvalidStateError:
-            self.logger.warning("PUBREL waiter with Id '%d' already done" % packet_id)
+            self.logger.warning("PUBREL waiter with Id '%d' already done", packet_id)
 
     async def handle_publish(self, publish_packet: PublishPacket):
         try:
@@ -585,7 +585,7 @@ class ProtocolHandler:
                 await self._reader_task.spawn(self._handle_message_flow, incoming_message)
 
             if self.session is not None:
-                self.logger.debug("Message queue size: %d" % self.session._delivered_message_queue.qsize())
+                self.logger.debug("Message queue size: %d", self.session._delivered_message_queue.qsize())
         except CancelledError:
             pass
 

@@ -60,7 +60,7 @@ class BrokerSysPlugin:
         try:
             sys_interval = int(self.context.config.get('sys_interval', 0))
             if sys_interval > 0:
-                self.context.logger.debug("Setup $SYS broadcasting every %d secondes" % sys_interval)
+                self.context.logger.debug("Setup $SYS broadcasting every %d secondes", sys_interval)
                 evt = anyio.create_event()
                 await self.context._broker_instance._tg.spawn(self.broadcast_dollar_sys_topics_loop, sys_interval, evt)
                 await evt.wait()

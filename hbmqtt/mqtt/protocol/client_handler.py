@@ -83,7 +83,7 @@ class ClientProtocolHandler(ProtocolHandler):
                 await self._tg.spawn(self.mqtt_ping, evt)
                 await evt.wait()
         except BaseException as be:
-            self.logger.debug("Exception in ping task: %r" % be)
+            self.logger.debug("Exception in ping task: %r", be)
             raise
 
     async def handle_read_timeout(self):
@@ -115,7 +115,7 @@ class ClientProtocolHandler(ProtocolHandler):
             waiter = self._subscriptions_waiter.get(packet_id)
             await waiter.set(suback.payload.return_codes)
         except KeyError as ke:
-            self.logger.warning("Received SUBACK for unknown pending subscription with Id: %s" % packet_id)
+            self.logger.warning("Received SUBACK for unknown pending subscription with Id: %s", packet_id)
 
     async def mqtt_unsubscribe(self, topics, packet_id):
         """
@@ -139,7 +139,7 @@ class ClientProtocolHandler(ProtocolHandler):
             waiter = self._unsubscriptions_waiter.get(packet_id)
             await waiter.set(None)
         except KeyError as ke:
-            self.logger.warning("Received UNSUBACK for unknown pending subscription with Id: %s" % packet_id)
+            self.logger.warning("Received UNSUBACK for unknown pending subscription with Id: %s", packet_id)
 
     async def mqtt_disconnect(self):
         disconnect_packet = DisconnectPacket()

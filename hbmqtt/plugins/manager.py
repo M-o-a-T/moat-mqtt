@@ -44,25 +44,25 @@ class PluginManager:
         return self.context
 
     def _load_plugins(self, namespace):
-        self.logger.debug("Loading plugins for namespace %s" % namespace)
+        self.logger.debug("Loading plugins for namespace %s", namespace)
         for ep in pkg_resources.iter_entry_points(group=namespace):
             plugin = self._load_plugin(ep)
             self._plugins.append(plugin)
-            self.logger.debug(" Plugin %s ready" % plugin.ep.name)
+            self.logger.debug(" Plugin %s ready", plugin.ep.name)
 
     def _load_plugin(self, ep: pkg_resources.EntryPoint):
         try:
-            self.logger.debug(" Loading plugin %s" % ep)
+            self.logger.debug(" Loading plugin %s", ep)
             plugin = ep.load(require=True)
-            self.logger.debug(" Initializing plugin %s" % ep)
+            self.logger.debug(" Initializing plugin %s", ep)
             plugin_context = copy.copy(self.app_context)
             plugin_context.logger = self.logger.getChild(ep.name)
             obj = plugin(plugin_context)
             return Plugin(ep.name, ep, obj)
         except ImportError as ie:
-            self.logger.warning("Plugin %r import failed: %s" % (ep, ie))
+            self.logger.warning("Plugin %r import failed: %s", ep, ie)
         except pkg_resources.UnknownExtra as ue:
-            self.logger.warning("Plugin %r dependencies resolution failed: %s" % (ep, ue))
+            self.logger.warning("Plugin %r dependencies resolution failed: %s", ep, ue)
 
     def get_plugin(self, name):
         """
@@ -126,8 +126,8 @@ class PluginManager:
                         await _schedule_coro(tg, event_method)
 
                     except TypeError:
-                        self.logger.error("Method '%s' on plugin '%s' is not a coroutine" %
-                                        (event_method_name, plugin.name))
+                        self.logger.error("Method '%s' on plugin '%s' is not a coroutine",
+                                          event_method_name, plugin.name)
 
     async def map(self, coro, *args, **kwargs):
         """
@@ -154,8 +154,8 @@ class PluginManager:
                     try:
                         await tg.spawn(worker, plugin)
                     except TypeError:
-                        self.logger.error("Method '%r' on plugin '%s' is not a coroutine" %
-                                          (coro, plugin.name))
+                        self.logger.error("Method '%r' on plugin '%s' is not a coroutine",
+                                          coro, plugin.name)
         return ret_dict
 
     @staticmethod

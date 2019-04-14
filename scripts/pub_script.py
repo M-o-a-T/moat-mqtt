@@ -79,7 +79,7 @@ def _get_message(arguments):
                 for line in f:
                     yield line.encode(encoding='utf-8')
         except:
-            logger.error("Failed to read file '%s'" % arguments['-f'])
+            logger.error("Failed to read file '%s'", arguments['-f'])
     if arguments['-l']:
         import sys
         for line in sys.stdin:
@@ -94,7 +94,7 @@ def _get_message(arguments):
 
 
 async def do_pub(client, arguments):
-    logger.info("%s Connecting to broker" % client.client_id)
+    logger.info("%s Connecting to broker", client.client_id)
 
     await client.connect(uri=arguments['--url'],
                                 cleansession=arguments['--clean-session'],
@@ -108,13 +108,13 @@ async def do_pub(client, arguments):
         retain = arguments['-r']
         async for anyio.create_task_group() as tg:
             for message in _get_message(arguments):
-                logger.info("%s Publishing to '%s'" % (client.client_id, topic))
+                logger.info("%s Publishing to '%s'", client.client_id, topic)
                 await tg.sspawn(client.publish, topic, message, qos, retain)
-        logger.info("%s Disconnected from broker" % client.client_id)
+        logger.info("%s Disconnected from broker", client.client_id)
     except KeyboardInterrupt:
-        logger.info("%s Disconnected from broker" % client.client_id)
+        logger.info("%s Disconnected from broker", client.client_id)
     except ConnectException as ce:
-        logger.fatal("connection to '%s' failed: %r" % (arguments['--url'], ce))
+        logger.fatal("connection to '%s' failed: %r", arguments['--url'], ce)
     finally:
         await client.disconnect()
 

@@ -111,7 +111,7 @@ class MQTTClient:
         else:
             from hbmqtt.utils import gen_client_id
             self.client_id = gen_client_id()
-            self.logger.debug("Using generated client ID : %s" % self.client_id)
+            self.logger.debug("Using generated client ID : %s", self.client_id)
 
         self.session = None
         self._tg = tg
@@ -152,12 +152,12 @@ class MQTTClient:
         """
         self.session = self._initsession(uri, cleansession, cafile, capath, cadata)
         self.extra_headers = extra_headers;
-        self.logger.debug("Connect to: %s" % uri)
+        self.logger.debug("Connect to: %s", uri)
 
         try:
             return await self._do_connect()
         except SyntaxError as be:
-            self.logger.warning("Connection failed: %r" % be)
+            self.logger.warning("Connection failed: %r", be)
             auto_reconnect = self.config.get('auto_reconnect', False)
             if not auto_reconnect:
                 raise
@@ -206,23 +206,23 @@ class MQTTClient:
 
         if cleansession:
             self.session.clean_session = cleansession
-        self.logger.debug("Reconnecting with session parameters: %s" % self.session)
+        self.logger.debug("Reconnecting with session parameters: %r", self.session)
         reconnect_max_interval = self.config.get('reconnect_max_interval', 10)
         reconnect_retries = self.config.get('reconnect_retries', 5)
         nb_attempt = 1
         await anyio.sleep(1)
         while True:
             try:
-                self.logger.debug("Reconnect attempt %d ..." % nb_attempt)
+                self.logger.debug("Reconnect attempt %d ...", nb_attempt)
                 return await self._do_connect()
             except SyntaxError as e:  # no you can't reconnect on every exception
-                self.logger.warning("Reconnection attempt failed: %r" % e)
+                self.logger.warning("Reconnection attempt failed: %r", e)
                 if reconnect_retries >= 0 and nb_attempt > reconnect_retries:
                     self.logger.error("Maximum number of connection attempts reached. Reconnection aborted")
                     raise ConnectException("Too many connection attempts failed")
                 exp = 2 ** nb_attempt
                 delay = exp if exp < reconnect_max_interval else reconnect_max_interval
-                self.logger.debug("Waiting %d second before next attempt" % delay)
+                self.logger.debug("Waiting %d second before next attempt", delay)
                 await anyio.sleep(delay)
                 nb_attempt += 1
 
@@ -246,7 +246,7 @@ class MQTTClient:
         if self.session.transitions.is_connected():
             await self._handler.mqtt_ping()
         else:
-            self.logger.warning("MQTT PING request incompatible with current session state '%s'" %
+            self.logger.warning("MQTT PING request incompatible with current session state '%s'",
                                 self.session.transitions.state)
 
     @mqtt_connected
@@ -412,7 +412,7 @@ class MQTTClient:
             return_code = await self._handler.mqtt_connect()
             if return_code is not CONNECTION_ACCEPTED:
                 self.session.transitions.disconnect()
-                self.logger.warning("Connection rejected with code '%s'" % return_code)
+                self.logger.warning("Connection rejected with code '%s'", return_code)
                 exc = ConnectException("Connection rejected by broker")
                 exc.return_code = return_code
                 raise exc
@@ -421,7 +421,7 @@ class MQTTClient:
                 await self._handler.start()
                 self.session.transitions.connect()
                 await self._connected_state.set()
-                self.logger.debug("connected to %s:%s" % (self.session.remote_address, self.session.remote_port))
+                self.logger.debug("connected to %s:%s", self.session.remote_address, self.session.remote_port)
             return return_code
         except ProtocolError as exc:
             self.logger.warning("connection failed: invalid websocket handshake")
