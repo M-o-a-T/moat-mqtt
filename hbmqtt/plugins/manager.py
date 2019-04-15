@@ -61,6 +61,8 @@ class PluginManager:
         self.logger.debug("Loading plugins for namespace %s" % namespace)
         for ep in pkg_resources.iter_entry_points(group=namespace):
             plugin = self._load_plugin(ep)
+            if plugin is None:
+                continue
             self._plugins.append(plugin)
             self.logger.debug(" Plugin %s ready" % plugin.ep.name)
 
