@@ -82,10 +82,9 @@ class BrokerTest(unittest.TestCase):
                     self.assertEqual(ret, 0)
                     self.assertEqual(len(broker._sessions), 1)
                     self.assertIn(client.session.client_id, broker._sessions)
-                await anyio.sleep(0.1)
+                await anyio.sleep(0.1) # let the broker task process the packet
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
-            await anyio.sleep(0.2)
             MockPluginManager.assert_has_calls(
                 [call().fire_event(EVENT_BROKER_CLIENT_CONNECTED, client_id=client.session.client_id),
                     call().fire_event(EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client.session.client_id)],
@@ -119,12 +118,10 @@ class BrokerTest(unittest.TestCase):
                     await connect.to_stream(writer)
                     await ConnackPacket.from_stream(reader)
 
-                    await anyio.sleep(0.1)
 
                     disconnect = DisconnectPacket()
                     await disconnect.to_stream(writer)
 
-                    await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
 
@@ -144,7 +141,6 @@ class BrokerTest(unittest.TestCase):
                         return_code = ce.return_code
                     self.assertEqual(return_code, 0x02)
                     self.assertNotIn(client.session.client_id, broker._sessions)
-                await anyio.sleep(0.1)
 
         anyio.run(test_coro)
 
@@ -167,7 +163,6 @@ class BrokerTest(unittest.TestCase):
                     self.assertEqual(s, client.session)
                     self.assertEqual(qos, QOS_0)
 
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
             MockPluginManager.assert_has_calls(
                 [call().fire_event(EVENT_BROKER_CLIENT_SUBSCRIBED,
@@ -201,7 +196,6 @@ class BrokerTest(unittest.TestCase):
                     self.assertEqual(s, client.session)
                     self.assertEqual(qos, QOS_0)
 
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
             MockPluginManager.assert_has_calls(
                 [call().fire_event(EVENT_BROKER_CLIENT_SUBSCRIBED,
@@ -230,9 +224,7 @@ class BrokerTest(unittest.TestCase):
                     self.assertEqual(qos, QOS_0)
 
                     await client.unsubscribe(['/topic'])
-                    await anyio.sleep(0.1)
                     self.assertEqual(broker._subscriptions['/topic'], [])
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
             MockPluginManager.assert_has_calls(
                 [
@@ -257,9 +249,9 @@ class BrokerTest(unittest.TestCase):
                     self.assertEqual(ret, 0)
 
                     ret_message = await pub_client.publish('/topic', b'data', QOS_0)
+                await anyio.sleep(0.1) # let the broker task process the packet
                 self.assertEqual(broker._retained_messages, {})
 
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
             MockPluginManager.assert_has_calls(
                 [
@@ -294,9 +286,7 @@ class BrokerTest(unittest.TestCase):
 
                     publish_1 = PublishPacket.build('/test', b'data', 1, False, QOS_2, False)
                     await publish_1.to_stream(writer)
-                    await broker._tg.spawn(PubrecPacket.from_stream, reader)
-
-                    await anyio.sleep(0.2)
+                    await PubrecPacket.from_stream(reader)
 
                     publish_dup = PublishPacket.build('/test', b'data', 1, True, QOS_2, False)
                     await publish_dup.to_stream(writer)
@@ -305,7 +295,6 @@ class BrokerTest(unittest.TestCase):
                     await pubrel.to_stream(writer)
                     #await PubcompPacket.from_stream(reader)
 
-                    await anyio.sleep(2)
                     disconnect = DisconnectPacket()
                     await disconnect.to_stream(writer)
 
@@ -322,9 +311,7 @@ class BrokerTest(unittest.TestCase):
                     self.assertEqual(ret, 0)
 
                     await pub_client.publish('/+', b'data', QOS_0)
-                    await anyio.sleep(0.1)
 
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
 
         anyio.run(test_coro)
@@ -342,7 +329,6 @@ class BrokerTest(unittest.TestCase):
                     ret_message = await pub_client.publish('/topic', bytearray(b'\x99' * 256 * 1024), QOS_2)
                 self.assertEqual(broker._retained_messages, {})
 
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
             MockPluginManager.assert_has_calls(
                 [
@@ -364,7 +350,7 @@ class BrokerTest(unittest.TestCase):
                     ret = await pub_client.connect('mqtt://127.0.0.1/')
                     self.assertEqual(ret, 0)
                     await pub_client.publish('/topic', b'data', QOS_0, retain=True)
-                await anyio.sleep(0.1)
+                await anyio.sleep(0.1) # let the broker task process the packet
                 self.assertIn('/topic', broker._retained_messages)
                 retained_message = broker._retained_messages['/topic']
                 self.assertEqual(retained_message.source_session, pub_client.session)
@@ -386,7 +372,7 @@ class BrokerTest(unittest.TestCase):
                     ret = await pub_client.connect('mqtt://127.0.0.1/')
                     self.assertEqual(ret, 0)
                     await pub_client.publish('/topic', b'', QOS_0, retain=True)
-                await anyio.sleep(0.1)
+                await anyio.sleep(0.1) # let the broker task process the packet
                 self.assertNotIn('/topic', broker._retained_messages)
             self.assertTrue(broker.transitions.is_stopped())
 
@@ -406,14 +392,12 @@ class BrokerTest(unittest.TestCase):
                     await self._client_publish('/qos0', b'data', QOS_0)
                     await self._client_publish('/qos1', b'data', QOS_1)
                     await self._client_publish('/qos2', b'data', QOS_2)
-                    await anyio.sleep(0.1)
                     for qos in [QOS_0, QOS_1, QOS_2]:
                         message = await sub_client.deliver_message()
                         self.assertIsNotNone(message)
                         self.assertEqual(message.topic, '/qos%s' % qos)
                         self.assertEqual(message.data, b'data')
                         self.assertEqual(message.qos, qos)
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
 
         anyio.run(test_coro)
@@ -430,8 +414,6 @@ class BrokerTest(unittest.TestCase):
                         [('+', QOS_0), ('+/tennis/#', QOS_0), ('sport+', QOS_0), ('sport/+/player1', QOS_0)])
                     self.assertEqual(ret, [QOS_0, QOS_0, 0x80, QOS_0])
 
-                    await anyio.sleep(0.1)
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
 
         anyio.run(test_coro)
@@ -452,12 +434,10 @@ class BrokerTest(unittest.TestCase):
                     self.assertIsNotNone(message)
 
                     await self._client_publish('$topic', b'data', QOS_0)
-                    await anyio.sleep(0.1)
                     message = None
                     with self.assertRaises(TimeoutError):
                         message = await sub_client.deliver_message(timeout=2)
                     self.assertIsNone(message)
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
 
         anyio.run(test_coro)
@@ -478,12 +458,10 @@ class BrokerTest(unittest.TestCase):
                     self.assertIsNotNone(message)
 
                     await self._client_publish('$SYS/monitor/Clients', b'data', QOS_0)
-                    await anyio.sleep(0.1)
                     message = None
                     with self.assertRaises(TimeoutError):
                         message = await sub_client.deliver_message(timeout=2)
                     self.assertIsNone(message)
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
 
         anyio.run(test_coro)
@@ -499,7 +477,6 @@ class BrokerTest(unittest.TestCase):
                     ret = await sub_client.subscribe([('/qos0', QOS_0), ('/qos1', QOS_1), ('/qos2', QOS_2)])
                     self.assertEqual(ret, [QOS_0, QOS_1, QOS_2])
                     await sub_client.disconnect()
-                    await anyio.sleep(0.1)
 
                     await self._client_publish('/qos0', b'data', QOS_0, retain=True)
                     await self._client_publish('/qos1', b'data', QOS_1, retain=True)
@@ -513,7 +490,6 @@ class BrokerTest(unittest.TestCase):
                         self.assertEqual(message.topic, '/qos%s' % qos)
                         self.assertEqual(message.data, b'data')
                         self.assertEqual(message.qos, qos)
-                await anyio.sleep(0.1)
             self.assertTrue(broker.transitions.is_stopped())
 
         anyio.run(test_coro)
