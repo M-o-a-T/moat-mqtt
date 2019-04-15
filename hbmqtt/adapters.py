@@ -40,11 +40,6 @@ class WriterAdapter:
         write some data to the protocol layer
         """
 
-    async def drain(self):
-        """
-        Let the write buffer of the underlying transport a chance to be flushed.
-        """
-
     def get_peer_info(self):
         """
         Return peer socket info (remote address and remote port as tuple
@@ -104,12 +99,6 @@ class WebSocketsWriter(WriterAdapter):
         """
         await self._protocol.send(data)
 
-    async def drain(self):
-        """
-        Let the write buffer of the underlying transport a chance to be flushed.
-        """
-        pass
-
     def get_peer_info(self):
         sock = self._protocol._sock._socket._raw_socket
         extra_info = sock.getpeername()
@@ -149,9 +138,6 @@ class StreamWriterAdapter(WriterAdapter):
     async def write(self, data):
         await self._writer.send_all(data)
 
-    async def drain(self):
-        pass
-
     def get_peer_info(self):
         sock = self._writer._socket._raw_socket
         extra_info = sock.getpeername()
@@ -186,9 +172,6 @@ class BufferWriter(WriterAdapter):
         write some data to the protocol layer
         """
         await self._stream.write(data)
-
-    async def drain(self):
-        pass
 
     def get_buffer(self):
         return self._stream.getvalue()

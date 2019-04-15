@@ -119,7 +119,6 @@ class MQTTVariableHeader:
 
     async def to_stream(self, writer: anyio.abc.Stream):
         await writer.write(self.to_bytes())
-        await writer.drain()
 
     def to_bytes(self) -> bytes:
         """
@@ -164,7 +163,6 @@ class MQTTPayload:
 
     async def to_stream(self, writer: anyio.abc.Stream):
         await writer.write(self.to_bytes())
-        await writer.drain()
 
     def to_bytes(self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader):
         pass
@@ -191,7 +189,6 @@ class MQTTPacket:
 
     async def to_stream(self, writer: anyio.abc.Stream):
         await writer.write(self.to_bytes())
-        await writer.drain()
         self.protocol_ts = datetime.now()
 
     def to_bytes(self) -> bytes:
