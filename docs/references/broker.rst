@@ -37,12 +37,12 @@ Reference
 Broker API
 ..........
 
-Typically, you create a :class:`~hbmqtt.broker.Broker` instance by way of ``async with`` :proc:`~hbmqtt.broker.create_broker`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+Typically, you create a :class:`~hbmqtt.broker.Broker` instance by way of ``async with`` :func:`~hbmqtt.broker.create_broker`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
 
 .. function:: hbmqtt.broker.create_broker
 
 If using an async context manager doesn't fit your code, you can pass your own taskgroup
-and explicitly start (and stop) the broker. However, the broker may leak some tasks, thus using :proc:`~hbmqtt.broker.create_broker` is strongly recommended.
+and explicitly start (and stop) the broker. However, the broker may leak some tasks, thus using :func:`~hbmqtt.broker.create_broker` is strongly recommended.
 
 .. automodule:: hbmqtt.broker
 

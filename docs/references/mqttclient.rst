@@ -43,7 +43,7 @@ The example below shows how to write a simple MQTT client which subscribes a top
         anyio.run(uptime_coro)
 
 When executed, this script runs the ``uptime_coro`` until it completes.
-``uptime_coro`` starts by opening an async context with :proc:`~hbmqtt.client.open_mqttclient`, which returns a
+``uptime_coro`` starts by opening an async context with :func:`~hbmqtt.client.open_mqttclient`, which returns a
 :class:`~hbmqtt.client.MQTTClient` instance.
 The coroutine then calls :meth:`~hbmqtt.client.MQTTClient.connect` to connect to the broker, in this case ``test.mosquitto.org``.
 Once connected, the coroutine subscribes to some topics, and then waits for 100 messages. Each message received is simply written to output.
@@ -148,9 +148,9 @@ MQTTClient API
 MQTTClient configuration
 ........................
 
-Typically, you create a :class:`~hbmqtt.client.MQTTClient` instance by way of ``async with`` :proc:`~hbmqtt.client.open_mqttclient`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+Typically, you create a :class:`~hbmqtt.client.MQTTClient` instance by way of ``async with`` :func:`~hbmqtt.client.open_mqttclient`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
 
-:proc:`~hbmqtt.client.open_mqttclient` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary which may contain the following entries:
+:func:`~hbmqtt.client.open_mqttclient` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary which may contain the following entries:
 
 * ``keep_alive``: keep alive interval (in seconds) to send when connecting to the broker (defaults to ``10`` seconds). :class:`~hbmqtt.client.MQTTClient` will *auto-ping* the broker if no message is sent within the keep-alive interval. This avoids disconnection from the broker.
 * ``ping_delay``: *auto-ping* delay before keep-alive times out (defaults to ``1`` seconds). This should be larger than twice the worst-case roundtrip between your client and the broker.
