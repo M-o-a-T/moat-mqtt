@@ -8,7 +8,10 @@ import ssl
 import copy
 from urllib.parse import urlparse, urlunparse
 from functools import wraps
-from async_generator import asynccontextmanager
+try:
+    from contextlib import asynccontextmanager
+except ImportError:
+    from async_generator import asynccontextmanager
 from wsproto.utilities import ProtocolError
 from asyncwebsockets import create_websocket
 

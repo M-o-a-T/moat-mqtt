@@ -11,7 +11,10 @@ import copy
 import sys
 
 from collections import namedtuple
-from async_generator import asynccontextmanager
+try:
+    from contextlib import asynccontextmanager
+except ImportError:
+    from async_generator import asynccontextmanager
 from functools import partial
 
 

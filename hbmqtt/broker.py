@@ -8,7 +8,10 @@ import anyio
 import sys
 import re
 from collections import deque
-from async_generator import asynccontextmanager
+try:
+    from contextlib import asynccontextmanager
+except ImportError:
+    from async_generator import asynccontextmanager
 
 from functools import partial
 from transitions import Machine, MachineError
