@@ -480,6 +480,8 @@ class ProtocolHandler:
                     await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session)
         except ConnectionResetError as cre:
             await self.handle_connection_closed()
+        except (anyio.exceptions.CancelledError, trio.Cancelled):
+            raise
         except BaseException as e:
             self.logger.warning("Unhandled exception", exc_info=e)
             raise
