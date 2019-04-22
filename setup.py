@@ -25,6 +25,7 @@ setup(
         'pyyaml',
         'anyio',
         'attrs',
+        'distkv',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

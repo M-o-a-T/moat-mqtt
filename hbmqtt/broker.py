@@ -148,7 +148,12 @@ async def create_broker(config=None, plugin_namespace=None):
     """
 
     async with anyio.create_task_group() as tg:
-        b = Broker(tg, config, plugin_namespace)
+        if 'distkv' in (config or {}):
+            from .distkv_broker import DistKVbroker
+            B = DistKVbroker
+        else:
+            B = Broker
+        b = B(tg, config, plugin_namespace)
         try:
             await b.start()
             yield b
@@ -227,6 +232,7 @@ class Broker:
         self.transitions.add_transition(trigger='stopping_success', source='stopping', dest='stopped')
         self.transitions.add_transition(trigger='stopping_failure', source='stopping', dest='not_stopped')
         self.transitions.add_transition(trigger='start', source='stopped', dest='starting')
+        self.transitions.add_transition(trigger='shutdown', source='new', dest='stopped')
 
     async def start(self):
         """
