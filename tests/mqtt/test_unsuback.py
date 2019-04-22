@@ -6,13 +6,13 @@ import unittest
 
 from hbmqtt.mqtt.unsuback import UnsubackPacket
 from hbmqtt.mqtt.packet import PacketIdVariableHeader
-from hbmqtt.adapters import BufferReader
+from hbmqtt.adapters import BufferAdapter
 
 
 class UnsubackPacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b'\xb0\x02\x00\x0a'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         message = anyio.run(UnsubackPacket.from_stream, stream)
         self.assertEqual(message.variable_header.packet_id, 10)
 

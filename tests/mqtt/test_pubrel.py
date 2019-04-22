@@ -5,13 +5,13 @@ import anyio
 import unittest
 
 from hbmqtt.mqtt.pubrel import PubrelPacket, PacketIdVariableHeader
-from hbmqtt.adapters import BufferReader
+from hbmqtt.adapters import BufferAdapter
 
 
 class PubrelPacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b'\x60\x02\x00\x0a'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         message = anyio.run(PubrelPacket.from_stream, stream)
         self.assertEqual(message.variable_header.packet_id, 10)
 

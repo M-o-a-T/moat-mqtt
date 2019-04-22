@@ -17,7 +17,7 @@ from hbmqtt.mqtt.unsuback import UnsubackPacket
 from hbmqtt.utils import format_client_message
 from hbmqtt.session import Session
 from hbmqtt.plugins.manager import PluginManager
-from hbmqtt.adapters import ReaderAdapter, WriterAdapter
+from hbmqtt.adapters import StreamAdapter
 from hbmqtt.errors import MQTTException, NoDataException
 from hbmqtt.utils import Future
 from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT
@@ -95,17 +95,16 @@ class BrokerProtocolHandler(ProtocolHandler):
         await self._send_packet(connack)
 
     @classmethod
-    async def init_from_connect(cls, reader: ReaderAdapter, writer: WriterAdapter, plugins_manager):
+    async def init_from_connect(cls, stream: StreamAdapter, plugins_manager):
         """
 
-        :param reader:
-        :param writer:
+        :param stream:
         :param plugins_manager:
         :return:
         """
-        remote_address, remote_port = writer.get_peer_info()
+        remote_address, remote_port = stream.get_peer_info()
         try:
-            connect = await ConnectPacket.from_stream(reader)
+            connect = await ConnectPacket.from_stream(stream)
         except NoDataException:
             raise MQTTException('Client closed the connection')
         logger.debug("< B %r", connect)
@@ -149,9 +148,9 @@ class BrokerProtocolHandler(ProtocolHandler):
         if connack is not None:
             logger.debug("B > %r", connack)
             await plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=connack)
-            await connack.to_stream(writer)
+            await connack.to_stream(stream)
 
-            await writer.close()
+            await stream.close()
             raise MQTTException(error_msg)
 
         incoming_session = Session(plugins_manager)

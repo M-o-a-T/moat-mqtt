@@ -6,13 +6,13 @@ import anyio
 
 from hbmqtt.mqtt.packet import CONNECT, MQTTFixedHeader
 from hbmqtt.errors import MQTTException
-from hbmqtt.adapters import BufferReader
+from hbmqtt.adapters import BufferAdapter
 
 
 class TestMQTTFixedHeaderTest(unittest.TestCase):
     def test_from_bytes(self):
         data = b'\x10\x7f'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         header = anyio.run(MQTTFixedHeader.from_stream, stream)
         self.assertEqual(header.packet_type, CONNECT)
         self.assertFalse(header.flags & 0x08)
@@ -22,7 +22,7 @@ class TestMQTTFixedHeaderTest(unittest.TestCase):
 
     def test_from_bytes_with_length(self):
         data = b'\x10\xff\xff\xff\x7f'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         header = anyio.run(MQTTFixedHeader.from_stream, stream)
         self.assertEqual(header.packet_type, CONNECT)
         self.assertFalse(header.flags & 0x08)
@@ -32,7 +32,7 @@ class TestMQTTFixedHeaderTest(unittest.TestCase):
 
     def test_from_bytes_ko_with_length(self):
         data = b'\x10\xff\xff\xff\xff\x7f'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         with self.assertRaises(MQTTException):
             anyio.run(MQTTFixedHeader.from_stream, stream)
 

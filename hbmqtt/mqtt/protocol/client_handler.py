@@ -70,7 +70,7 @@ class ClientProtocolHandler(ProtocolHandler):
     async def mqtt_connect(self):
         connect_packet = self._build_connect_packet()
         await self._send_packet(connect_packet)
-        connack = await ConnackPacket.from_stream(self.reader)
+        connack = await ConnackPacket.from_stream(self.stream)
         self.logger.debug("< C %r", connack)
         await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_RECEIVED, packet=connack, session=self.session)
         return connack.return_code

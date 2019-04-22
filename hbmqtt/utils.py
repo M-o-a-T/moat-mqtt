@@ -61,7 +61,7 @@ from .errors import InvalidStateError
 
 class CancelledError(RuntimeError):
     ## This intentionally does not descend from any toolkit's cancellation exception
-    ## (much less from ll of them)
+    ## (much less from all of them)
     pass
 
 

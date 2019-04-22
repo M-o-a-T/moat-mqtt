@@ -5,7 +5,7 @@ import anyio
 
 from hbmqtt.codecs import bytes_to_hex_str, decode_packet_id, int_to_bytes, read_or_raise
 from hbmqtt.errors import CodecException, MQTTException, NoDataException
-from hbmqtt.adapters import ReaderAdapter, WriterAdapter
+from hbmqtt.adapters import StreamAdapter
 from datetime import datetime
 from struct import unpack
 
@@ -63,7 +63,7 @@ class MQTTFixedHeader:
 
         return out
 
-    async def to_stream(self, writer: WriterAdapter):
+    async def to_stream(self, writer: StreamAdapter):
         await writer.write(self.to_bytes())
 
     @property
@@ -71,7 +71,7 @@ class MQTTFixedHeader:
         return len(self.to_bytes())
 
     @classmethod
-    async def from_stream(cls, reader: ReaderAdapter):
+    async def from_stream(cls, reader: StreamAdapter):
         """
         Read and decode MQTT message fixed header from stream
         :return: FixedHeader instance
@@ -131,7 +131,7 @@ class MQTTVariableHeader:
         return len(self.to_bytes())
 
     @classmethod
-    async def from_stream(cls, reader: ReaderAdapter, fixed_header: MQTTFixedHeader):
+    async def from_stream(cls, reader: StreamAdapter, fixed_header: MQTTFixedHeader):
         pass
 
 
@@ -149,7 +149,7 @@ class PacketIdVariableHeader(MQTTVariableHeader):
         return out
 
     @classmethod
-    async def from_stream(cls, reader: ReaderAdapter, fixed_header: MQTTFixedHeader):
+    async def from_stream(cls, reader: StreamAdapter, fixed_header: MQTTFixedHeader):
         packet_id = await decode_packet_id(reader)
         return cls(packet_id)
 
@@ -207,7 +207,7 @@ class MQTTPacket:
         return fixed_header_bytes + variable_header_bytes + payload_bytes
 
     @classmethod
-    async def from_stream(cls, reader: ReaderAdapter, fixed_header=None, variable_header=None):
+    async def from_stream(cls, reader: StreamAdapter, fixed_header=None, variable_header=None):
         if fixed_header is None:
             fixed_header = await cls.FIXED_HEADER.from_stream(reader)
         if cls.VARIABLE_HEADER:

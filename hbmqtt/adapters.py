@@ -8,7 +8,7 @@ import anyio
 import logging
 
 
-class ReaderAdapter:
+class BaseAdapter:
     """
     Base class for all network protocol reader adapter.
 
@@ -27,14 +27,6 @@ class ReaderAdapter:
         Acknowleddge EOF
         """
 
-
-class WriterAdapter:
-    """
-    Base class for all network protocol writer adapter.
-
-    Writer adapters are used to adapt write operations on the network depending on the protocol used
-    """
-
     def write(self, data):
         """
         write some data to the protocol layer
@@ -51,17 +43,17 @@ class WriterAdapter:
         """
 
 
-class WebSocketsReader(ReaderAdapter):
+class WebSocketsAdapter(BaseAdapter):
     """
     WebSockets API reader adapter
     """
-    def __init__(self, protocol: Websocket):
-        self._protocol = protocol
-        self._stream = io.BytesIO(b'')
+    def __init__(self, websocket: Websocket):
+        self._websocket = websocket
+        self._buffer = io.BytesIO(b'')
 
     async def read(self, n=-1) -> bytes:
         await self._feed_buffer(n)
-        data = self._stream.read(n)
+        data = self._buffer.read(n)
         return data
 
     async def _feed_buffer(self, n=1):
@@ -69,115 +61,90 @@ class WebSocketsReader(ReaderAdapter):
         Feed the data buffer by reading a Websocket message.
         :param n: if given, feed buffer until it contains at least n bytes
         """
-        buffer = bytearray(self._stream.read())
+        buffer = bytearray(self._buffer.read())
         while len(buffer) < n:
             try:
-                message = await self._protocol._next_event()
+                message = await self._websocket._next_event()
             except anyio.exceptions.ClosedResourceError:
                 message = None
             if isinstance(message, CloseConnection):
                 message = None
             if message is None:
-                self._stream = None
+                self._buffer = None
                 break
             if not isinstance(message, BytesMessage):
                 raise TypeError("message must be bytes")
             buffer.extend(message.data)
-        self._stream = io.BytesIO(buffer)
-
-
-class WebSocketsWriter(WriterAdapter):
-    """
-    WebSockets API writer adapter
-    """
-    def __init__(self, protocol: Websocket):
-        self._protocol = protocol
+        self._buffer = io.BytesIO(buffer)
 
     async def write(self, data):
         """
         write some data to the protocol layer
         """
-        await self._protocol.send(data)
+        await self._websocket.send(data)
 
     def get_peer_info(self):
-        sock = self._protocol._sock._socket._raw_socket
+        sock = self._websocket._sock._socket._raw_socket
         extra_info = sock.getpeername()
         return extra_info[0], extra_info[1]
 
     async def close(self):
-        await self._protocol.close()
+        await self._websocket.close()
 
 
-class StreamReaderAdapter(ReaderAdapter):
+class StreamAdapter(BaseAdapter):
     """
     Asyncio Streams API protocol adapter
     This adapter relies on anyio.Stream to read from a TCP socket.
     Because API is very close, this class is trivial
     """
-    def __init__(self, reader: anyio.abc.Stream):
-        self._reader = reader
+    def __init__(self, stream: anyio.abc.Stream):
+        self.logger = logging.getLogger(__name__)
+        self._stream = stream
 
     async def read(self, n=-1) -> bytes:
         if n == -1:
-            data = await self._reader.receive_some(4096)
+            data = await self._stream.receive_some(4096)
         else:
-            data = await self._reader.receive_exactly(n)
+            data = await self._stream.receive_exactly(n)
         return data
 
-
-class StreamWriterAdapter(WriterAdapter):
-    """
-    Asyncio Streams API protocol adapter
-    This adapter relies on StreamWriter to write to a TCP socket.
-    Because API is very close, this class is trivial
-    """
-    def __init__(self, writer: anyio.abc.Stream):
-        self.logger = logging.getLogger(__name__)
-        self._writer = writer
-
     async def write(self, data):
-        await self._writer.send_all(data)
+        await self._stream.send_all(data)
 
     def get_peer_info(self):
-        sock = self._writer._socket._raw_socket
+        sock = self._stream._socket._raw_socket
         extra_info = sock.getpeername()
         return extra_info[0], extra_info[1]
 
     async def close(self):
-        await self._writer.close()
+        await self._stream.close()
 
 
-class BufferReader(ReaderAdapter):
+class BufferAdapter(BaseAdapter):
     """
     Byte Buffer reader adapter
     This adapter simply adapt reading a byte buffer.
     """
     def __init__(self, buffer: bytes):
-        self._stream = io.BytesIO(buffer)
+        self._rstream = io.BytesIO(buffer)
+        self._wstream = io.BytesIO(b'')
 
     async def read(self, n=-1) -> bytes:
-        return self._stream.read(n)
-
-
-class BufferWriter(WriterAdapter):
-    """
-    ByteBuffer writer adapter
-    This adapter simply adapt writing to a byte buffer
-    """
-    def __init__(self, buffer=b''):
-        self._stream = io.BytesIO(buffer)
+        return self._rstream.read(n)
 
     async def write(self, data):
         """
         write some data to the protocol layer
         """
-        await self._stream.write(data)
+        await self._wstream.write(data)
 
     def get_buffer(self):
-        return self._stream.getvalue()
+        return self._wstream.getvalue()
 
     def get_peer_info(self):
         return "BufferWriter", 0
 
     async def close(self):
-        self._stream.close()
+        self._rstream.close()
+        self._wstream.close()

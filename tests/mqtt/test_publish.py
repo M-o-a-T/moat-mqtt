@@ -5,14 +5,14 @@ import anyio
 import unittest
 
 from hbmqtt.mqtt.publish import PublishPacket, PublishVariableHeader, PublishPayload
-from hbmqtt.adapters import BufferReader
+from hbmqtt.adapters import BufferAdapter
 from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
 
 class PublishPacketTest(unittest.TestCase):
     def test_from_stream_qos_0(self):
         data = b'\x31\x11\x00\x05topic0123456789'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         message = anyio.run(PublishPacket.from_stream, stream)
         self.assertEqual(message.variable_header.topic_name, 'topic')
         self.assertEqual(message.variable_header.packet_id, None)
@@ -22,7 +22,7 @@ class PublishPacketTest(unittest.TestCase):
 
     def test_from_stream_qos_2(self):
         data = b'\x37\x13\x00\x05topic\x00\x0a0123456789'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         message = anyio.run(PublishPacket.from_stream, stream)
         self.assertEqual(message.variable_header.topic_name, 'topic')
         self.assertEqual(message.variable_header.packet_id, 10)

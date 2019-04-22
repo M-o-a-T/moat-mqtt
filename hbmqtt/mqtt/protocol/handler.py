@@ -6,6 +6,8 @@ import collections
 import itertools
 
 import anyio
+from asyncio import CancelledError as AsyncioCancelled
+
 try:
     from trio import Cancelled as TrioCancelled
 except ImportError:
@@ -32,7 +34,7 @@ from hbmqtt.mqtt.subscribe import SubscribePacket
 from hbmqtt.mqtt.unsubscribe import UnsubscribePacket
 from hbmqtt.mqtt.unsuback import UnsubackPacket
 from hbmqtt.mqtt.disconnect import DisconnectPacket
-from hbmqtt.adapters import ReaderAdapter, WriterAdapter
+from hbmqtt.adapters import StreamAdapter
 from hbmqtt.session import Session, OutgoingApplicationMessage, IncomingApplicationMessage, INCOMING, OUTGOING
 from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 from hbmqtt.plugins.manager import PluginManager
@@ -74,8 +76,7 @@ class ProtocolHandler:
             self._init_session(session)
         else:
             self.session = None
-        self.reader = None
-        self.writer = None
+        self.stream = None
         self.plugins_manager = plugins_manager
         self._tg = plugins_manager._tg
 
@@ -103,18 +104,16 @@ class ProtocolHandler:
         if self.keepalive_timeout <= 0:
             self.keepalive_timeout = None
 
-    async def attach(self, session, reader: ReaderAdapter, writer: WriterAdapter):
+    async def attach(self, session, stream: StreamAdapter):
         if self.session:
             raise ProtocolHandlerException("Handler is already attached to a session")
         self._init_session(session)
-        self.reader = reader
-        self.writer = writer
+        self.stream = stream
         await self._tg.spawn(self._sender_loop)
 
     async def detach(self):
         self.session = None
-        self.reader = None
-        self.writer = None
+        self.stream = None
 
     def _is_attached(self):
         if self.session:
@@ -151,8 +150,8 @@ class ProtocolHandler:
             await self._send_q.put(None)
             await self._sender_stopped.wait()
         self.logger.debug("closing writer")
-        if self.writer is not None:
-            await self.writer.close()
+        if self.stream is not None:
+            await self.stream.close()
         if self._disconnect_waiter is not None:
             await self._disconnect_waiter.set()
 
@@ -407,7 +406,7 @@ class ProtocolHandler:
                 while True:
                     try:
                         async with anyio.fail_after(keepalive_timeout):
-                            fixed_header = await MQTTFixedHeader.from_stream(self.reader)
+                            fixed_header = await MQTTFixedHeader.from_stream(self.stream)
                         if fixed_header is None:
                             self.logger.debug("%s No more data (EOF received), stopping reader coro", self.session.client_id)
                             break
@@ -418,8 +417,8 @@ class ProtocolHandler:
                             await self.handle_connection_closed()
                             break
                         cls = packet_class(fixed_header)
-                        packet = await cls.from_stream(self.reader, fixed_header=fixed_header)
-                        self.logger.info("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
+                        packet = await cls.from_stream(self.stream, fixed_header=fixed_header)
+                        self.logger.debug("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
                         await self.plugins_manager.fire_event(
                             EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session)
                         try:
@@ -480,12 +479,12 @@ class ProtocolHandler:
                     if packet is None:  # timeout
                         await self.handle_write_timeout()
                         continue
-                    self.logger.info("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
-                    await packet.to_stream(self.writer)
+                    self.logger.debug("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
+                    await packet.to_stream(self.stream)
                     await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session)
         except ConnectionResetError as cre:
             await self.handle_connection_closed()
-        except (anyio.exceptions.CancelledError, TrioCancelled):
+        except (anyio.exceptions.CancelledError, TrioCancelled, AsyncioCancelled):
             raise
         except BaseException as e:
             self.logger.warning("Unhandled exception", exc_info=e)

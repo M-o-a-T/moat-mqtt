@@ -4,7 +4,7 @@
 from hbmqtt.mqtt.packet import CONNACK, MQTTPacket, MQTTFixedHeader, MQTTVariableHeader
 from hbmqtt.codecs import read_or_raise, bytes_to_int
 from hbmqtt.errors import HBMQTTException
-from hbmqtt.adapters import ReaderAdapter
+from hbmqtt.adapters import StreamAdapter
 
 CONNECTION_ACCEPTED = 0x00
 UNACCEPTABLE_PROTOCOL_VERSION = 0x01
@@ -24,7 +24,7 @@ class ConnackVariableHeader(MQTTVariableHeader):
         self.return_code = return_code
 
     @classmethod
-    async def from_stream(cls, reader: ReaderAdapter, fixed_header: MQTTFixedHeader):
+    async def from_stream(cls, reader: StreamAdapter, fixed_header: MQTTFixedHeader):
         data = await read_or_raise(reader, 2)
         session_parent = data[0] & 0x01
         return_code = bytes_to_int(data[1])

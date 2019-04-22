@@ -5,13 +5,13 @@ import anyio
 import unittest
 
 from hbmqtt.mqtt.puback import PubackPacket, PacketIdVariableHeader
-from hbmqtt.adapters import BufferReader
+from hbmqtt.adapters import BufferAdapter
 
 
 class PubackPacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b'\x40\x02\x00\x0a'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         message = anyio.run(PubackPacket.from_stream, stream)
         self.assertEqual(message.variable_header.packet_id, 10)
 

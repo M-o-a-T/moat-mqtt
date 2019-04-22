@@ -20,12 +20,10 @@ from hbmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
 from hbmqtt.errors import HBMQTTException, MQTTException
 from hbmqtt.utils import format_client_message, gen_client_id, Future
 from hbmqtt.adapters import (
-    StreamReaderAdapter,
-    StreamWriterAdapter,
-    ReaderAdapter,
-    WriterAdapter,
-    WebSocketsReader,
-    WebSocketsWriter)
+    StreamAdapter,
+    BaseAdapter,
+    WebSocketsAdapter,
+    )
 from .plugins.manager import PluginManager, BaseContext
 from asyncwebsockets import create_websocket_server
 
@@ -119,11 +117,8 @@ class BrokerContext(BaseContext):
         self.config = None
         self._broker_instance = broker
 
-    async def broadcast_message(self, topic, data, qos=None):
-        await self._broker_instance.internal_message_broadcast(topic, data, qos)
-
-    def retain_message(self, topic_name, data, qos=None):
-        self._broker_instance.retain_message(None, topic_name, data, qos)
+    async def broadcast_message(self, topic, data, qos=None, retain=False):
+        await self._broker_instance.internal_message_broadcast(topic, data, qos, retain=retain)
 
     @property
     def sessions(self):
@@ -160,6 +155,7 @@ async def create_broker(config=None, plugin_namespace=None):
         finally:
             await b.shutdown()
             await tg.cancel_scope.cancel()
+
 
 class Broker:
     """
@@ -375,28 +371,28 @@ class Broker:
                 return False
             return "mqtt"
         websocket = await create_websocket_server(conn, filter=subpro)
-        await self.client_connected(listener_name, WebSocketsReader(websocket), WebSocketsWriter(websocket))
+        await self.client_connected(listener_name, WebSocketsAdapter(websocket))
 
     async def stream_connected(self, conn, listener_name):
-        await self.client_connected(listener_name, StreamReaderAdapter(conn), StreamWriterAdapter(conn))
+        await self.client_connected(listener_name, StreamAdapter(conn))
 
-    async def client_connected(self, listener_name, reader: ReaderAdapter, writer: WriterAdapter):
+    async def client_connected(self, listener_name, adapter: BaseAdapter):
         server = self._servers.get(listener_name, None)
         if not server:
             raise BrokerException("Invalid listener name '%s'" % listener_name)
 
         async with server._client_limit():
-            return await self.client_connected_(server, listener_name, reader, writer)
+            return await self.client_connected_(server, listener_name, adapter)
 
-    async def client_connected_(self, server, listener_name, reader: ReaderAdapter, writer: WriterAdapter):
+    async def client_connected_(self, server, listener_name, adapter: BaseAdapter):
         # Wait for connection available on listener
 
-        remote_address, remote_port = writer.get_peer_info()
+        remote_address, remote_port = adapter.get_peer_info()
         self.logger.info("Connection from %s:%d on listener '%s'", remote_address, remote_port, listener_name)
 
         # Wait for first packet and expect a CONNECT
         try:
-            handler, client_session = await BrokerProtocolHandler.init_from_connect(reader, writer, self.plugins_manager)
+            handler, client_session = await BrokerProtocolHandler.init_from_connect(adapter, self.plugins_manager)
         except HBMQTTException as exc:
             self.logger.warning("[MQTT-3.1.0-1] %s: Can't read first packet an CONNECT: %s",
                                 format_client_message(address=remote_address, port=remote_port), exc)
@@ -406,7 +402,7 @@ class Broker:
         except MQTTException as me:
             self.logger.error('Invalid connection from %s : %s',
                               format_client_message(address=remote_address, port=remote_port), me)
-            await writer.close()
+            await adapter.close()
             self.logger.debug("Connection closed")
             return
 
@@ -427,16 +423,17 @@ class Broker:
                 client_session.parent = 0
         if not client_session.parent:
             await client_session.start(self)
-        if client_session.keep_alive > 0:
-            client_session.keep_alive += self.config['timeout-disconnect-delay']
+        if client_session.keep_alive > 0 and not client_session.parent:
+            # MQTT 3.1.2.10: one and a half keepalive times, plus configurable grace
+            client_session.keep_alive += client_session.keep_alive/2 + self.config['timeout-disconnect-delay']
         self.logger.debug("Keep-alive timeout=%d", client_session.keep_alive)
 
-        await handler.attach(client_session, reader, writer)
+        await handler.attach(client_session, adapter)
         self._sessions[client_session.client_id] = (client_session, handler)
 
         authenticated = await self.authenticate(client_session, self.listeners_config[listener_name])
         if not authenticated:
-            await writer.close()
+            await adapter.close()
             return
 
         while True:
@@ -509,12 +506,8 @@ class Broker:
                             client_session,
                             client_session.will_topic,
                             client_session.will_message,
-                            client_session.will_qos)
-                        if client_session.will_retain:
-                            self.retain_message(client_session,
-                                                client_session.will_topic,
-                                                client_session.will_message,
-                                                client_session.will_qos)
+                            client_session.will_qos,
+                            retain=client_session.will_retain)
                 self.logger.debug("%s Disconnecting session", client_session.client_id)
                 await self._stop_handler(handler)
                 client_session.transitions.disconnect()
@@ -720,7 +713,7 @@ class Broker:
                                     broadcast['session'], broadcast['topic'], broadcast['data'], qos)
                                 await target_session.retained_messages.put(retained_message)
 
-    async def broadcast_message(self, session, topic, data, force_qos=None):
+    async def broadcast_message(self, session, topic, data, force_qos=None, qos=None, retain=False):
         broadcast = {
             'session': session,
             'topic': topic,
@@ -729,6 +722,8 @@ class Broker:
         if force_qos:
             broadcast['qos'] = force_qos
         await self._broadcast_queue.put(broadcast)
+        if retain:
+            self.retain_message(session, topic, data, force_qos or qos)
 
     async def publish_session_retained_messages(self, session):
         if self.logger.isEnabledFor(logging.DEBUG):

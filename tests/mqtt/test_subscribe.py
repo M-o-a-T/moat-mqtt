@@ -7,13 +7,13 @@ import unittest
 from hbmqtt.mqtt.subscribe import SubscribePacket, SubscribePayload
 from hbmqtt.mqtt.packet import PacketIdVariableHeader
 from hbmqtt.mqtt.constants import QOS_1, QOS_2
-from hbmqtt.adapters import BufferReader
+from hbmqtt.adapters import BufferAdapter
 
 
 class SubscribePacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b'\x80\x0e\x00\x0a\x00\x03a/b\x01\x00\x03c/d\x02'
-        stream = BufferReader(data)
+        stream = BufferAdapter(data)
         message = anyio.run(SubscribePacket.from_stream, stream)
         (topic, qos) = message.payload.topics[0]
         self.assertEqual(topic, 'a/b')

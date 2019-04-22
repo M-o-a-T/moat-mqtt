@@ -205,9 +205,7 @@ class Session:
                                                 client_id=self.client_id,      
                                                 message=app_message)
 
-                    await broker.broadcast_message(self, app_message.topic, app_message.data)
-                    if app_message.publish_packet.retain_flag:
-                        broker.retain_message(self, app_message.topic, app_message.data, app_message.qos)
+                    await broker.broadcast_message(self, app_message.topic, app_message.data, qos=app_message.qos, retain=app_message.publish_packet.retain_flag)
         finally:
             broker.logger.debug("%s finished message delivery", self.client_id)
             self._delivery_task = None

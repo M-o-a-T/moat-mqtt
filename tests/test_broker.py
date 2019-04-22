@@ -6,7 +6,7 @@ import logging
 import unittest
 from unittest.mock import patch, call, MagicMock
 
-from hbmqtt.adapters import StreamReaderAdapter, StreamWriterAdapter
+from hbmqtt.adapters import StreamAdapter
 from hbmqtt.broker import (
     EVENT_BROKER_PRE_START,
     EVENT_BROKER_POST_START,
@@ -27,7 +27,7 @@ from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
 
 formatter = "%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s"
-logging.basicConfig(level=logging.DEBUG, format=formatter)
+logging.basicConfig(level=logging.INFO, format=formatter)
 log = logging.getLogger(__name__)
 
 test_config = {
@@ -69,7 +69,7 @@ class BrokerTest(unittest.TestCase):
                     call().fire_event(EVENT_BROKER_POST_SHUTDOWN)], any_order=True)
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend='trio')
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_connect(self, MockPluginManager):
@@ -100,8 +100,7 @@ class BrokerTest(unittest.TestCase):
                 self.assertTrue(broker.transitions.is_started())
 
                 async with await anyio.connect_tcp("127.0.0.1", 1883) as conn:
-                    reader = StreamReaderAdapter(conn)
-                    writer = StreamWriterAdapter(conn)
+                    stream = StreamAdapter(conn)
 
                     vh = ConnectVariableHeader()
                     payload = ConnectPayload()
@@ -115,12 +114,12 @@ class BrokerTest(unittest.TestCase):
                     payload.will_message = b'test'
                     payload.will_topic = '/topic'
                     connect = ConnectPacket(vh=vh, payload=payload)
-                    await connect.to_stream(writer)
-                    await ConnackPacket.from_stream(reader)
+                    await connect.to_stream(stream)
+                    await ConnackPacket.from_stream(stream)
 
 
                     disconnect = DisconnectPacket()
-                    await disconnect.to_stream(writer)
+                    await disconnect.to_stream(stream)
 
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
@@ -270,8 +269,7 @@ class BrokerTest(unittest.TestCase):
                 self.assertTrue(broker.transitions.is_started())
 
                 async with await anyio.connect_tcp("127.0.0.1", 1883) as conn:
-                    reader = StreamReaderAdapter(conn)
-                    writer = StreamWriterAdapter(conn)
+                    stream = StreamAdapter(conn)
 
                     vh = ConnectVariableHeader()
                     payload = ConnectPayload()
@@ -281,22 +279,22 @@ class BrokerTest(unittest.TestCase):
                     vh.will_retain_flag = False
                     payload.client_id = 'test_id'
                     connect = ConnectPacket(vh=vh, payload=payload)
-                    await connect.to_stream(writer)
-                    await ConnackPacket.from_stream(reader)
+                    await connect.to_stream(stream)
+                    await ConnackPacket.from_stream(stream)
 
                     publish_1 = PublishPacket.build('/test', b'data', 1, False, QOS_2, False)
-                    await publish_1.to_stream(writer)
-                    await PubrecPacket.from_stream(reader)
+                    await publish_1.to_stream(stream)
+                    await PubrecPacket.from_stream(stream)
 
                     publish_dup = PublishPacket.build('/test', b'data', 1, True, QOS_2, False)
-                    await publish_dup.to_stream(writer)
-                    await PubrecPacket.from_stream(reader)
+                    await publish_dup.to_stream(stream)
+                    await PubrecPacket.from_stream(stream)
                     pubrel = PubrelPacket.build(1)
-                    await pubrel.to_stream(writer)
-                    #await PubcompPacket.from_stream(reader)
+                    await pubrel.to_stream(stream)
+                    #await PubcompPacket.from_stream(stream)
 
                     disconnect = DisconnectPacket()
-                    await disconnect.to_stream(writer)
+                    await disconnect.to_stream(stream)
 
         anyio.run(test_coro)
 

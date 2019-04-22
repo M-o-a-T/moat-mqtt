@@ -17,9 +17,10 @@ from asyncwebsockets import create_websocket
 
 from hbmqtt.utils import not_in_dict_or_none
 from hbmqtt.session import Session
+from hbmqtt.errors import NoDataException
 from hbmqtt.mqtt.connack import CONNECTION_ACCEPTED
 from hbmqtt.mqtt.protocol.client_handler import ClientProtocolHandler
-from hbmqtt.adapters import StreamReaderAdapter, StreamWriterAdapter, WebSocketsReader, WebSocketsWriter
+from hbmqtt.adapters import StreamAdapter, WebSocketsAdapter
 from hbmqtt.plugins.manager import PluginManager, BaseContext
 from hbmqtt.mqtt.protocol.handler import ProtocolHandlerException
 from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
@@ -415,8 +416,7 @@ class MQTTClient:
             kwargs['autostart_tls'] = True
 
         try:
-            reader = None
-            writer = None
+            adapter = None
             self._connected_state.clear()
             # Open connection
             if scheme in ('mqtt', 'mqtts'):
@@ -426,8 +426,7 @@ class MQTTClient:
                         self.session.remote_port, **kwargs)
                 if secure:
                     await conn.start_tls()
-                reader = StreamReaderAdapter(conn)
-                writer = StreamWriterAdapter(conn)
+                adapter = StreamAdapter(conn)
             elif scheme in ('ws', 'wss'):
                 if kwargs.pop('autostart_tls', False):
                     kwargs['ssl'] = kwargs.pop('ssl_context')
@@ -435,11 +434,15 @@ class MQTTClient:
                     subprotocols=['mqtt'],
                     headers=self.extra_headers,
                     **kwargs)
-                reader = WebSocketsReader(websocket)
-                writer = WebSocketsWriter(websocket)
+                adapter = WebSocketsAdapter(websocket)
             # Start MQTT protocol
-            await self._handler.attach(self.session, reader, writer)
-            return_code = await self._handler.mqtt_connect()
+            await self._handler.attach(self.session, adapter)
+            try:
+                return_code = await self._handler.mqtt_connect()
+            except NoDataException:
+                self.logger.warning("Connection broken by broker")
+                exc = ConnectException("Connection broken by broker")
+                raise exc
             if return_code is not CONNECTION_ACCEPTED:
                 self.session.transitions.disconnect()
                 self.logger.warning("Connection rejected with code '%s'", return_code)

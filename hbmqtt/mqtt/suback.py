@@ -4,7 +4,7 @@
 
 from hbmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, SUBACK, PacketIdVariableHeader, MQTTPayload, MQTTVariableHeader
 from hbmqtt.errors import HBMQTTException, NoDataException
-from hbmqtt.adapters import ReaderAdapter
+from hbmqtt.adapters import StreamAdapter
 from hbmqtt.codecs import bytes_to_int, int_to_bytes, read_or_raise
 
 
@@ -31,7 +31,7 @@ class SubackPayload(MQTTPayload):
         return out
 
     @classmethod
-    async def from_stream(cls, reader: ReaderAdapter, fixed_header: MQTTFixedHeader,
+    async def from_stream(cls, reader: StreamAdapter, fixed_header: MQTTFixedHeader,
                     variable_header: MQTTVariableHeader):
         return_codes = []
         bytes_to_read = fixed_header.remaining_length - variable_header.bytes_length
