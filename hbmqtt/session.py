@@ -71,7 +71,17 @@ class ApplicationMessage:
     def __eq__(self, other):
         return self.packet_id == other.packet_id
 
+    def __getstate__(self):
+        res = dict((k,getattr(self,k)) for k in ('topic','qos','data','retain'))
+        res['id'] = self.packet_id
+        return res
 
+    def __setstate__(self, state):
+        self.packet_id = res['id']
+        for k in ('topic','qos','data','retain'):
+            setattr(self, k, state[k])
+
+    
 class IncomingApplicationMessage(ApplicationMessage):
 
     """
