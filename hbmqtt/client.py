@@ -295,27 +295,19 @@ class MQTTClient:
             :param retain: retain flag. Defaults to ``default_retain`` config parameter or False.
         """
 
-        def get_retain_and_qos():
-            if qos:
+            if qos is not None:
                 assert qos in (QOS_0, QOS_1, QOS_2)
-                _qos = qos
             else:
-                _qos = self.config['default_qos']
                 try:
-                    _qos = self.config['topics'][topic]['qos']
+                    qos = self.config['topics'][topic]['qos']
                 except KeyError:
-                    pass
-            if retain:
-                _retain = retain
-            else:
-                _retain = self.config['default_retain']
+                    qos = self.config['default_qos']
+            if retain is None:
                 try:
-                    _retain = self.config['topics'][topic]['retain']
+                    retain = self.config['topics'][topic]['retain']
                 except KeyError:
-                    pass
-            return _qos, _retain
-        (app_qos, app_retain) = get_retain_and_qos()
-        return await self._handler.mqtt_publish(topic, message, app_qos, app_retain, ack_timeout)
+                    retain = self.config['default_retain']
+        return await self._handler.mqtt_publish(topic, message, qos, retain, ack_timeout)
 
     @mqtt_connected
     async def subscribe(self, topics):
