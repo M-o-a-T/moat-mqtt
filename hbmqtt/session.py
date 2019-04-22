@@ -216,10 +216,13 @@ class Session:
         self._packet_id += 1
         if self._packet_id > 65535:
             self._packet_id = 1
+        limit = self._packet_id
         while self._packet_id in self.inflight_in or self._packet_id in self.inflight_out:
             self._packet_id += 1
             if self._packet_id > 65535:
-                raise HBMQTTException("More than 65525 messages pending. No free packet ID")
+                self._packet_id = 1
+            if self._packet_id == limit:
+                raise HBMQTTException("More than 65535 messages pending. No free packet ID")
 
         return self._packet_id
 
