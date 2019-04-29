@@ -369,8 +369,8 @@ class Broker:
         await self.plugins_manager.fire_event(EVENT_BROKER_POST_SHUTDOWN)
         self.transitions.stopping_success()
 
-    async def internal_message_broadcast(self, topic, data, qos=None):
-        return await self.broadcast_message(None, topic, data)
+    async def internal_message_broadcast(self, topic, data, qos=None, retain=None):
+        return await self.broadcast_message(None, topic, data, qos=qos, retain=retain)
 
     async def ws_connected(self, conn, listener_name):
         async def subpro(req):
