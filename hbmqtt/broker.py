@@ -229,10 +229,11 @@ class Broker:
         self.transitions.add_transition(trigger='starting_success', source='starting', dest='started')
         self.transitions.add_transition(trigger='shutdown', source='started', dest='stopping')
         self.transitions.add_transition(trigger='shutdown', source='not_started', dest='stopping')
-        self.transitions.add_transition(trigger='stopping_success', source='stopping', dest='stopped')
+        self.transitions.add_transition(trigger='stopping_success', source='stopped', dest='stopped')
         self.transitions.add_transition(trigger='stopping_failure', source='stopping', dest='not_stopped')
         self.transitions.add_transition(trigger='start', source='stopped', dest='starting')
         self.transitions.add_transition(trigger='shutdown', source='new', dest='stopped')
+        self.transitions.add_transition(trigger='stopping_success', source='stopping', dest='stopped')
 
     async def start(self):
         """
