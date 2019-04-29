@@ -29,6 +29,12 @@ from asyncwebsockets import create_websocket_server
 
 
 _defaults = {
+    'listeners': {
+        'default': {
+            'type': 'tcp',
+            'bind': '0.0.0.0:1883',
+        },
+    },
     'timeout-disconnect-delay': 2,
     'auth': {
         'allow-anonymous': True,
@@ -214,7 +220,7 @@ class Broker:
         self.listeners_config = dict()
         try:
             listeners_config = broker_config['listeners']
-            defaults = listeners_config['default']
+            defaults = listeners_config.get('default', {})
             for listener in listeners_config:
                 config = dict(defaults)
                 config.update(listeners_config[listener])
