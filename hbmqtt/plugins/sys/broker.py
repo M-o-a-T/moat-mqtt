@@ -54,7 +54,7 @@ class BrokerSysPlugin:
         self._stats[STAT_START_TIME] = datetime.now()
         from hbmqtt.version import get_version
         version = 'HBMQTT version ' + get_version()
-        self.context.broadcast_message(DOLLAR_SYS_ROOT + 'version', version.encode(), retain=True)
+        await self.context.broadcast_message(DOLLAR_SYS_ROOT + 'version', version.encode(), retain=True)
 
         # Start $SYS topics management
         try:
