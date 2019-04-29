@@ -35,7 +35,7 @@ config = {
 }
 
 async def test_coro():
-    async with create_broker() as broker:
+    async with create_broker(config) as broker:
         while True:
             await anyio.sleep(99999)
 
