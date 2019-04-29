@@ -434,7 +434,8 @@ class BrokerTest(unittest.TestCase):
                     await self._client_publish('$topic', b'data', QOS_0)
                     message = None
                     with self.assertRaises(TimeoutError):
-                        message = await sub_client.deliver_message(timeout=2)
+                        async with anyio.fail_after(2):
+                            message = await sub_client.deliver_message()
                     self.assertIsNone(message)
             self.assertTrue(broker.transitions.is_stopped())
 
@@ -458,7 +459,8 @@ class BrokerTest(unittest.TestCase):
                     await self._client_publish('$SYS/monitor/Clients', b'data', QOS_0)
                     message = None
                     with self.assertRaises(TimeoutError):
-                        message = await sub_client.deliver_message(timeout=2)
+                        async with anyio.fail_after(2):
+                            message = await sub_client.deliver_message()
                     self.assertIsNone(message)
             self.assertTrue(broker.transitions.is_stopped())
 

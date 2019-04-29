@@ -182,7 +182,8 @@ class MQTTClientTest(unittest.TestCase):
                     ])
                     self.assertEqual(ret[0], QOS_0)
                     with self.assertRaises(TimeoutError):
-                        await client.deliver_message(timeout=2)
+                        async with anyio.fail_after(2):
+                            await client.deliver_message()
                     await client.unsubscribe(['$SYS/broker/uptime'])
 
         anyio.run(test_coro)

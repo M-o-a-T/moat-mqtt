@@ -349,7 +349,7 @@ class MQTTClient:
         """
         await self._handler.mqtt_unsubscribe(topics, self.session.next_packet_id)
 
-    async def deliver_message(self, timeout=None):
+    async def deliver_message(self):
         """
             Deliver next received message.
 
@@ -357,12 +357,14 @@ class MQTTClient:
 
             This method is a *coroutine*.
 
-            :param timeout: maximum number of seconds to wait before returning. If timeout is not specified or None, there is no limit to the wait time until next message arrives.
             :return: instance of :class:`hbmqtt.session.ApplicationMessage` containing received message information flow.
             :raises: :class:`TimeoutError` if timeout occurs before a message is delivered
+
+            This method returns ``None`` if it is cancelled by closing the
+            connection.
         """
         self.logger.debug("Waiting message delivery")
-        async with anyio.fail_after(timeout) as scope:
+        async with anyio.open_cancel_scope() as scope:
             self.client_tasks.add(scope)
             try:
                 return await self.session.get_next_message()
