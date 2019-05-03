@@ -2,7 +2,8 @@
 *.pyc
 .idea/hbmqtt.iml
 .tox/
+/.coverage
 __pycache__
-build/
-dist/
-tests/plugins/test.db
+/build/
+/dist/
+/tests/plugins/test.db
