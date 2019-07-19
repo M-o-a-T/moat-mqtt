@@ -60,6 +60,12 @@ Configuration example
 
 .. code-block:: yaml
 
+    distkv:
+        server:
+            host: '127.0.0.1'
+            port: 27586
+        topic: mqtt
+        retain: [test, retain]
     listeners:
         default:
             max-connections: 50000
@@ -87,6 +93,18 @@ Configuration example
         password-file: /some/passwd_file
 
 This configuration example shows use case of every parameter.
+
+The ``distkv`` section controls routing of messages via DistKV.
+
+* The ``server`` subsection mimics DistKV's ``connect`` section.
+  See the distKV documentation for details.
+
+* The ``topic`` controls which Serf topic non-retained messages are
+  distributed under.
+
+* The ``retain`` list tells DistMQTT which DistKV entries to use for
+  storing / listening to retained messages.
+
 
 The ``listeners`` section define 3 bindings :
 
