@@ -13,7 +13,7 @@ PACKAGE = hbmqtt
 PYTHON ?= python3
 export PYTHONPATH=$(shell pwd)
 
-PYTEST ?= ${PYTHON} $(shell which pytest-3)
+PYTEST ?= ${PYTHON} $(shell which pytest)
 TEST_OPTIONS ?= -xvvv --full-trace
 
 BUILD_DIR ?= build
@@ -31,14 +31,18 @@ AUTOSPHINXOPTS := -i *~ -i *.sw* -i Makefile*
 SPHINXBUILDDIR ?= $(BUILD_DIR)/sphinx/html
 ALLSPHINXOPTS ?= -d $(BUILD_DIR)/sphinx/doctrees $(SPHINXOPTS) docs
 
+test:
+	-rm -rf obj
+	mkdir obj
+	env PYTHONPATH=obj python3 setup.py develop -d obj
+	PYTHONPATH=obj $(PYTEST) $(TEST_OPTIONS) tests
+
 doc:
 	sphinx3-build -a $(INPUT_DIR) $(BUILD_DIR)
 
 livehtml: docs
 	sphinx-autobuild $(AUTOSPHINXOPTS) $(ALLSPHINXOPTS) $(SPHINXBUILDDIR)
 
-test:
-	$(PYTEST) $(PACKAGE) $(TEST_OPTIONS)
 
 
 tagged:
