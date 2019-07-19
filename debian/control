@@ -1,0 +1,13 @@
+Source: hbmqtt
+Maintainer: Matthias Urlichs <matthias@urlichs.de>
+Section: python
+Priority: optional
+Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9)
+Standards-Version: 3.9.6
+Homepage: https://github.com/beerfactory/hbmqtt
+
+Package: python3-hbmqtt
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}
+Description: MQTT client/broker using Python 3.4 asyncio library
+
