@@ -2,8 +2,8 @@
 #
 # See the file license.txt for copying permission.
 from datetime import datetime
-from hbmqtt.mqtt.packet import PUBLISH
-from hbmqtt.codecs import int_to_bytes_str
+from distmqtt.mqtt.packet import PUBLISH
+from distmqtt.codecs import int_to_bytes_str
 import anyio
 import sys
 from collections import deque
@@ -52,7 +52,7 @@ class BrokerSysPlugin:
 
     async def on_broker_post_start(self, *args, **kwargs):
         self._stats[STAT_START_TIME] = datetime.now()
-        from hbmqtt.version import get_version
+        from distmqtt.version import get_version
         version = 'HBMQTT version ' + get_version()
         await self.context.broadcast_message(DOLLAR_SYS_ROOT + 'version', version.encode(), retain=True)
 

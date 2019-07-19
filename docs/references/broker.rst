@@ -1,7 +1,7 @@
 Broker API reference
 ====================
 
-The :class:`~hbmqtt.broker.Broker` class provides a complete MQTT 3.1.1 broker implementation. This class allows Python developers to embed a MQTT broker in their own applications.
+The :class:`~distmqtt.broker.Broker` class provides a complete MQTT 3.1.1 broker implementation. This class allows Python developers to embed a MQTT broker in their own applications.
 
 Usage example
 -------------
@@ -13,7 +13,7 @@ The following example shows how to start a broker using the default configuratio
     import logging
     import anyio
     import os
-    from hbmqtt.broker import open_broker
+    from distmqtt.broker import open_broker
 
 
     async def broker_coro():
@@ -28,7 +28,7 @@ The following example shows how to start a broker using the default configuratio
         anyio.run(broker_coro)
 
 When executed, this script runs the ``broker_coro`` until it completes.
-``broker_coro`` creates a :class:`~hbmqtt.broker.Broker` instance.
+``broker_coro`` creates a :class:`~distmqtt.broker.Broker` instance.
 Once completed, the loop is ran forever, making this script never stop ...
 
 Reference
@@ -37,21 +37,21 @@ Reference
 Broker API
 ..........
 
-Typically, you create a :class:`~hbmqtt.broker.Broker` instance by way of ``async with`` :func:`~hbmqtt.broker.create_broker`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+Typically, you create a :class:`~distmqtt.broker.Broker` instance by way of ``async with`` :func:`~distmqtt.broker.create_broker`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
 
-.. function:: hbmqtt.broker.create_broker
+.. function:: distmqtt.broker.create_broker
 
 If using an async context manager doesn't fit your code, you can pass your own taskgroup
-and explicitly start (and stop) the broker. However, the broker may leak some tasks, thus using :func:`~hbmqtt.broker.create_broker` is strongly recommended.
+and explicitly start (and stop) the broker. However, the broker may leak some tasks, thus using :func:`~distmqtt.broker.create_broker` is strongly recommended.
 
-.. automodule:: hbmqtt.broker
+.. automodule:: distmqtt.broker
 
     .. autoclass:: Broker
 
 Broker configuration
 ....................
 
-`~hbmqtt.broker.create_broker` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary. For convenience, it is presented below as a YAML file [1]_.
+`~distmqtt.broker.create_broker` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary. For convenience, it is presented below as a YAML file [1]_.
 
 .. code-block:: yaml
 
@@ -90,7 +90,7 @@ Broker configuration
             anonymous: []  # List of topics on which an anonymous client can publish and subscribe
 
 
-The ``listeners`` section allows to define network listeners which must be started by the :class:`~hbmqtt.broker.Broker`. Several listeners can be setup. ``default`` subsection defines common attributes for all listeners. Each listener can have the following settings:
+The ``listeners`` section allows to define network listeners which must be started by the :class:`~distmqtt.broker.Broker`. Several listeners can be setup. ``default`` subsection defines common attributes for all listeners. Each listener can have the following settings:
 
 * ``bind``: IP address and port binding.
 * ``max-connections``: Set maximum number of active connection for the listener. ``0`` means no limit.
@@ -100,14 +100,14 @@ The ``listeners`` section allows to define network listeners which must be start
 
 The ``auth`` section setup authentication behaviour:
 
-* ``plugins``: defines the list of activated plugins. Note the plugins must be defined in the ``hbmqtt.broker.plugins`` `entry point <https://pythonhosted.org/setuptools/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
-* ``allow-anonymous`` : used by the internal :class:`hbmqtt.plugins.authentication.AnonymousAuthPlugin` plugin. This parameter enables (``on``) or disable anonymous connection, ie. connection without username.
-* ``password-file`` : used by the internal :class:`hbmqtt.plugins.authentication.FileAuthPlugin` plugin. This parameter gives to path of the password file to load for authenticating users.
+* ``plugins``: defines the list of activated plugins. Note the plugins must be defined in the ``distmqtt.broker.plugins`` `entry point <https://pythonhosted.org/setuptools/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+* ``allow-anonymous`` : used by the internal :class:`distmqtt.plugins.authentication.AnonymousAuthPlugin` plugin. This parameter enables (``on``) or disable anonymous connection, ie. connection without username.
+* ``password-file`` : used by the internal :class:`distmqtt.plugins.authentication.FileAuthPlugin` plugin. This parameter gives to path of the password file to load for authenticating users.
 
 The ``topic-check`` section setup access control policies for publishing and subscribing to topics:
 
 * ``enabled``: set to true if you want to impose an access control policy. Otherwise, set it to false.
-* ``plugins``: defines the list of activated plugins. Note the plugins must be defined in the ``hbmqtt.broker.plugins`` `entry point <https://pythonhosted.org/setuptools/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+* ``plugins``: defines the list of activated plugins. Note the plugins must be defined in the ``distmqtt.broker.plugins`` `entry point <https://pythonhosted.org/setuptools/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
 * additional parameters: depending on the plugin used for access control, additional parameters should be added.
     * In case of ``topic_acl`` plugin, the Access Control List (ACL) must be defined in the parameter ``acl``.
         * For each username, a list with the allowed topics must be defined.

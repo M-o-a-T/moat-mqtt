@@ -5,9 +5,9 @@
 HBMQTT - MQTT 3.1.1 broker
 
 Usage:
-    hbmqtt --version
-    hbmqtt (-h | --help)
-    hbmqtt [-c <config_file> ] [-d]
+    distmqtt --version
+    distmqtt (-h | --help)
+    distmqtt [-c <config_file> ] [-d]
 
 Options:
     -h --help           Show this screen.
@@ -20,10 +20,10 @@ import sys
 import logging
 import anyio
 import os
-from hbmqtt.broker import create_broker
-from hbmqtt.version import get_version
+from distmqtt.broker import create_broker
+from distmqtt.version import get_version
 from docopt import docopt
-from hbmqtt.utils import read_yaml_config
+from distmqtt.utils import read_yaml_config
 
 
 default_config = {

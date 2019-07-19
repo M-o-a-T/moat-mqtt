@@ -10,7 +10,7 @@ import subprocess
 def get_version(version=None):
     "Returns a PEP 386-compliant version number from VERSION."
     if version is None:
-        from hbmqtt import VERSION as version
+        from distmqtt import VERSION as version
     else:
         assert len(version) == 5
         assert version[3] in ('alpha', 'beta', 'rc', 'final')

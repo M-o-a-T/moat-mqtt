@@ -1,10 +1,10 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from hbmqtt.mqtt.packet import CONNACK, MQTTPacket, MQTTFixedHeader, MQTTVariableHeader
-from hbmqtt.codecs import read_or_raise, bytes_to_int
-from hbmqtt.errors import HBMQTTException
-from hbmqtt.adapters import StreamAdapter
+from distmqtt.mqtt.packet import CONNACK, MQTTPacket, MQTTFixedHeader, MQTTVariableHeader
+from distmqtt.codecs import read_or_raise, bytes_to_int
+from distmqtt.errors import HBMQTTException
+from distmqtt.adapters import StreamAdapter
 
 CONNECTION_ACCEPTED = 0x00
 UNACCEPTABLE_PROTOCOL_VERSION = 0x01

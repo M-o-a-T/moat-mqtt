@@ -3,19 +3,19 @@
 # See the file license.txt for copying permission.
 import anyio
 import sys
-from hbmqtt.mqtt.protocol.handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
-from hbmqtt.mqtt.disconnect import DisconnectPacket
-from hbmqtt.mqtt.pingreq import PingReqPacket
-from hbmqtt.mqtt.pingresp import PingRespPacket
-from hbmqtt.mqtt.subscribe import SubscribePacket
-from hbmqtt.mqtt.suback import SubackPacket
-from hbmqtt.mqtt.unsubscribe import UnsubscribePacket
-from hbmqtt.mqtt.unsuback import UnsubackPacket
-from hbmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload, ConnectPacket
-from hbmqtt.mqtt.connack import ConnackPacket
-from hbmqtt.session import Session
-from hbmqtt.plugins.manager import PluginManager
-from hbmqtt.utils import Future
+from distmqtt.mqtt.protocol.handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
+from distmqtt.mqtt.disconnect import DisconnectPacket
+from distmqtt.mqtt.pingreq import PingReqPacket
+from distmqtt.mqtt.pingresp import PingRespPacket
+from distmqtt.mqtt.subscribe import SubscribePacket
+from distmqtt.mqtt.suback import SubackPacket
+from distmqtt.mqtt.unsubscribe import UnsubscribePacket
+from distmqtt.mqtt.unsuback import UnsubackPacket
+from distmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload, ConnectPacket
+from distmqtt.mqtt.connack import ConnackPacket
+from distmqtt.session import Session
+from distmqtt.plugins.manager import PluginManager
+from distmqtt.utils import Future
 
 
 class ClientProtocolHandler(ProtocolHandler):

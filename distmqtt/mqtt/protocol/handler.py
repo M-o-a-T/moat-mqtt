@@ -6,31 +6,31 @@ import collections
 import itertools
 import anyio
 
-from hbmqtt.mqtt import packet_class
-from hbmqtt.mqtt.connack import ConnackPacket
-from hbmqtt.mqtt.connect import ConnectPacket
-from hbmqtt.mqtt.packet import (
+from distmqtt.mqtt import packet_class
+from distmqtt.mqtt.connack import ConnackPacket
+from distmqtt.mqtt.connect import ConnectPacket
+from distmqtt.mqtt.packet import (
     RESERVED_0, CONNECT, CONNACK, PUBLISH, PUBACK, PUBREC, PUBREL, PUBCOMP,
     SUBSCRIBE, SUBACK, UNSUBSCRIBE, UNSUBACK, PINGREQ, PINGRESP, DISCONNECT,
     RESERVED_15, MQTTFixedHeader)
-from hbmqtt.mqtt.pingresp import PingRespPacket
-from hbmqtt.mqtt.pingreq import PingReqPacket
-from hbmqtt.mqtt.publish import PublishPacket
-from hbmqtt.mqtt.pubrel import PubrelPacket
-from hbmqtt.mqtt.puback import PubackPacket
-from hbmqtt.mqtt.pubrec import PubrecPacket
-from hbmqtt.mqtt.pubcomp import PubcompPacket
-from hbmqtt.mqtt.suback import SubackPacket
-from hbmqtt.mqtt.subscribe import SubscribePacket
-from hbmqtt.mqtt.unsubscribe import UnsubscribePacket
-from hbmqtt.mqtt.unsuback import UnsubackPacket
-from hbmqtt.mqtt.disconnect import DisconnectPacket
-from hbmqtt.adapters import StreamAdapter
-from hbmqtt.session import Session, OutgoingApplicationMessage, IncomingApplicationMessage, INCOMING, OUTGOING
-from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
-from hbmqtt.plugins.manager import PluginManager
-from hbmqtt.errors import HBMQTTException, MQTTException, NoDataException, InvalidStateError
-from hbmqtt.utils import Future, CancelledError
+from distmqtt.mqtt.pingresp import PingRespPacket
+from distmqtt.mqtt.pingreq import PingReqPacket
+from distmqtt.mqtt.publish import PublishPacket
+from distmqtt.mqtt.pubrel import PubrelPacket
+from distmqtt.mqtt.puback import PubackPacket
+from distmqtt.mqtt.pubrec import PubrecPacket
+from distmqtt.mqtt.pubcomp import PubcompPacket
+from distmqtt.mqtt.suback import SubackPacket
+from distmqtt.mqtt.subscribe import SubscribePacket
+from distmqtt.mqtt.unsubscribe import UnsubscribePacket
+from distmqtt.mqtt.unsuback import UnsubackPacket
+from distmqtt.mqtt.disconnect import DisconnectPacket
+from distmqtt.adapters import StreamAdapter
+from distmqtt.session import Session, OutgoingApplicationMessage, IncomingApplicationMessage, INCOMING, OUTGOING
+from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+from distmqtt.plugins.manager import PluginManager
+from distmqtt.errors import HBMQTTException, MQTTException, NoDataException, InvalidStateError
+from distmqtt.utils import Future, CancelledError
 
 
 EVENT_MQTT_PACKET_SENT = 'mqtt_packet_sent'

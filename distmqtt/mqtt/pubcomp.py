@@ -1,8 +1,8 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from hbmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PUBCOMP, PacketIdVariableHeader
-from hbmqtt.errors import HBMQTTException
+from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PUBCOMP, PacketIdVariableHeader
+from distmqtt.errors import HBMQTTException
 
 
 class PubcompPacket(MQTTPacket):

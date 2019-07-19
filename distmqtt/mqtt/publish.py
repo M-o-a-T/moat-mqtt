@@ -3,9 +3,9 @@
 # See the file license.txt for copying permission.
 import anyio
 
-from hbmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PUBLISH, MQTTVariableHeader, MQTTPayload
-from hbmqtt.errors import HBMQTTException, MQTTException
-from hbmqtt.codecs import decode_packet_id, decode_string, encode_string, int_to_bytes
+from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PUBLISH, MQTTVariableHeader, MQTTPayload
+from distmqtt.errors import HBMQTTException, MQTTException
+from distmqtt.codecs import decode_packet_id, decode_string, encode_string, int_to_bytes
 
 
 class PublishVariableHeader(MQTTVariableHeader):

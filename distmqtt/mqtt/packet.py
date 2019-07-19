@@ -3,9 +3,9 @@
 # See the file license.txt for copying permission.
 import anyio
 
-from hbmqtt.codecs import bytes_to_hex_str, decode_packet_id, int_to_bytes, read_or_raise
-from hbmqtt.errors import CodecException, MQTTException, NoDataException
-from hbmqtt.adapters import StreamAdapter
+from distmqtt.codecs import bytes_to_hex_str, decode_packet_id, int_to_bytes, read_or_raise
+from distmqtt.errors import CodecException, MQTTException, NoDataException
+from distmqtt.adapters import StreamAdapter
 from datetime import datetime
 from struct import unpack
 

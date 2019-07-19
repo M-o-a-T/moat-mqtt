@@ -6,8 +6,8 @@ import logging
 import unittest
 from unittest.mock import patch, call, MagicMock
 
-from hbmqtt.adapters import StreamAdapter
-from hbmqtt.broker import (
+from distmqtt.adapters import StreamAdapter
+from distmqtt.broker import (
     EVENT_BROKER_PRE_START,
     EVENT_BROKER_POST_START,
     EVENT_BROKER_PRE_SHUTDOWN,
@@ -18,12 +18,12 @@ from hbmqtt.broker import (
     EVENT_BROKER_CLIENT_UNSUBSCRIBED,
     EVENT_BROKER_MESSAGE_RECEIVED,
     create_broker)
-from hbmqtt.client import open_mqttclient, ConnectException
-from hbmqtt.mqtt import (
+from distmqtt.client import open_mqttclient, ConnectException
+from distmqtt.mqtt import (
     ConnectPacket, ConnackPacket, PublishPacket, PubrecPacket,
     PubrelPacket, PubcompPacket, DisconnectPacket)
-from hbmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload
-from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+from distmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload
+from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
 
 formatter = "%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s"
@@ -52,10 +52,10 @@ class AsyncMock(MagicMock):
         return foo().__await__()
 
 class BrokerTest(unittest.TestCase):
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_start_stop(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 self.assertDictEqual(broker._sessions, {})
@@ -71,10 +71,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro, backend='trio')
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_connect(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as client:
@@ -92,10 +92,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_connect_will_flag(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
 
@@ -126,10 +126,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro, backend="trio")
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_connect_clean_session_false(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient(client_id="", config={'auto_reconnect': False}) as client:
@@ -143,10 +143,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as client:
@@ -170,10 +170,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro, backend="trio")
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_twice(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as client:
@@ -203,10 +203,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro, backend="trio")
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_unsubscribe(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as client:
@@ -237,10 +237,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro, backend="trio")
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as pub_client:
@@ -261,10 +261,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    #@patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    #@patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_dup(self):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
 
@@ -298,10 +298,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro, backend="trio")
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_invalid_topic(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as pub_client:
@@ -314,10 +314,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_big(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as pub_client:
@@ -337,10 +337,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro, backend="trio")
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_retain(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
 
@@ -359,10 +359,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_retain_delete(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
 
@@ -376,10 +376,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_publish(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
@@ -400,10 +400,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_invalid(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
@@ -416,10 +416,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro, backend="trio")
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_publish_dollar_topic_1(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
@@ -441,10 +441,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_publish_dollar_topic_2(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
@@ -466,10 +466,10 @@ class BrokerTest(unittest.TestCase):
 
         anyio.run(test_coro)
 
-    @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
+    @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_retain_subscribe(self, MockPluginManager):
         async def test_coro():
-            async with create_broker(test_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+            async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:

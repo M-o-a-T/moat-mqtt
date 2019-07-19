@@ -3,9 +3,9 @@
 # See the file license.txt for copying permission.
 import anyio
 
-from hbmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, UNSUBSCRIBE, PacketIdVariableHeader, MQTTPayload, MQTTVariableHeader
-from hbmqtt.errors import HBMQTTException, NoDataException
-from hbmqtt.codecs import decode_string, encode_string
+from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, UNSUBSCRIBE, PacketIdVariableHeader, MQTTPayload, MQTTVariableHeader
+from distmqtt.errors import HBMQTTException, NoDataException
+from distmqtt.codecs import decode_string, encode_string
 
 
 class UnubscribePayload(MQTTPayload):

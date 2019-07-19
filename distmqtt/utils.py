@@ -36,7 +36,7 @@ def gen_client_id():
     :return:
     """
     import random
-    gen_id = 'hbmqtt/'
+    gen_id = 'distmqtt/'
 
     for i in range(7, 23):
         gen_id += chr(random.randint(0, 74) + 48)

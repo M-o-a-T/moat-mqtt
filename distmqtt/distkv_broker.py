@@ -9,12 +9,12 @@ from typing import Optional
 from transitions import Machine
 from collections import OrderedDict
 
-from hbmqtt.mqtt.publish import PublishPacket
-from hbmqtt.errors import HBMQTTException, MQTTException
-from hbmqtt.mqtt.constants import QOS_0
+from distmqtt.mqtt.publish import PublishPacket
+from distmqtt.errors import HBMQTTException, MQTTException
+from distmqtt.mqtt.constants import QOS_0
 
-from hbmqtt.broker import Broker
-from hbmqtt.session import ApplicationMessage
+from distmqtt.broker import Broker
+from distmqtt.session import ApplicationMessage
 
 from distkv.client import open_client as open_distkv_client
 from distkv.util import PathLongener

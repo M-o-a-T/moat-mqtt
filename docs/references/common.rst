@@ -9,7 +9,7 @@ Reference
 ApplicationMessage
 ..................
 
-.. automodule:: hbmqtt.session
+.. automodule:: distmqtt.session
 
     .. autoclass:: ApplicationMessage
         :members:

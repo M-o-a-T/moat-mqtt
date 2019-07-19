@@ -2,24 +2,24 @@
 #
 # See the file license.txt for copying permission.
 import anyio
-from hbmqtt.mqtt.protocol.handler import ProtocolHandler
-from hbmqtt.mqtt.connack import (
+from distmqtt.mqtt.protocol.handler import ProtocolHandler
+from distmqtt.mqtt.connack import (
     CONNECTION_ACCEPTED, UNACCEPTABLE_PROTOCOL_VERSION, IDENTIFIER_REJECTED,
     BAD_USERNAME_PASSWORD, NOT_AUTHORIZED, ConnackPacket)
-from hbmqtt.mqtt.connect import ConnectPacket
-from hbmqtt.mqtt.disconnect import DisconnectPacket
-from hbmqtt.mqtt.pingreq import PingReqPacket
-from hbmqtt.mqtt.pingresp import PingRespPacket
-from hbmqtt.mqtt.subscribe import SubscribePacket
-from hbmqtt.mqtt.suback import SubackPacket
-from hbmqtt.mqtt.unsubscribe import UnsubscribePacket
-from hbmqtt.mqtt.unsuback import UnsubackPacket
-from hbmqtt.utils import format_client_message
-from hbmqtt.session import Session
-from hbmqtt.plugins.manager import PluginManager
-from hbmqtt.adapters import StreamAdapter
-from hbmqtt.errors import MQTTException, NoDataException
-from hbmqtt.utils import Future
+from distmqtt.mqtt.connect import ConnectPacket
+from distmqtt.mqtt.disconnect import DisconnectPacket
+from distmqtt.mqtt.pingreq import PingReqPacket
+from distmqtt.mqtt.pingresp import PingRespPacket
+from distmqtt.mqtt.subscribe import SubscribePacket
+from distmqtt.mqtt.suback import SubackPacket
+from distmqtt.mqtt.unsubscribe import UnsubscribePacket
+from distmqtt.mqtt.unsuback import UnsubackPacket
+from distmqtt.utils import format_client_message
+from distmqtt.session import Session
+from distmqtt.plugins.manager import PluginManager
+from distmqtt.adapters import StreamAdapter
+from distmqtt.errors import MQTTException, NoDataException
+from distmqtt.utils import Future
 from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT
 
 import logging

@@ -1,7 +1,7 @@
 import logging
 import anyio
 import os
-from hbmqtt.broker import create_broker
+from distmqtt.broker import create_broker
 
 logger = logging.getLogger(__name__)
 

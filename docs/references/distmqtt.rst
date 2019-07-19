@@ -1,31 +1,31 @@
-hbmqtt
+distmqtt
 ======
 
-``hbmqtt`` is a command-line script for running a MQTT 3.1.1 broker.
+``distmqtt`` is a command-line script for running a MQTT 3.1.1 broker.
 
 Usage
 -----
 
-``hbmqtt`` usage :
+``distmqtt`` usage :
 ::
 
-  hbmqtt --version
-  hbmqtt (-h | --help)
-  hbmqtt [-c <config_file> ] [-d]
+  distmqtt --version
+  distmqtt (-h | --help)
+  distmqtt [-c <config_file> ] [-d]
 
 
 Options
 -------
 
 --version           HBMQTT version information
--h, --help          Display ``hbmqtt_sub`` usage help
+-h, --help          Display ``distmqtt_sub`` usage help
 -c                  Set the YAML configuration file to read and pass to the client runtime.
 
 
 Configuration
 -------------
 
-If ``-c`` argument is given, ``hbmqtt`` will read specific MQTT settings for the given configuration file. This file must be a valid `YAML`_ file which may contains the following configuration elements :
+If ``-c`` argument is given, ``distmqtt`` will read specific MQTT settings for the given configuration file. This file must be a valid `YAML`_ file which may contains the following configuration elements :
 
 * ``listeners`` : network bindings configuration list
 * ``timeout-disconnect-delay`` : client disconnect timeout after keep-alive timeout
@@ -46,7 +46,7 @@ Without the ``-c`` argument, the broker will run with the following default conf
         - auth_file
         - auth_anonymous
 
-Using this configuration, ``hbmqtt`` will start a broker :
+Using this configuration, ``distmqtt`` will start a broker :
 
 * listening on TCP port 1883 on all network interfaces.
 * Publishing ``$SYS``_ update messages every ``20`` seconds.

@@ -36,7 +36,7 @@ installing HBMQTT is to create a virtual environment and then install all the de
 
 Once you have a environment setup and ready, HBMQTT can be installed with the following command ::
 
-  (venv) $ pip install hbmqtt
+  (venv) $ pip install distmqtt
 
 ``pip`` will download and install HBMQTT and all its dependencies.
 

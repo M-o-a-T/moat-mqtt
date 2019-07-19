@@ -15,15 +15,15 @@ except ImportError:
 from wsproto.utilities import ProtocolError
 from asyncwebsockets import create_websocket
 
-from hbmqtt.utils import not_in_dict_or_none
-from hbmqtt.session import Session
-from hbmqtt.errors import NoDataException
-from hbmqtt.mqtt.connack import CONNECTION_ACCEPTED
-from hbmqtt.mqtt.protocol.client_handler import ClientProtocolHandler
-from hbmqtt.adapters import StreamAdapter, WebSocketsAdapter
-from hbmqtt.plugins.manager import PluginManager, BaseContext
-from hbmqtt.mqtt.protocol.handler import ProtocolHandlerException
-from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+from distmqtt.utils import not_in_dict_or_none
+from distmqtt.session import Session
+from distmqtt.errors import NoDataException
+from distmqtt.mqtt.connack import CONNECTION_ACCEPTED
+from distmqtt.mqtt.protocol.client_handler import ClientProtocolHandler
+from distmqtt.adapters import StreamAdapter, WebSocketsAdapter
+from distmqtt.plugins.manager import PluginManager, BaseContext
+from distmqtt.mqtt.protocol.handler import ProtocolHandlerException
+from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 from collections import deque
 
 
@@ -88,7 +88,7 @@ async def open_mqttclient(client_id=None, config=None):
 
         MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
 
-        :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`hbmqtt.utils.gen_client_id`
+        :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
         :param config: Client configuration
         :return: class instance
 
@@ -124,7 +124,7 @@ class MQTTClient:
         MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
 
         :param tg: The task group in which to run open-ended subtasks.
-        :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`hbmqtt.utils.gen_client_id`
+        :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
         :param config: Client configuration
         :return: class instance
 
@@ -140,7 +140,7 @@ class MQTTClient:
         if client_id is not None:
             self.client_id = client_id
         else:
-            from hbmqtt.utils import gen_client_id
+            from distmqtt.utils import gen_client_id
             self.client_id = gen_client_id()
             self.logger.debug("Using generated client ID : %s", self.client_id)
 
@@ -155,7 +155,7 @@ class MQTTClient:
         # Init plugins manager
         context = ClientContext()
         context.config = self.config
-        self.plugins_manager = PluginManager(tg, 'hbmqtt.client.plugins', context)
+        self.plugins_manager = PluginManager(tg, 'distmqtt.client.plugins', context)
         self.client_tasks = set()
 
     async def connect(self,
@@ -179,7 +179,7 @@ class MQTTClient:
             :param cadata: server certificate authority data (optional, used for secured connection)
             :param extra_headers: a dictionary with additional http headers that should be sent on the initial connection (optional, used only with websocket connections)
             :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
-            :raise: :class:`hbmqtt.client.ConnectException` if connection fails
+            :raise: :class:`distmqtt.client.ConnectException` if connection fails
         """
         self.session = self._initsession(uri, cleansession, cafile, capath, cadata)
         self.extra_headers = extra_headers;
@@ -228,7 +228,7 @@ class MQTTClient:
 
             :param cleansession: clean session flag used in MQTT CONNECT messages sent for reconnections.
             :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
-            :raise: :class:`hbmqtt.client.ConnectException` if re-connection fails after max retries.
+            :raise: :class:`distmqtt.client.ConnectException` if re-connection fails after max retries.
         """
 
         if self.session.transitions.is_connected():
@@ -357,7 +357,7 @@ class MQTTClient:
 
             This method is a *coroutine*.
 
-            :return: instance of :class:`hbmqtt.session.ApplicationMessage` containing received message information flow.
+            :return: instance of :class:`distmqtt.session.ApplicationMessage` containing received message information flow.
             :raises: :class:`TimeoutError` if timeout occurs before a message is delivered
 
             This method returns ``None`` if it is cancelled by closing the

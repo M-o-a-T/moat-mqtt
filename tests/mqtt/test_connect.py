@@ -4,9 +4,9 @@
 import unittest
 import anyio
 
-from hbmqtt.mqtt.connect import ConnectPacket, ConnectVariableHeader, ConnectPayload
-from hbmqtt.mqtt.packet import MQTTFixedHeader, CONNECT
-from hbmqtt.adapters import BufferAdapter
+from distmqtt.mqtt.connect import ConnectPacket, ConnectVariableHeader, ConnectPayload
+from distmqtt.mqtt.packet import MQTTFixedHeader, CONNECT
+from distmqtt.adapters import BufferAdapter
 
 
 class ConnectPacketTest(unittest.TestCase):

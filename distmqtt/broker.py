@@ -15,11 +15,11 @@ except ImportError:
 
 from functools import partial
 from transitions import Machine, MachineError
-from hbmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED
-from hbmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
-from hbmqtt.errors import HBMQTTException, MQTTException
-from hbmqtt.utils import format_client_message, gen_client_id, Future
-from hbmqtt.adapters import (
+from distmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED
+from distmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
+from distmqtt.errors import HBMQTTException, MQTTException
+from distmqtt.utils import format_client_message, gen_client_id, Future
+from distmqtt.adapters import (
     StreamAdapter,
     BaseAdapter,
     WebSocketsAdapter,
@@ -144,7 +144,7 @@ class BrokerContext(BaseContext):
 async def create_broker(config=None, plugin_namespace=None):
     """MQTT 3.1.1 compliant broker implementation 
     :param config: Example Yaml config
-    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``hbmqtt.broker.plugins``
+    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``distmqtt.broker.plugins``
 
     This is an async context manager::
 
@@ -174,7 +174,7 @@ class Broker:
 
     :param tg: The task group used to run the broker's tasks.
     :param config: Example Yaml config
-    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``hbmqtt.broker.plugins``
+    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``distmqtt.broker.plugins``
 
     Usage::
 
@@ -213,7 +213,7 @@ class Broker:
         if plugin_namespace:
             namespace = plugin_namespace
         else:
-            namespace = 'hbmqtt.broker.plugins'
+            namespace = 'distmqtt.broker.plugins'
         self.plugins_manager = PluginManager(tg, namespace, context)
 
     def _build_listeners_config(self, broker_config):

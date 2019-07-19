@@ -2,10 +2,10 @@
 #
 # See the file license.txt for copying permission.
 
-from hbmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, SUBACK, PacketIdVariableHeader, MQTTPayload, MQTTVariableHeader
-from hbmqtt.errors import HBMQTTException, NoDataException
-from hbmqtt.adapters import StreamAdapter
-from hbmqtt.codecs import bytes_to_int, int_to_bytes, read_or_raise
+from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, SUBACK, PacketIdVariableHeader, MQTTPayload, MQTTVariableHeader
+from distmqtt.errors import HBMQTTException, NoDataException
+from distmqtt.adapters import StreamAdapter
+from distmqtt.codecs import bytes_to_int, int_to_bytes, read_or_raise
 
 
 class SubackPayload(MQTTPayload):

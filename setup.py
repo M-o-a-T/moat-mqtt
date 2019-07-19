@@ -3,15 +3,15 @@
 # See the file license.txt for copying permission.
 
 from setuptools import setup, find_packages
-from hbmqtt.version import get_version
+from distmqtt.version import get_version
 
 setup(
-    name="hbmqtt",
+    name="distmqtt",
     version=get_version(),
     description="MQTT client/broker using Python 3.4 asyncio library",
     author="Nicolas Jouanin",
     author_email='nico@beerfactory.org',
-    url="https://github.com/beerfactory/hbmqtt",
+    url="https://github.com/beerfactory/distmqtt",
     license='MIT',
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
@@ -41,27 +41,27 @@ setup(
         'Topic :: Internet'
     ],
     entry_points={
-        'hbmqtt.test.plugins': [
+        'distmqtt.test.plugins': [
             'test_plugin = tests.plugins.test_manager:SimpleTestPlugin',
             'event_plugin = tests.plugins.test_manager:EventTestPlugin',
-            'packet_logger_plugin = hbmqtt.plugins.logging:PacketLoggerPlugin',
+            'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
         ],
-        'hbmqtt.broker.plugins': [
-            # 'event_logger_plugin = hbmqtt.plugins.logging:EventLoggerPlugin',
-            'packet_logger_plugin = hbmqtt.plugins.logging:PacketLoggerPlugin',
-            'auth_anonymous = hbmqtt.plugins.authentication:AnonymousAuthPlugin',
-            'auth_file = hbmqtt.plugins.authentication:FileAuthPlugin',
-            'topic_taboo = hbmqtt.plugins.topic_checking:TopicTabooPlugin',
-            'topic_acl = hbmqtt.plugins.topic_checking:TopicAccessControlListPlugin',
-            'broker_sys = hbmqtt.plugins.sys.broker:BrokerSysPlugin',
+        'distmqtt.broker.plugins': [
+            # 'event_logger_plugin = distmqtt.plugins.logging:EventLoggerPlugin',
+            'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
+            'auth_anonymous = distmqtt.plugins.authentication:AnonymousAuthPlugin',
+            'auth_file = distmqtt.plugins.authentication:FileAuthPlugin',
+            'topic_taboo = distmqtt.plugins.topic_checking:TopicTabooPlugin',
+            'topic_acl = distmqtt.plugins.topic_checking:TopicAccessControlListPlugin',
+            'broker_sys = distmqtt.plugins.sys.broker:BrokerSysPlugin',
         ],
-        'hbmqtt.client.plugins': [
-            'packet_logger_plugin = hbmqtt.plugins.logging:PacketLoggerPlugin',
+        'distmqtt.client.plugins': [
+            'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
         ],
         'console_scripts': [
-            'hbmqtt = scripts.broker_script:main',
-            'hbmqtt_pub = scripts.pub_script:main',
-            'hbmqtt_sub = scripts.sub_script:main',
+            'distmqtt = scripts.broker_script:main',
+            'distmqtt_pub = scripts.pub_script:main',
+            'distmqtt_sub = scripts.sub_script:main',
         ]
     }
 )

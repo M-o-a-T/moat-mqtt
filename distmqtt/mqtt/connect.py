@@ -2,11 +2,11 @@
 #
 # See the file license.txt for copying permission.
 
-from hbmqtt.codecs import bytes_to_int, decode_data_with_length, decode_string, encode_data_with_length, encode_string, int_to_bytes, read_or_raise
-from hbmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, CONNECT, MQTTVariableHeader, MQTTPayload
-from hbmqtt.errors import HBMQTTException, NoDataException
-from hbmqtt.adapters import StreamAdapter
-from hbmqtt.utils import gen_client_id
+from distmqtt.codecs import bytes_to_int, decode_data_with_length, decode_string, encode_data_with_length, encode_string, int_to_bytes, read_or_raise
+from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, CONNECT, MQTTVariableHeader, MQTTPayload
+from distmqtt.errors import HBMQTTException, NoDataException
+from distmqtt.adapters import StreamAdapter
+from distmqtt.utils import gen_client_id
 
 
 class ConnectVariableHeader(MQTTVariableHeader):
