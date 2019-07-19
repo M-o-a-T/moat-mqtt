@@ -124,7 +124,7 @@ class BrokerTest(unittest.TestCase):
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_connect_clean_session_false(self, MockPluginManager):
@@ -168,7 +168,7 @@ class BrokerTest(unittest.TestCase):
                                     client_id=client.session.client_id,
                                     topic='/topic', qos=QOS_0)], any_order=True)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_twice(self, MockPluginManager):
@@ -201,7 +201,7 @@ class BrokerTest(unittest.TestCase):
                                     client_id=client.session.client_id,
                                     topic='/topic', qos=QOS_0)], any_order=True)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_unsubscribe(self, MockPluginManager):
@@ -235,7 +235,7 @@ class BrokerTest(unittest.TestCase):
                                         topic='/topic')
                 ], any_order=True)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish(self, MockPluginManager):
@@ -296,7 +296,7 @@ class BrokerTest(unittest.TestCase):
                     disconnect = DisconnectPacket()
                     await disconnect.to_stream(stream)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_invalid_topic(self, MockPluginManager):
@@ -335,7 +335,7 @@ class BrokerTest(unittest.TestCase):
                                         message=ret_message),
                 ], any_order=True)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_retain(self, MockPluginManager):
@@ -414,7 +414,7 @@ class BrokerTest(unittest.TestCase):
 
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     @patch('hbmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_subscribe_publish_dollar_topic_1(self, MockPluginManager):

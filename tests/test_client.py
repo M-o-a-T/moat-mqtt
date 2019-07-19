@@ -82,7 +82,7 @@ class MQTTClientTest(unittest.TestCase):
                     await client.connect('ws://127.0.0.1:8080/')
                     self.assertIsNotNone(client.session)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     def test_reconnect_ws_retain_username_password(self):
         async def test_coro():
@@ -95,7 +95,7 @@ class MQTTClientTest(unittest.TestCase):
                     self.assertIsNotNone(client.session.username)
                     self.assertIsNotNone(client.session.password)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     def test_connect_ws_secure(self):
         async def test_coro():
@@ -105,7 +105,7 @@ class MQTTClientTest(unittest.TestCase):
                     await client.connect('ws://127.0.0.1:8081/', cafile=ca)
                     self.assertIsNotNone(client.session)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     def test_ping(self):
         async def test_coro():
@@ -115,7 +115,7 @@ class MQTTClientTest(unittest.TestCase):
                     self.assertIsNotNone(client.session)
                     await client.ping()
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     def test_subscribe(self):
         async def test_coro():
@@ -132,7 +132,7 @@ class MQTTClientTest(unittest.TestCase):
                     self.assertEqual(ret[1], QOS_1)
                     self.assertEqual(ret[2], QOS_2)
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     def test_unsubscribe(self):
         async def test_coro():
@@ -146,7 +146,7 @@ class MQTTClientTest(unittest.TestCase):
                     self.assertEqual(ret[0], QOS_0)
                     await client.unsubscribe(['$SYS/broker/uptime'])
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     def test_deliver(self):
         data = b'data'
@@ -169,7 +169,7 @@ class MQTTClientTest(unittest.TestCase):
                     self.assertEqual(message.data, data)
                     await client.unsubscribe(['$SYS/broker/uptime'])
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
 
     def test_deliver_timeout(self):
         async def test_coro():
@@ -186,4 +186,4 @@ class MQTTClientTest(unittest.TestCase):
                             await client.deliver_message()
                     await client.unsubscribe(['$SYS/broker/uptime'])
 
-        anyio.run(test_coro)
+        anyio.run(test_coro, backend="trio")
