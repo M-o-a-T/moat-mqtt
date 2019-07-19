@@ -66,7 +66,7 @@ Configuration example
             type: tcp
         my-tcp-1:
             bind: 127.0.0.1:1883
-            my-tcp-2:
+         my-tcp-2:
             bind: 1.2.3.4:1883
             max-connections: 1000
         my-tcp-ssl-1:
