@@ -100,7 +100,8 @@ class MQTTClientTest(unittest.TestCase):
                         async with open_mqttclient() as client_pub:
                             await client_pub.connect('mqtt://127.0.0.1/')
                             await client_pub.publish('test_topic', data, QOS_0, retain=True)
-                        message = await client.deliver_message()
+                        async with anyio.fail_after(0.5):
+                            message = await client.deliver_message()
                         self.assertIsNotNone(message)
                         self.assertIsNotNone(message.publish_packet)
                         self.assertEqual(message.data, data)
