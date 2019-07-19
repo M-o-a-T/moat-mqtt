@@ -17,7 +17,7 @@ from hbmqtt.broker import create_broker
 from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 from distkv.server import Server
 from distkv.client import open_client
-from pprint import pprint
+from functools import partial
 
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=formatter)
@@ -57,9 +57,11 @@ broker_config = {
 @asynccontextmanager
 async def distkv_server(n):
     msgs = []
-    async with trio.open_nursery() as tg:
+    async with anyio.create_task_group() as tg:
         s = Server("test", cfg={"serf":broker_config['distkv']['serf'], "server":{"host":"127.0.0.1", "port":None}}, init="test")
-        await tg.start(s.serve)
+        evt = anyio.create_event()
+        await tg.spawn(partial(s.serve, ready_evt=evt))
+        await evt.wait()
 
         broker_config['distkv']['server']['host'] = s.ports[0][0]
         broker_config['distkv']['server']['port'] = s.ports[0][1]
@@ -71,10 +73,10 @@ async def distkv_server(n):
                     async for m in mon:
                         log.info("Serf Msg %r",m.data)
                         msgs.append(m.data)
-            await cl.tg.start(serflog)
+            await cl.tg.spawn(serflog)
             yield s
-            cl.tg.cancel_scope.cancel()
-        tg.cancel_scope.cancel()
+            await cl.tg.cancel_scope.cancel()
+        await tg.cancel_scope.cancel()
     assert len(msgs) == n, msgs
 
 
