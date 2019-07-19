@@ -4,16 +4,7 @@
 import logging
 import collections
 import itertools
-
 import anyio
-from asyncio import CancelledError as AsyncioCancelled
-
-try:
-    from trio import Cancelled as TrioCancelled
-except ImportError:
-    class TrioCancelled(Exception):
-        def __init__(self):
-            raise RuntimeError("Dummy exception. Do not use.")
 
 from hbmqtt.mqtt import packet_class
 from hbmqtt.mqtt.connack import ConnackPacket
@@ -444,9 +435,11 @@ class ProtocolHandler:
                     except NoDataException:
                         self.logger.debug("%s No data available", self.session.client_id)
                         break # XXX
+                    except anyio.get_cancelled_exc_class():
+                        self.logger.warning("%s CANCEL", type(self).__name__)
+                        raise
                     except BaseException as e:
-                        if 'Cancel' not in repr(e):
-                            self.logger.warning("%s Unhandled exception in reader coro", type(self).__name__, exc_info=e)
+                        self.logger.warning("%s Unhandled exception in reader coro", type(self).__name__, exc_info=e)
                         raise
                 await tg.cancel_scope.cancel()
         finally:
@@ -484,7 +477,7 @@ class ProtocolHandler:
                     await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session)
         except ConnectionResetError as cre:
             await self.handle_connection_closed()
-        except (anyio.exceptions.CancelledError, TrioCancelled, AsyncioCancelled):
+        except anyio.get_cancelled_exc_class():
             raise
         except BaseException as e:
             self.logger.warning("Unhandled exception", exc_info=e)
