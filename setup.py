@@ -3,15 +3,15 @@
 # See the file license.txt for copying permission.
 
 from setuptools import setup, find_packages
-from distmqtt.version import get_version
 
 setup(
     name="distmqtt",
-    version=get_version(),
+    use_scm_version={"version_scheme": "guess-next-dev", "local_scheme": "dirty-tag"},
+    setup_requires=["setuptools_scm", "pytest-runner"],
     description="MQTT client/broker using Python 3.4 asyncio library",
-    author="Nicolas Jouanin",
-    author_email='nico@beerfactory.org',
-    url="https://github.com/beerfactory/distmqtt",
+    author="Matthias Urlichs",
+    author_email='matthias@urlichs.de',
+    url="https://github.com/smurfix/distmqtt",
     license='MIT',
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
