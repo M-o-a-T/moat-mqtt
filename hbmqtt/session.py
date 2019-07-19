@@ -190,7 +190,9 @@ class Session:
 
     async def get_next_message(self):
         """Client: get the next message"""
-        return await self._delivered_message_queue.get()
+        m = await self._delivered_message_queue.get()
+        # split up so that a breakpoint may be set
+        return m
 
     async def _delivery_loop(self):
         """Server: process incoming messages"""

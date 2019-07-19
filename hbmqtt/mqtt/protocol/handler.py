@@ -71,7 +71,7 @@ class ProtocolHandler:
     """
 
     def __init__(self, plugins_manager: PluginManager, session: Session=None):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__+"."+self.__class__.__name__)
         if session:
             self._init_session(session)
         else:

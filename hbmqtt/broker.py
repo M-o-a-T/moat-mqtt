@@ -528,6 +528,7 @@ class Broker:
             finally:
                 async with anyio.open_cancel_scope(shield=True):
                     await tg.cancel_scope.cancel()
+            pass # end taskgroup
 
         self.logger.debug("%s Client disconnected", client_session.client_id)
 
