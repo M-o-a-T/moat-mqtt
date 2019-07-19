@@ -363,7 +363,6 @@ class MQTTClient:
             This method returns ``None`` if it is cancelled by closing the
             connection.
         """
-        self.logger.debug("Waiting message delivery")
         async with anyio.open_cancel_scope() as scope:
             self.client_tasks.add(scope)
             try:
