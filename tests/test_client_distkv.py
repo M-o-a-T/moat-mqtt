@@ -88,6 +88,30 @@ class MQTTClientTest(unittest.TestCase):
         data = b'data 123'
 
         async def test_coro():
+            async with distkv_server(1):
+                async with create_broker(broker_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+                    async with open_mqttclient() as client:
+                        await client.connect('mqtt://127.0.0.1/')
+                        self.assertIsNotNone(client.session)
+                        ret = await client.subscribe([
+                            ('test_topic', QOS_0),
+                        ])
+                        self.assertEqual(ret[0], QOS_0)
+                        async with open_mqttclient() as client_pub:
+                            await client_pub.connect('mqtt://127.0.0.1/')
+                            await client_pub.publish('test_topic', data, QOS_0, retain=False)
+                        #async with anyio.fail_after(0.5):
+                        message = await client.deliver_message()
+                        self.assertIsNotNone(message)
+                        self.assertIsNotNone(message.publish_packet)
+                        self.assertEqual(message.data, data)
+
+        anyio.run(test_coro, backend='trio')
+
+    def test_deliver_retain_direct(self):
+        data = b'data 123'
+
+        async def test_coro():
             async with distkv_server(0):
                 async with create_broker(broker_config, plugin_namespace="hbmqtt.test.plugins") as broker:
                     async with open_mqttclient() as client:
@@ -108,7 +132,7 @@ class MQTTClientTest(unittest.TestCase):
 
         anyio.run(test_coro, backend='trio')
 
-    def test_deliver_retained(self):
+    def test_deliver_retain_later(self):
         data = b'data 1234'
 
         async def test_coro():
