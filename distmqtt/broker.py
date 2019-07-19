@@ -17,7 +17,7 @@ from functools import partial
 from transitions import Machine, MachineError
 from distmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED
 from distmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
-from distmqtt.errors import HBMQTTException, MQTTException
+from distmqtt.errors import DistMQTTException, MQTTException
 from distmqtt.utils import format_client_message, gen_client_id, Future
 from distmqtt.adapters import (
     StreamAdapter,
@@ -116,7 +116,7 @@ class Server:
 class BrokerContext(BaseContext):
     """
     BrokerContext is used as the context passed to plugins interacting with the broker.
-    It act as an adapter to broker services from plugins developed for HBMQTT broker
+    It act as an adapter to broker services from plugins developed for DistMQTT broker
     """
     def __init__(self, broker):
         super().__init__()
@@ -406,7 +406,7 @@ class Broker:
         # Wait for first packet and expect a CONNECT
         try:
             handler, client_session = await BrokerProtocolHandler.init_from_connect(adapter, self.plugins_manager)
-        except HBMQTTException as exc:
+        except DistMQTTException as exc:
             self.logger.warning("[MQTT-3.1.0-1] %s: Can't read first packet an CONNECT: %s",
                                 format_client_message(address=remote_address, port=remote_port), exc)
             #await writer.close()

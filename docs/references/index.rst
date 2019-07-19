@@ -1,7 +1,7 @@
 References
 ==========
 
-Reference documentation for HBMQTT console scripts and programming API.
+Reference documentation for DistMQTT console scripts and programming API.
 
 Console scripts
 ---------------

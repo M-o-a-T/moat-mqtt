@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PINGRESP
-from distmqtt.errors import HBMQTTException
+from distmqtt.errors import DistMQTTException
 
 
 class PingRespPacket(MQTTPacket):
@@ -14,7 +14,7 @@ class PingRespPacket(MQTTPacket):
             header = MQTTFixedHeader(PINGRESP, 0x00)
         else:
             if fixed.packet_type is not PINGRESP:
-                raise HBMQTTException("Invalid fixed packet type %s for PingRespPacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for PingRespPacket init" % fixed.packet_type)
             header = fixed
         super().__init__(header)
         self.variable_header = None

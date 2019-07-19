@@ -20,7 +20,7 @@ Note that for simplicity, ``distmqtt_sub`` uses mostly the same argument syntax 
 Options
 -------
 
---version           HBMQTT version information
+--version           DistMQTT version information
 -h, --help          Display ``distmqtt_sub`` usage help
 -c                  Set the YAML configuration file to read and pass to the client runtime.
 -d                  Enable debugging informations.

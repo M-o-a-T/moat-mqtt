@@ -4,7 +4,7 @@
 import anyio
 
 from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PUBLISH, MQTTVariableHeader, MQTTPayload
-from distmqtt.errors import HBMQTTException, MQTTException
+from distmqtt.errors import DistMQTTException, MQTTException
 from distmqtt.codecs import decode_packet_id, decode_string, encode_string, int_to_bytes
 
 
@@ -80,7 +80,7 @@ class PublishPacket(MQTTPacket):
             header = MQTTFixedHeader(PUBLISH, 0x00)
         else:
             if fixed.packet_type is not PUBLISH:
-                raise HBMQTTException("Invalid fixed packet type %s for PublishPacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for PublishPacket init" % fixed.packet_type)
             header = fixed
 
         super().__init__(header)

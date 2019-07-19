@@ -3,7 +3,7 @@
 # See the file license.txt for copying permission.
 from distmqtt.mqtt.packet import CONNACK, MQTTPacket, MQTTFixedHeader, MQTTVariableHeader
 from distmqtt.codecs import read_or_raise, bytes_to_int
-from distmqtt.errors import HBMQTTException
+from distmqtt.errors import DistMQTTException
 from distmqtt.adapters import StreamAdapter
 
 CONNECTION_ACCEPTED = 0x00
@@ -72,7 +72,7 @@ class ConnackPacket(MQTTPacket):
             header = MQTTFixedHeader(CONNACK, 0x00)
         else:
             if fixed.packet_type is not CONNACK:
-                raise HBMQTTException("Invalid fixed packet type %s for ConnackPacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for ConnackPacket init" % fixed.packet_type)
             header = fixed
         super().__init__(header)
         self.variable_header = variable_header

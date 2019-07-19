@@ -53,7 +53,7 @@ class BrokerSysPlugin:
     async def on_broker_post_start(self, *args, **kwargs):
         self._stats[STAT_START_TIME] = datetime.now()
         from distmqtt.version import get_version
-        version = 'HBMQTT version ' + get_version()
+        version = 'DistMQTT version ' + get_version()
         await self.context.broadcast_message(DOLLAR_SYS_ROOT + 'version', version.encode(), retain=True)
 
         # Start $SYS topics management

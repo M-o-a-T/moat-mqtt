@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, UNSUBACK, PacketIdVariableHeader
-from distmqtt.errors import HBMQTTException
+from distmqtt.errors import DistMQTTException
 
 
 class UnsubackPacket(MQTTPacket):
@@ -14,7 +14,7 @@ class UnsubackPacket(MQTTPacket):
             header = MQTTFixedHeader(UNSUBACK, 0x00)
         else:
             if fixed.packet_type is not UNSUBACK:
-                raise HBMQTTException("Invalid fixed packet type %s for UnsubackPacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for UnsubackPacket init" % fixed.packet_type)
             header = fixed
 
         super().__init__(header)

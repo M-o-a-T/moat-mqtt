@@ -1,9 +1,9 @@
-HBMQTT
+DistMQTT
 ======
 
-``HBMQTT`` is an open source `MQTT`_ client and broker implementation.
+``DistMQTT`` is an open source `MQTT`_ client and broker implementation.
 
-Built on top of `asyncio`_, Python's standard asynchronous I/O framework, HBMQTT provides a straightforward API
+Built on top of `asyncio`_, Python's standard asynchronous I/O framework, DistMQTT provides a straightforward API
 based on coroutines, making it easy to write highly concurrent applications.
 
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
@@ -11,7 +11,7 @@ based on coroutines, making it easy to write highly concurrent applications.
 Features
 --------
 
-HBMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and provides the following features:
+DistMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and provides the following features:
 
 - Support QoS 0, QoS 1 and QoS 2 messages flow
 - Client auto-reconnection on network lost

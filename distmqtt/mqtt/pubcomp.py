@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PUBCOMP, PacketIdVariableHeader
-from distmqtt.errors import HBMQTTException
+from distmqtt.errors import DistMQTTException
 
 
 class PubcompPacket(MQTTPacket):
@@ -22,7 +22,7 @@ class PubcompPacket(MQTTPacket):
             header = MQTTFixedHeader(PUBCOMP, 0x00)
         else:
             if fixed.packet_type is not PUBCOMP:
-                raise HBMQTTException("Invalid fixed packet type %s for PubcompPacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for PubcompPacket init" % fixed.packet_type)
             header = fixed
         super().__init__(header)
         self.variable_header = variable_header

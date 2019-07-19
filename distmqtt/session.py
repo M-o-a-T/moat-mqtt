@@ -8,7 +8,7 @@ from transitions import Machine
 from collections import OrderedDict
 
 from distmqtt.mqtt.publish import PublishPacket
-from distmqtt.errors import HBMQTTException, MQTTException
+from distmqtt.errors import DistMQTTException, MQTTException
 from distmqtt.mqtt.constants import QOS_0
 
 OUTGOING = 0
@@ -224,7 +224,7 @@ class Session:
             if self._packet_id > 65535:
                 self._packet_id = 1
             if self._packet_id == limit:
-                raise HBMQTTException("More than 65535 messages pending. No free packet ID")
+                raise DistMQTTException("More than 65535 messages pending. No free packet ID")
 
         return self._packet_id
 

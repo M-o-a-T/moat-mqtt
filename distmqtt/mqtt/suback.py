@@ -3,7 +3,7 @@
 # See the file license.txt for copying permission.
 
 from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, SUBACK, PacketIdVariableHeader, MQTTPayload, MQTTVariableHeader
-from distmqtt.errors import HBMQTTException, NoDataException
+from distmqtt.errors import DistMQTTException, NoDataException
 from distmqtt.adapters import StreamAdapter
 from distmqtt.codecs import bytes_to_int, int_to_bytes, read_or_raise
 
@@ -54,7 +54,7 @@ class SubackPacket(MQTTPacket):
             header = MQTTFixedHeader(SUBACK, 0x00)
         else:
             if fixed.packet_type is not SUBACK:
-                raise HBMQTTException("Invalid fixed packet type %s for SubackPacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for SubackPacket init" % fixed.packet_type)
             header = fixed
 
         super().__init__(header)

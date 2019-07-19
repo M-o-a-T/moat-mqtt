@@ -4,7 +4,7 @@
 import anyio
 
 from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, SUBSCRIBE, PacketIdVariableHeader, MQTTPayload, MQTTVariableHeader
-from distmqtt.errors import HBMQTTException, NoDataException
+from distmqtt.errors import DistMQTTException, NoDataException
 from distmqtt.codecs import bytes_to_int, decode_string, encode_string, int_to_bytes, read_or_raise
 
 
@@ -53,7 +53,7 @@ class SubscribePacket(MQTTPacket):
             header = MQTTFixedHeader(SUBSCRIBE, 0x02)  # [MQTT-3.8.1-1]
         else:
             if fixed.packet_type is not SUBSCRIBE:
-                raise HBMQTTException("Invalid fixed packet type %s for SubscribePacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for SubscribePacket init" % fixed.packet_type)
             header = fixed
 
         super().__init__(header)

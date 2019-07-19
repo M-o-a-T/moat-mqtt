@@ -17,7 +17,7 @@ Usage
 Options
 -------
 
---version           HBMQTT version information
+--version           DistMQTT version information
 -h, --help          Display ``distmqtt_sub`` usage help
 -c                  Set the YAML configuration file to read and pass to the client runtime.
 

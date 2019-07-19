@@ -4,7 +4,7 @@
 
 from distmqtt.codecs import bytes_to_int, decode_data_with_length, decode_string, encode_data_with_length, encode_string, int_to_bytes, read_or_raise
 from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, CONNECT, MQTTVariableHeader, MQTTPayload
-from distmqtt.errors import HBMQTTException, NoDataException
+from distmqtt.errors import DistMQTTException, NoDataException
 from distmqtt.adapters import StreamAdapter
 from distmqtt.utils import gen_client_id
 
@@ -350,7 +350,7 @@ class ConnectPacket(MQTTPacket):
             header = MQTTFixedHeader(CONNECT, 0x00)
         else:
             if fixed.packet_type is not CONNECT:
-                raise HBMQTTException("Invalid fixed packet type %s for ConnectPacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for ConnectPacket init" % fixed.packet_type)
             header = fixed
         super().__init__(header)
         self.variable_header = vh

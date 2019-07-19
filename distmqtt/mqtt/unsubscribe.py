@@ -4,7 +4,7 @@
 import anyio
 
 from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, UNSUBSCRIBE, PacketIdVariableHeader, MQTTPayload, MQTTVariableHeader
-from distmqtt.errors import HBMQTTException, NoDataException
+from distmqtt.errors import DistMQTTException, NoDataException
 from distmqtt.codecs import decode_string, encode_string
 
 
@@ -47,7 +47,7 @@ class UnsubscribePacket(MQTTPacket):
             header = MQTTFixedHeader(UNSUBSCRIBE, 0x02)  # [MQTT-3.10.1-1]
         else:
             if fixed.packet_type is not UNSUBSCRIBE:
-                raise HBMQTTException("Invalid fixed packet type %s for UnsubscribePacket init" % fixed.packet_type)
+                raise DistMQTTException("Invalid fixed packet type %s for UnsubscribePacket init" % fixed.packet_type)
             header = fixed
 
         super().__init__(header)

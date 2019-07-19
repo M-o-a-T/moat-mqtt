@@ -29,7 +29,7 @@ from distmqtt.adapters import StreamAdapter
 from distmqtt.session import Session, OutgoingApplicationMessage, IncomingApplicationMessage, INCOMING, OUTGOING
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 from distmqtt.plugins.manager import PluginManager
-from distmqtt.errors import HBMQTTException, MQTTException, NoDataException, InvalidStateError
+from distmqtt.errors import DistMQTTException, MQTTException, NoDataException, InvalidStateError
 from distmqtt.utils import Future, CancelledError
 
 
@@ -205,7 +205,7 @@ class ProtocolHandler:
         if qos in (QOS_1, QOS_2):
             packet_id = self.session.next_packet_id
             if packet_id in self.session.inflight_out:
-                raise HBMQTTException("A message with the same packet ID '%d' is already in flight" % packet_id)
+                raise DistMQTTException("A message with the same packet ID '%d' is already in flight" % packet_id)
         else:
             packet_id = None
 
@@ -234,7 +234,7 @@ class ProtocolHandler:
             elif app_message.qos == QOS_2:
                 await self._handle_qos2_message_flow(app_message)
             else:
-                raise HBMQTTException("Unexcepted QOS value '%d" % str(app_message.qos))
+                raise DistMQTTException("Unexcepted QOS value '%d" % str(app_message.qos))
         except CancelledError:
             pass
 
@@ -269,7 +269,7 @@ class ProtocolHandler:
         """
         assert app_message.qos == QOS_1
         if app_message.puback_packet:
-            raise HBMQTTException("Message '%d' has already been acknowledged" % app_message.packet_id)
+            raise DistMQTTException("Message '%d' has already been acknowledged" % app_message.packet_id)
         if app_message.direction == OUTGOING:
             if app_message.packet_id not in self.session.inflight_out:
                 # Store message in session
@@ -314,13 +314,13 @@ class ProtocolHandler:
         assert app_message.qos == QOS_2
         if app_message.direction == OUTGOING:
             if app_message.pubrel_packet and app_message.pubcomp_packet:
-                raise HBMQTTException("Message '%d' has already been acknowledged" % app_message.packet_id)
+                raise DistMQTTException("Message '%d' has already been acknowledged" % app_message.packet_id)
             if not app_message.pubrel_packet:
                 # Store message
                 if app_message.publish_packet is not None:
                     # This is a retry flow, no need to store just check the message exists in session
                     if app_message.packet_id not in self.session.inflight_out:
-                        raise HBMQTTException("Unknown inflight message '%d' in session" % app_message.packet_id)
+                        raise DistMQTTException("Unknown inflight message '%d' in session" % app_message.packet_id)
                     publish_packet = app_message.build_publish_packet(dup=True)
                 else:
                     # Store message in session
@@ -333,7 +333,7 @@ class ProtocolHandler:
                     message = "Can't add PUBREC waiter, a waiter already exists for message Id '%s'" \
                               % app_message.packet_id
                     self.logger.warning(message)
-                    raise HBMQTTException(message)
+                    raise DistMQTTException(message)
                 waiter = Future()
                 self._pubrec_waiters[app_message.packet_id] = waiter
                 # Send PUBLISH packet

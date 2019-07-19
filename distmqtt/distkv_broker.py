@@ -10,7 +10,7 @@ from transitions import Machine
 from collections import OrderedDict
 
 from distmqtt.mqtt.publish import PublishPacket
-from distmqtt.errors import HBMQTTException, MQTTException
+from distmqtt.errors import DistMQTTException, MQTTException
 from distmqtt.mqtt.constants import QOS_0
 
 from distmqtt.broker import Broker

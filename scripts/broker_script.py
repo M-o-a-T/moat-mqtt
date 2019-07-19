@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 """
-HBMQTT - MQTT 3.1.1 broker
+DistMQTT - MQTT 3.1.1 broker
 
 Usage:
     distmqtt --version
