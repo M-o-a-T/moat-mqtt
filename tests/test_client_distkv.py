@@ -63,9 +63,12 @@ async def distkv_server(n):
         await tg.spawn(partial(s.serve, ready_evt=evt))
         await evt.wait()
 
-        broker_config['distkv']['server']['host'] = s.ports[0][0]
-        broker_config['distkv']['server']['port'] = s.ports[0][1]
-        async with open_client(*s.ports[0]) as cl:
+        for h, p, *_ in s.ports:
+            if h[0] != ":":
+                break
+        broker_config['distkv']['server']['host'] = h
+        broker_config['distkv']['server']['port'] = p
+        async with open_client(host=h,port=p) as cl:
             async def serflog(task_status=trio.TASK_STATUS_IGNORED):
                 async with cl._stream('serfmon', type=broker_config['distkv']['topic']) as mon:
                     log.info("Serf Start")
@@ -146,11 +149,14 @@ class MQTTClientTest(unittest.TestCase):
                         self.assertEqual(message.data, data)
 
                 seen = 0
-                async with open_client(*s.ports[0]) as cl:
-                    async for m in await cl.get_tree(min_depth=1):
+                for h, p, *_ in s.ports:
+                    if h[0] != ":":
+                        break
+                async with open_client(host=h,port=p) as cl:
+                    async for m in cl.get_tree(min_depth=1):
                         del m['tock']
                         del m['seq']
-                        assert m == {'depth': 0,
+                        assert m == {
                             'path': ('test', 'retain', 'test_topic'),
                             'value': b'data 1234'}
                         seen += 1
