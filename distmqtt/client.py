@@ -209,6 +209,7 @@ class MQTTClient:
 
         # do not reconnect any more
         self.config['auto_reconnect'] = False
+        await self.cancel_tasks()
 
         if self.session is not None and self.session.transitions.is_connected():
             if self._disconnect_task is not None:
@@ -219,6 +220,18 @@ class MQTTClient:
             self.session.transitions.disconnect()
         else:
             self.logger.warning("Client session is not currently connected, ignoring call")
+
+    async def cancel_tasks(self):
+        """
+        Before disconnection need to cancel all pending tasks
+        :return:
+        """
+        try:
+            while True:
+                task = self.client_tasks.pop()
+                await task.cancel()
+        except IndexError as err:
+            pass
 
     async def reconnect(self, cleansession=None):
         """
