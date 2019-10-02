@@ -106,7 +106,7 @@ async def do_pub(client, arguments):
         qos = _get_qos(arguments)
         topic = arguments['-t']
         retain = arguments['-r']
-        async for anyio.create_task_group() as tg:
+        async with anyio.create_task_group() as tg:
             for message in _get_message(arguments):
                 logger.info("%s Publishing to '%s'", client.client_id, topic)
                 await tg.spawn(client.publish, topic, message, qos, retain)

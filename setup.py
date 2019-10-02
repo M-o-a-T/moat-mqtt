@@ -8,7 +8,7 @@ setup(
     name="distmqtt",
     use_scm_version={"version_scheme": "guess-next-dev", "local_scheme": "dirty-tag"},
     setup_requires=["setuptools_scm", "pytest-runner"],
-    description="MQTT client/broker using Python 3.4 asyncio library",
+    description="MQTT client/broker using anyio and distkv",
     author="Matthias Urlichs",
     author_email='matthias@urlichs.de',
     url="https://github.com/smurfix/distmqtt",
@@ -16,7 +16,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     platforms='all',
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     install_requires=[
         'transitions',
         'asyncwebsockets',
@@ -59,9 +59,9 @@ setup(
             'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
         ],
         'console_scripts': [
-            'distmqtt = scripts.broker_script:main',
-            'distmqtt_pub = scripts.pub_script:main',
-            'distmqtt_sub = scripts.sub_script:main',
+            'distmqtt = distmqtt.scripts.broker_script:main',
+            'distmqtt_pub = distmqtt.scripts.pub_script:main',
+            'distmqtt_sub = distmqtt.scripts.sub_script:main',
         ]
     }
 )

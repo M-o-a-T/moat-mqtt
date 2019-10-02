@@ -1,3 +1,9 @@
+distmqtt (0.16.0-2) unstable; urgency=medium
+
+  * Some clean up done.
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Wed, 02 Oct 2019 19:04:23 +0200
+
 distmqtt (0.16.0-1) unstable; urgency=medium
 
   * Some clean up required.
