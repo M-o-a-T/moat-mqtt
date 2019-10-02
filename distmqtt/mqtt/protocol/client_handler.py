@@ -137,7 +137,8 @@ class ClientProtocolHandler(ProtocolHandler):
         packet_id = unsuback.variable_header.packet_id
         try:
             waiter = self._unsubscriptions_waiter.get(packet_id)
-            await waiter.set(None)
+            if waiter is not None:
+                await waiter.set(None)
         except KeyError as ke:
             self.logger.warning("Received UNSUBACK for unknown pending subscription with Id: %s", packet_id)
 

@@ -210,7 +210,7 @@ class MQTTClient:
         # do not reconnect any more
         self.config['auto_reconnect'] = False
 
-        if self.session.transitions.is_connected():
+        if self.session is not None and self.session.transitions.is_connected():
             if self._disconnect_task is not None:
                 await self._disconnect_task.cancel()
             await self._handler.mqtt_disconnect()
@@ -373,7 +373,7 @@ class MQTTClient:
                 return msg
 
             finally:
-                self.client_tasks.remove(scope)
+                self.client_tasks.discard(scope)
 
     async def _connect_coro(self):
         kwargs = dict()

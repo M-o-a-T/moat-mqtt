@@ -50,6 +50,8 @@ class PluginManager:
         self.logger.debug("Loading plugins for namespace %s", namespace)
         for ep in pkg_resources.iter_entry_points(group=namespace):
             plugin = self._load_plugin(ep)
+            if plugin is None:
+                continue
             self._plugins.append(plugin)
             self.logger.debug(" Plugin %s ready", plugin.ep.name)
 
@@ -64,6 +66,8 @@ class PluginManager:
             return Plugin(ep.name, ep, obj)
         except ImportError as ie:
             self.logger.warning("Plugin %r import failed: %s", ep, ie)
+        except pkg_resources.DistributionNotFound as ue:
+            self.logger.warning("Plugin %r dependencies resolution failed: %s", ep, ue)
         except pkg_resources.UnknownExtra as ue:
             self.logger.warning("Plugin %r dependencies resolution failed: %s", ep, ue)
 
