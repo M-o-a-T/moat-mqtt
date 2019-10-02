@@ -226,12 +226,9 @@ class MQTTClient:
         Before disconnection need to cancel all pending tasks
         :return:
         """
-        try:
-            while True:
-                task = self.client_tasks.pop()
-                await task.cancel()
-        except IndexError as err:
-            pass
+        while self.client_tasks:
+            task = self.client_tasks.pop()
+            await task.cancel()
 
     async def reconnect(self, cleansession=None):
         """
