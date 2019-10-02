@@ -96,8 +96,8 @@ async def open_mqttclient(client_id=None, config=None):
         
         Example usage::
 
-            async with open_mqttclient() as client:
-                await client.connect("mqtt://my-broker.example")
+            async with open_mqttclient(uri="mqtt://my-broker.example") as client:
+                # await client.connect("mqtt://my-broker.example")  # alternate use
                 await C.subscribe([
                         ('$SYS/broker/uptime', QOS_1),
                         ('$SYS/broker/load/#', QOS_2),
@@ -110,6 +110,8 @@ async def open_mqttclient(client_id=None, config=None):
     async with anyio.create_task_group() as tg:
         C = MQTTClient(tg, client_id, config)
         try:
+            if 'uri' in config:
+                await C.connect(**config)
             yield C
         finally:
             async with anyio.open_cancel_scope(shield=True):
@@ -164,7 +166,8 @@ class MQTTClient:
                 cafile=None,
                 capath=None,
                 cadata=None,
-                extra_headers={}):
+                extra_headers={},
+                **kw):
         """
             Connect to a remote broker.
 
