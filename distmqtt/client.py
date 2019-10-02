@@ -377,6 +377,8 @@ class MQTTClient:
             connection.
         """
         async with anyio.open_cancel_scope() as scope:
+            if self.session is None:
+                return None
             self.client_tasks.add(scope)
             try:
                 msg = await self.session.get_next_message()
