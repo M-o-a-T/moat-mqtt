@@ -1,3 +1,9 @@
+distmqtt (0.16.0-1) unstable; urgency=medium
+
+  * Some clean up required.
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Wed, 02 Oct 2019 18:51:49 +0200
+
 hbmqtt (0.10a1-1) smurf; urgency=low
 
   * source package automatically created by stdeb 0.8.5

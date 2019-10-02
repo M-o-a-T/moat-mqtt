@@ -1,8 +1,8 @@
 import logging
 import anyio
 
-from hbmqtt.client import open_mqttclient, ClientException
-from hbmqtt.mqtt.constants import QOS_1, QOS_2
+from distmqtt.client import open_mqttclient, ClientException
+from distmqtt.mqtt.constants import QOS_1, QOS_2
 
 
 #

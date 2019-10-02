@@ -4,8 +4,8 @@
 import anyio
 import unittest
 
-from hbmqtt.mqtt.pubrel import PubrelPacket, PacketIdVariableHeader
-from hbmqtt.adapters import BufferAdapter
+from distmqtt.mqtt.pubrel import PubrelPacket, PacketIdVariableHeader
+from distmqtt.adapters import BufferAdapter
 
 
 class PubrelPacketTest(unittest.TestCase):

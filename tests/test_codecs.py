@@ -4,13 +4,13 @@
 import unittest
 import anyio
 
-from hbmqtt.codecs import (
+from distmqtt.codecs import (
     bytes_to_hex_str,
     bytes_to_int,
     decode_string,
     encode_string,
 )
-from hbmqtt.adapters import BufferAdapter
+from distmqtt.adapters import BufferAdapter
 
 
 class TestCodecs(unittest.TestCase):

@@ -4,7 +4,7 @@
 import unittest
 import logging
 import anyio
-from hbmqtt.plugins.manager import PluginManager
+from distmqtt.plugins.manager import PluginManager
 
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=formatter)
@@ -36,7 +36,7 @@ class TestPluginManager(unittest.TestCase):
     def test_load_plugin(self):
         async def coro():
             async with anyio.create_task_group() as tg:
-                manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 self.assertTrue(len(manager._plugins) > 0)
         anyio.run(coro)
 
@@ -48,7 +48,7 @@ class TestPluginManager(unittest.TestCase):
 
         async def coro():
             async with anyio.create_task_group() as tg:
-                manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 await fire_event(manager)
                 plugin = manager.get_plugin("event_plugin")
                 self.assertTrue(plugin.object.test_flag)
@@ -61,7 +61,7 @@ class TestPluginManager(unittest.TestCase):
 
         async def coro():
             async with anyio.create_task_group() as tg:
-                manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 await fire_event(manager)
                 plugin = manager.get_plugin("event_plugin")
                 self.assertTrue(plugin.object.test_flag)
@@ -73,7 +73,7 @@ class TestPluginManager(unittest.TestCase):
 
         async def coro():
             async with anyio.create_task_group() as tg:
-                manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 await call_coro(manager)
                 plugin = manager.get_plugin("event_plugin")
                 self.assertTrue(plugin.object.test_coro)
@@ -85,7 +85,7 @@ class TestPluginManager(unittest.TestCase):
 
         async def coro():
             async with anyio.create_task_group() as tg:
-                manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 ret = await call_coro(manager)
                 plugin = manager.get_plugin("event_plugin")
                 self.assertEqual(ret[plugin], "TEST")
@@ -101,7 +101,7 @@ class TestPluginManager(unittest.TestCase):
 
         async def coro():
             async with anyio.create_task_group() as tg:
-                manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 ret = await call_coro(manager)
                 self.assertTrue(len(ret) == 0)
         anyio.run(coro)

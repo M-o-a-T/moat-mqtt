@@ -4,10 +4,10 @@
 import anyio
 import unittest
 
-from hbmqtt.mqtt.subscribe import SubscribePacket, SubscribePayload
-from hbmqtt.mqtt.packet import PacketIdVariableHeader
-from hbmqtt.mqtt.constants import QOS_1, QOS_2
-from hbmqtt.adapters import BufferAdapter
+from distmqtt.mqtt.subscribe import SubscribePacket, SubscribePayload
+from distmqtt.mqtt.packet import PacketIdVariableHeader
+from distmqtt.mqtt.constants import QOS_1, QOS_2
+from distmqtt.adapters import BufferAdapter
 
 
 class SubscribePacketTest(unittest.TestCase):

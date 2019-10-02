@@ -4,9 +4,9 @@
 import anyio
 import unittest
 
-from hbmqtt.mqtt.unsubscribe import UnsubscribePacket, UnubscribePayload
-from hbmqtt.mqtt.packet import PacketIdVariableHeader
-from hbmqtt.adapters import BufferAdapter
+from distmqtt.mqtt.unsubscribe import UnsubscribePacket, UnubscribePayload
+from distmqtt.mqtt.packet import PacketIdVariableHeader
+from distmqtt.adapters import BufferAdapter
 
 
 class UnsubscribePacketTest(unittest.TestCase):

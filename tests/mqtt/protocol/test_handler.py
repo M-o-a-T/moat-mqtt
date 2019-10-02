@@ -5,16 +5,16 @@ import unittest
 import anyio
 import logging
 import random
-from hbmqtt.plugins.manager import PluginManager
-from hbmqtt.session import Session, OutgoingApplicationMessage, IncomingApplicationMessage
-from hbmqtt.mqtt.protocol.handler import ProtocolHandler
-from hbmqtt.adapters import StreamAdapter
-from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
-from hbmqtt.mqtt.publish import PublishPacket
-from hbmqtt.mqtt.puback import PubackPacket
-from hbmqtt.mqtt.pubrec import PubrecPacket
-from hbmqtt.mqtt.pubrel import PubrelPacket
-from hbmqtt.mqtt.pubcomp import PubcompPacket
+from distmqtt.plugins.manager import PluginManager
+from distmqtt.session import Session, OutgoingApplicationMessage, IncomingApplicationMessage
+from distmqtt.mqtt.protocol.handler import ProtocolHandler
+from distmqtt.adapters import StreamAdapter
+from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+from distmqtt.mqtt.publish import PublishPacket
+from distmqtt.mqtt.puback import PubackPacket
+from distmqtt.mqtt.pubrec import PubrecPacket
+from distmqtt.mqtt.pubrel import PubrelPacket
+from distmqtt.mqtt.pubcomp import PubcompPacket
 
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)
@@ -38,7 +38,7 @@ class ProtocolHandlerTest(unittest.TestCase):
     def run_(self, server_mock, test_coro):
         async def runner():
             async with anyio.create_task_group() as tg:
-                self.plugin_manager = PluginManager(tg, "hbmqtt.test.plugins", context=None)
+                self.plugin_manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 async with await anyio.create_tcp_server(port=8888, interface="127.0.0.1") as server:
                     await tg.spawn(self.listen_, server_mock, server)
                     async with await anyio.connect_tcp("127.0.0.1", server.port) as conn:

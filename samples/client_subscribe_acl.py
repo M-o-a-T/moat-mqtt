@@ -1,8 +1,8 @@
 import logging
 import anyio
 
-from hbmqtt.client import open_mqttclient, ClientException
-from hbmqtt.mqtt.constants import QOS_1
+from distmqtt.client import open_mqttclient, ClientException
+from distmqtt.mqtt.constants import QOS_1
 
 
 #
@@ -22,9 +22,9 @@ async def uptime_coro():
             await C.subscribe([
                 ('data/memes', QOS_1),  # Topic allowed
                 ('data/classified', QOS_1),  # Topic forbidden
-                ('repositories/hbmqtt/master', QOS_1),  # Topic allowed
-                ('repositories/hbmqtt/devel', QOS_1),  # Topic forbidden
-                ('calendar/hbmqtt/releases', QOS_1),  # Topic allowed
+                ('repositories/distmqtt/master', QOS_1),  # Topic allowed
+                ('repositories/distmqtt/devel', QOS_1),  # Topic forbidden
+                ('calendar/distmqtt/releases', QOS_1),  # Topic allowed
             ])
             logger.info("Subscribed")
             for i in range(1, 100):

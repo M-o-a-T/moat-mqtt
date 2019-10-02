@@ -4,9 +4,9 @@
 import unittest
 import anyio
 
-from hbmqtt.mqtt.packet import CONNECT, MQTTFixedHeader
-from hbmqtt.errors import MQTTException
-from hbmqtt.adapters import BufferAdapter
+from distmqtt.mqtt.packet import CONNECT, MQTTFixedHeader
+from distmqtt.errors import MQTTException
+from distmqtt.adapters import BufferAdapter
 
 
 class TestMQTTFixedHeaderTest(unittest.TestCase):

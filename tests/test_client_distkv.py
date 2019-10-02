@@ -12,9 +12,9 @@ try:
 except ImportError:
     from async_generator import asynccontextmanager
 
-from hbmqtt.client import open_mqttclient, ConnectException
-from hbmqtt.broker import create_broker
-from hbmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+from distmqtt.client import open_mqttclient, ConnectException
+from distmqtt.broker import create_broker
+from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 from distkv.server import Server
 from distkv.client import open_client
 from functools import partial
@@ -89,7 +89,7 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(1):
-                async with create_broker(broker_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                     async with open_mqttclient() as client:
                         await client.connect('mqtt://127.0.0.1/')
                         self.assertIsNotNone(client.session)
@@ -113,7 +113,7 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(0):
-                async with create_broker(broker_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                     async with open_mqttclient() as client:
                         await client.connect('mqtt://127.0.0.1/')
                         self.assertIsNotNone(client.session)
@@ -137,7 +137,7 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(0) as s:
-                async with create_broker(broker_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                     async with open_mqttclient() as client:
                         await client.connect('mqtt://127.0.0.1/')
                         self.assertIsNotNone(client.session)
@@ -159,7 +159,7 @@ class MQTTClientTest(unittest.TestCase):
                         self.assertIsNotNone(message.publish_packet)
                         self.assertEqual(message.data, data)
 
-                async with create_broker(broker_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                     async with open_mqttclient() as client:
                         await client.connect('mqtt://127.0.0.1/')
                         self.assertIsNotNone(client.session)
@@ -192,7 +192,7 @@ class MQTTClientTest(unittest.TestCase):
     def test_deliver_timeout(self):
         async def test_coro():
             async with distkv_server(0):
-                async with create_broker(broker_config, plugin_namespace="hbmqtt.test.plugins") as broker:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                     async with open_mqttclient() as client:
                         await client.connect('mqtt://127.0.0.1/')
                         self.assertIsNotNone(client.session)

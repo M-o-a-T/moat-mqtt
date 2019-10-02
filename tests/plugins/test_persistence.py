@@ -7,8 +7,8 @@ import logging
 import os
 import anyio
 import sqlite3
-from hbmqtt.plugins.manager import BaseContext
-from hbmqtt.plugins.persistence import SQLitePlugin
+from distmqtt.plugins.manager import BaseContext
+from distmqtt.plugins.persistence import SQLitePlugin
 
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)

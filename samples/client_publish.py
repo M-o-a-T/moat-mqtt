@@ -2,8 +2,8 @@ import logging
 import anyio
 from functools import partial
 
-from hbmqtt.client import open_mqttclient, ConnectException
-from hbmqtt.mqtt.constants import QOS_1, QOS_2
+from distmqtt.client import open_mqttclient, ConnectException
+from distmqtt.mqtt.constants import QOS_1, QOS_2
 
 
 #

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# HBMQTT documentation build configuration file, created by
+# DistMQTT documentation build configuration file, created by
 # sphinx-quickstart on Sun Nov  1 14:30:37 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'HBMQTT'
+project = 'DistMQTT'
 copyright = '2015, Nicolas Jouanin'
 author = 'Nicolas Jouanin'
 
@@ -207,7 +207,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'HBMQTTdoc'
+htmlhelp_basename = 'DistMQTTdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -229,7 +229,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'HBMQTT.tex', 'HBMQTT Documentation',
+    (master_doc, 'DistMQTT.tex', 'DistMQTT Documentation',
      'Nicolas Jouanin', 'manual'),
 ]
 
@@ -259,7 +259,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'hbmqtt', 'HBMQTT Documentation',
+    (master_doc, 'distmqtt', 'DistMQTT Documentation',
      [author], 1)
 ]
 
@@ -273,8 +273,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'HBMQTT', 'HBMQTT Documentation',
-     author, 'HBMQTT', 'One line description of project.',
+    (master_doc, 'DistMQTT', 'DistMQTT Documentation',
+     author, 'DistMQTT', 'One line description of project.',
      'Miscellaneous'),
 ]
 

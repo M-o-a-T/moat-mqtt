@@ -4,9 +4,9 @@
 import anyio
 import unittest
 
-from hbmqtt.mqtt.unsuback import UnsubackPacket
-from hbmqtt.mqtt.packet import PacketIdVariableHeader
-from hbmqtt.adapters import BufferAdapter
+from distmqtt.mqtt.unsuback import UnsubackPacket
+from distmqtt.mqtt.packet import PacketIdVariableHeader
+from distmqtt.adapters import BufferAdapter
 
 
 class UnsubackPacketTest(unittest.TestCase):

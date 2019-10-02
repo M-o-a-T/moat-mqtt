@@ -4,8 +4,8 @@
 import anyio
 import unittest
 
-from hbmqtt.mqtt.puback import PubackPacket, PacketIdVariableHeader
-from hbmqtt.adapters import BufferAdapter
+from distmqtt.mqtt.puback import PubackPacket, PacketIdVariableHeader
+from distmqtt.adapters import BufferAdapter
 
 
 class PubackPacketTest(unittest.TestCase):

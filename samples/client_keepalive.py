@@ -1,7 +1,7 @@
 import logging
 import anyio
 
-from hbmqtt.client import open_mqttclient
+from distmqtt.client import open_mqttclient
 
 
 #

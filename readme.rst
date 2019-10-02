@@ -1,18 +1,23 @@
-HBMQTT
+DistMQTT
 ======
 
-``HBMQTT`` is an open source `MQTT`_ client and broker implementation.
+``DistMQTT`` is an open source `MQTT`_ client and broker implementation. It
+is a fork of `hbmqtt`_ with support for `anyio`_ and `DistKV`_.
 
-Built on top of `asyncio`_, Python's standard asynchronous I/O framework, HBMQTT provides a straightforward API
-based on coroutines, making it easy to write highly concurrent applications.
+DistMQTT provides a straightforward API based on coroutines, making it easy
+to write highly concurrent applications.
 
-.. _asyncio: https://docs.python.org/3/library/asyncio.html
+.. _anyio: https://github.com/agronholm/anyio
+.. _DistKV: https://github.com/smurfix/distkv
+.. _hbmqtt: https://github.com/beerfactory/hbmqtt
 
 Features
 --------
 
-HBMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and provides the following features:
+DistMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and provides the following features:
 
+- Routing of MQTT messages via `Serf`_
+- Storage of retained messages in DistKV
 - Support QoS 0, QoS 1 and QoS 2 messages flow
 - Client auto-reconnection on network lost
 - Authentication through password file (more methods can be added through a plugin system)
@@ -21,43 +26,44 @@ HBMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and prov
 - SSL support over TCP and websocket
 - Plugin system
 
+.. _Serf: https://www.serf.io
+
 Build status
 ------------
 
-.. image:: https://travis-ci.org/beerfactory/hbmqtt.svg?branch=master
-    :target: https://travis-ci.org/beerfactory/hbmqtt
+.. image:: https://travis-ci.org/smurfix/distmqtt.svg?branch=master
+    :target: https://travis-ci.org/smurfix/distmqtt
 
-.. image:: https://coveralls.io/repos/beerfactory/hbmqtt/badge.svg?branch=master&service=github
-    :target: https://coveralls.io/github/beerfactory/hbmqtt?branch=master
+.. image:: https://coveralls.io/repos/smurfix/distmqtt/badge.svg?branch=master&service=github
+    :target: https://coveralls.io/github/smurfix/distmqtt?branch=master
 
 Project status
 --------------
 
-.. image:: https://readthedocs.org/projects/hbmqtt/badge/?version=latest
-    :target: http://hbmqtt.readthedocs.org/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/distmqtt/badge/?version=latest
+    :target: http://distmqtt.readthedocs.org/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://badge.fury.io/py/hbmqtt.svg
-    :target: https://badge.fury.io/py/hbmqtt
+.. image:: https://badge.fury.io/py/distmqtt.svg
+    :target: https://badge.fury.io/py/distmqtt
 
 Getting started
 ---------------
 
-hbmqtt is available on `Pypi <https://pypi.python.org/pypi/hbmqtt>`_ and can installed simply using ``pip`` :
+distmqtt is available on `Pypi <https://pypi.python.org/pypi/distmqtt>`_ and can installed simply using ``pip`` :
 ::
 
-    $ pip install hbmqtt
+    $ pip install distmqtt
 
 Documentation is available on `Read the Docs`_.
 
-Bug reports, patches and suggestions welcome! Just `open an issue`_ or join the `gitter channel`_.
+Bug reports, patches and suggestions welcome! Just `open an issue`_.
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
-    :target: https://gitter.im/beerfactory/hbmqtt?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
-    :alt: 'Join the chat at https://gitter.im/beerfactory/hbmqtt'
+    :target: https://gitter.im/beerfactory/distmqtt?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+    :alt: 'Join the chat at https://gitter.im/beerfactory/distmqtt'
 
 .. _MQTT: http://www.mqtt.org
 .. _MQTT 3.1.1: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
-.. _Read the Docs: http://hbmqtt.readthedocs.org/
-.. _open an issue: https://github.com/beerfactory/hbmqtt/issues/new
-.. _gitter channel: https://gitter.im/beerfactory/hbmqtt
+.. _Read the Docs: http://distmqtt.readthedocs.org/
+.. _open an issue: https://github.com/smurfix/distmqtt/issues/new
