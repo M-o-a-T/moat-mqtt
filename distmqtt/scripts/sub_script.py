@@ -76,32 +76,33 @@ async def do_sub(client, arguments):
                                   capath=arguments['--ca-path'],
                                   cadata=arguments['--ca-data'],
                                   extra_headers=_get_extra_headers(arguments))
-        qos = _get_qos(arguments)
         filters = []
-        for topic in arguments['-t']:
-            filters.append((topic, qos))
-        await client.subscribe(filters)
-        if arguments['-n']:
-            max_count = int(arguments['-n'])
-        else:
-            max_count = None
-        count = 0
-        while True:
-            if max_count and count >= max_count:
-                break
-            try:
-                message = await client.deliver_message()
-                count += 1
-                sys.stdout.buffer.write(message.publish_packet.data)
-                sys.stdout.write('\n')
-            except MQTTException:
-                logger.debug("Error reading packet")
+        async with anyio.create_task_group() as tg:
+            for topic in arguments['-t']:
+                await tg.spawn(run_sub,client,topic, arguments)
+
     except KeyboardInterrupt:
         pass
     except ConnectException as ce:
         logger.fatal("connection to '%s' failed: %r", arguments['--url'], ce)
     finally:
         await client.disconnect()
+
+async def run_sub(client,topic, arguments):
+    qos = _get_qos(arguments)
+    if arguments['-n']:
+        max_count = int(arguments['-n'])
+    else:
+        max_count = None
+    count = 0
+
+    async with client.subscription(topic, qos) as sub:
+        async for message in sub:
+            count += 1
+            sys.stdout.buffer.write(message.publish_packet.data)
+            sys.stdout.write('\n')
+            if max_count and count >= max_count:
+                break
 
 
 async def main(*args, **kwargs):

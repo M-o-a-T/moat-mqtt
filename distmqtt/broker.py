@@ -18,7 +18,8 @@ from transitions import Machine, MachineError
 from distmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED
 from distmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
 from distmqtt.errors import DistMQTTException, MQTTException
-from distmqtt.utils import format_client_message, gen_client_id, Future
+from distmqtt.utils import format_client_message, gen_client_id, Future, match_topic
+from distmqtt.mqtt.constants import QOS_0
 from distmqtt.adapters import (
     StreamAdapter,
     BaseAdapter,
@@ -636,10 +637,13 @@ class Broker:
                 if "/+" not in a_filter and "+/" not in a_filter:
                     # [MQTT-4.7.1-3] + wildcard character must occupy entire level
                     return 0x80
+
         # Check if the client is authorised to connect to the topic
         permitted = await self.topic_filtering(session, topic=a_filter)
         if not permitted:
             return 0x80
+
+        a_filter = tuple(a_filter.split('/'))
         qos = subscription[1]
         if 'max-qos' in self.config and qos > self.config['max-qos']:
             qos = self.config['max-qos']
@@ -662,6 +666,8 @@ class Broker:
         :return:
         """
         deleted = 0
+        if isinstance(a_filter,str):
+            a_filter = tuple(a_filter.split('/'))
         try:
             subscriptions = self._subscriptions[a_filter]
             for index, (sub_session, qos) in enumerate(subscriptions):
@@ -692,42 +698,36 @@ class Broker:
             if not self._subscriptions[topic]:
                 del self._subscriptions[topic]
 
-    def matches(self, topic, a_filter):
-        if "#" not in a_filter and "+" not in a_filter:
-            # if filter doesn't contain wildcard, return exact match
-            return a_filter == topic
-        else:
-            # else use regex
-            match_pattern = re.compile(a_filter.replace('#', '.*').replace('$', r'\$').replace('+', r'[/\$\s\w\d]+'))
-            return match_pattern.match(topic)
-
     async def _broadcast_loop(self):
         async with anyio.create_task_group() as tg:
             while True:
                 broadcast = await self._broadcast_queue.get()
                 self.logger.debug("broadcasting %r", broadcast)
+                topic = broadcast['topic'].split('/')
+
+                targets = {}
                 for k_filter,subscriptions in self._subscriptions.items():
-                    if broadcast['topic'].startswith("$") and (k_filter.startswith("+") or k_filter.startswith("#")):
-                        self.logger.debug("[MQTT-4.7.2-1] - ignoring brodcasting $ topic to subscriptions starting with + or #")
-                    elif self.matches(broadcast['topic'], k_filter):
+                    if match_topic(topic, k_filter):
                         for (target_session, qos) in subscriptions:
-                            if 'qos' in broadcast:
-                                qos = broadcast['qos']
-                            if target_session.transitions.state == 'connected':
-                                if self.logger.isEnabledFor(logging.DEBUG):
-                                    self.logger.debug("broadcasting application message from %s on topic '%s' to %s",
-                                                      format_client_message(session=broadcast['session']),
-                                                      broadcast['topic'], format_client_message(session=target_session))
-                                handler = self._get_handler(target_session)
-                                await tg.spawn(partial(handler.mqtt_publish,broadcast['topic'], broadcast['data'], qos, retain=False))
-                            else:
-                                if self.logger.isEnabledFor(logging.DEBUG):
-                                    self.logger.debug("retaining application message from %s on topic '%s' to client '%s'",
-                                                      format_client_message(session=broadcast['session']),
-                                                      broadcast['topic'], format_client_message(session=target_session))
-                                retained_message = RetainedApplicationMessage(
-                                    broadcast['session'], broadcast['topic'], broadcast['data'], qos)
-                                await target_session.retained_messages.put(retained_message)
+                            qos = max(qos, broadcast.get('qos', QOS_0), targets.get(target_session, QOS_0))
+                            targets[target_session] = qos
+
+                for target_session, qos in targets.items():
+                    if target_session.transitions.state == 'connected':
+                        if self.logger.isEnabledFor(logging.DEBUG):
+                            self.logger.debug("broadcasting application message from %s on topic '%s' to %s",
+                                                format_client_message(session=broadcast['session']),
+                                                broadcast['topic'], format_client_message(session=target_session))
+                        handler = self._get_handler(target_session)
+                        await tg.spawn(partial(handler.mqtt_publish,broadcast['topic'], broadcast['data'], qos, retain=False))
+                    else:
+                        if self.logger.isEnabledFor(logging.DEBUG):
+                            self.logger.debug("retaining application message from %s on topic '%s' to client '%s'",
+                                                format_client_message(session=broadcast['session']),
+                                                broadcast['topic'], format_client_message(session=target_session))
+                        retained_message = RetainedApplicationMessage(
+                            broadcast['session'], broadcast['topic'], broadcast['data'], qos)
+                        await target_session.retained_messages.put(retained_message)
 
     async def broadcast_message(self, session, topic, data, force_qos=None, qos=None, retain=False):
         broadcast = {
@@ -759,8 +759,9 @@ class Broker:
         handler = self._get_handler(session)
         async with anyio.create_task_group() as tg:
             for d_topic in self._retained_messages:
+                topic = d_topic.split('/')
                 self.logger.debug("matching : %s %s", d_topic, subscription[0])
-                if self.matches(d_topic, subscription[0]):
+                if match_topic(topic, subscription[0]):
                     self.logger.debug("%s and %s match", d_topic, subscription[0])
                     retained = self._retained_messages[d_topic]
                     await tg.spawn(handler.mqtt_publish,

@@ -5,24 +5,15 @@
 DistMQTT - MQTT 3.1.1 broker
 
 Usage:
-    distmqtt --version
-    distmqtt (-h | --help)
-    distmqtt [-c <config_file> ] [-d]
-
-Options:
-    -h --help           Show this screen.
-    --version           Show version.
-    -c <config_file>    Broker configuration file (YAML format)
-    -d                  Enable debug messages
+    distmqtt --help
 """
 
 import sys
 import logging
 import anyio
 import os
+import asyncclick as click
 from distmqtt.broker import create_broker
-from distmqtt.version import get_version
-from docopt import docopt
 from distmqtt.utils import read_yaml_config
 
 
@@ -49,27 +40,24 @@ default_config = {
 logger = logging.getLogger(__name__)
 
 
-async def main(*args, **kwargs):
-    arguments = docopt(__doc__, version=get_version())
+@click.command()
+@click.version_option()
+@click.option("-c","--config", help="Name of config file (YAML)")
+@click.option("-d","--debug", is_flag=True, help="Debug?")
+async def main(config, debug):
     formatter = "[%(asctime)s] :: %(levelname)s - %(message)s"
 
-    if arguments['-d']:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
+    level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(level=level, format=formatter)
 
-    config = None
-    if arguments['-c']:
-        config = read_yaml_config(arguments['-c'])
-    else:
-        config = read_yaml_config(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_broker.yaml'))
+    if not config:
+        config = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_broker.yaml')
         logger.debug("Using default configuration")
+    config = read_yaml_config(config)
 
     async with create_broker(config) as broker:
         while True:
             await anyio.sleep(99999)
 
-
 if __name__ == "__main__":
-    anyio.run(main)
+    main()
