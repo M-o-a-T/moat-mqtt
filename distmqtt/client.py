@@ -15,7 +15,7 @@ except ImportError:
 from wsproto.utilities import ProtocolError
 from asyncwebsockets import create_websocket
 
-from distmqtt.utils import not_in_dict_or_none
+from distmqtt.utils import not_in_dict_or_none, match_topic
 from distmqtt.session import Session
 from distmqtt.errors import NoDataException
 from distmqtt.mqtt.connack import CONNECTION_ACCEPTED
@@ -37,6 +37,10 @@ _defaults = {
     'reconnect_retries': 2,
 }
 
+_handler_id = 0
+
+class _set(set):
+    pass
 
 class ClientException(Exception):
     pass
@@ -154,11 +158,13 @@ class MQTTClient:
         self._no_more_connections = anyio.create_event()
         self.extra_headers = {}
 
+        self._subscriptions = None
+
         # Init plugins manager
         context = ClientContext()
         context.config = self.config
         self.plugins_manager = PluginManager(tg, 'distmqtt.client.plugins', context)
-        self.client_tasks = set()
+        self.client_task = None
 
     async def connect(self,
                 uri=None,
@@ -226,8 +232,8 @@ class MQTTClient:
         Before disconnection need to cancel all pending tasks
         :return:
         """
-        while self.client_tasks:
-            task = self.client_tasks.pop()
+        if self.client_task is not None:
+            task,self.client_task = self.client_task, None
             await task.cancel()
 
     async def reconnect(self, cleansession=None):
@@ -362,6 +368,119 @@ class MQTTClient:
         """
         await self._handler.mqtt_unsubscribe(topics, self.session.next_packet_id)
 
+    def subscription(self, topic, qos=QOS_0):
+        """
+            Iterate over a message.
+
+            Usage::
+
+                async with client.subscription("/foo/bar") as sub:
+                    async for msg in sub:
+                        await process(msg)
+
+        You can use either multiple calls to `subscription`, or manage
+        message dispatching your self with `subscribe` and `deliver_message`.
+        Using both methods in parallel are not supported.
+
+        """
+        class _Subscription:
+            def __init__(self,client,topic,qos):
+                self.client = client
+                self.topic = topic
+                self.qos = qos
+                self._q = None
+
+                global _handler_id
+                _handler_id += 1
+                self._id = _handler_id
+
+            def __hash__(self):
+                return self._id
+
+            def __eq__(self, other):
+                return self._id == getattr(other,'_id',other)
+
+            async def __aenter__(self):
+                self._q = anyio.create_queue(100)
+                await self.client._subscribe(self)
+                return self
+
+            async def __aexit__(self, *tb):
+                self._q = None
+                async with anyio.open_cancel_scope(shield=True):
+                    await self.client._unsubscribe(self)
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self._q is None:
+                    raise RuntimeError("Overflow. Please resubscribe.")
+                return await self._q.get()
+
+        return _Subscription(self,topic,qos)
+
+    async def _subscribe(self,handler):
+
+        topic = handler.topic
+        if self._subscriptions is None:
+            self._subscriptions = dict()
+            await self._tg.spawn(self._deliver_loop)
+        clients = self._subscriptions.get(topic,None)
+        if clients is None:
+            self._subscriptions[topic] = clients = _set()
+            clients.__topic = tuple(topic.split("/"))
+            clients.__qos = handler.qos
+            await self.subscribe([(topic,handler.qos)])
+        elif clients.__qos < handler.qos:
+            clients.__qos = handler.qos
+            await self.subscribe([(topic,handler.qos)])
+
+        clients.add(handler)
+
+    async def _unsubscribe(self,handler):
+        topic = handler.topic
+        clients = self._subscriptions[topic]
+        clients.remove(handler)
+        if not clients:
+            del self._subscriptions[topic]
+            await self.unsubscribe([topic])
+
+    async def _dispatch(self, msg):
+        t = msg.topic.split('/')
+        for topic,clients in self._subscriptions.items():
+            if not match_topic(t, clients.__topic):
+                continue
+            for c in clients:
+                if c._q is None:
+                    continue
+                try:
+                    async with anyio.fail_after(0.01):
+                        await c._q.put(msg)
+                except TimeoutError:
+                    c._q = None
+
+    async def _deliver_loop(self):
+        """
+            Dispatch incoming messages to subscriptions.
+        """
+        async with anyio.open_cancel_scope() as scope:
+            if self.client_task is not None:
+                raise RuntimeError("You can't listen in more than one task")
+            self.client_task = scope
+            try:
+                while True:
+                    if self.session is None:
+                        return
+                    msg = await self.session.get_next_message()
+                    if msg is None:
+                        return
+                    await self._dispatch(msg)
+
+            finally:
+                self.client_task = None
+
+
     async def deliver_message(self):
         """
             Deliver next received message.
@@ -379,13 +498,15 @@ class MQTTClient:
         async with anyio.open_cancel_scope() as scope:
             if self.session is None:
                 return None
-            self.client_tasks.add(scope)
+            if self.client_task is not None:
+                raise RuntimeError("You can't listen in more than one task")
+            self.client_task = scope
             try:
                 msg = await self.session.get_next_message()
                 return msg
 
             finally:
-                self.client_tasks.discard(scope)
+                self.client_task = None
 
     async def _connect_coro(self):
         kwargs = dict()
@@ -478,8 +599,8 @@ class MQTTClient:
 
         async def cancel_tasks():
             await self._no_more_connections.set()
-            while self.client_tasks:
-                task = self.client_tasks.pop()
+            if self.client_task:
+                task,self.client_task = self.client_task,None
                 await task.cancel()
 
         async with anyio.open_cancel_scope() as scope:
