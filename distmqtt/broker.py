@@ -19,6 +19,7 @@ from distmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED
 from distmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
 from distmqtt.errors import DistMQTTException, MQTTException
 from distmqtt.utils import format_client_message, gen_client_id, Future
+from distmqtt.mqtt.constants import QOS_0
 from distmqtt.adapters import (
     StreamAdapter,
     BaseAdapter,
@@ -710,9 +711,11 @@ class Broker:
                     if broadcast['topic'].startswith("$") and (k_filter.startswith("+") or k_filter.startswith("#")):
                         self.logger.debug("[MQTT-4.7.2-1] - ignoring brodcasting $ topic to subscriptions starting with + or #")
                     elif self.matches(broadcast['topic'], k_filter):
+                        targets = {}
                         for (target_session, qos) in subscriptions:
-                            if 'qos' in broadcast:
-                                qos = broadcast['qos']
+                            qos = max(qos, broadcast.get('qos', QOS_0), targets.get(target_session, QOS_0))
+                            targets[target_session] = qos
+                        for target_ession, qos in targets.items():
                             if target_session.transitions.state == 'connected':
                                 if self.logger.isEnabledFor(logging.DEBUG):
                                     self.logger.debug("broadcasting application message from %s on topic '%s' to %s",
