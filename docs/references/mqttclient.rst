@@ -42,12 +42,34 @@ The example below shows how to write a simple MQTT client which subscribes a top
         logging.basicConfig(level=logging.DEBUG, format=formatter)
         anyio.run(uptime_coro)
 
-When executed, this script runs the ``uptime_coro`` until it completes.
-``uptime_coro`` starts by opening an async context with :func:`~distmqtt.client.open_mqttclient`, which returns a
-:class:`~distmqtt.client.MQTTClient` instance.
-The coroutine then calls :meth:`~distmqtt.client.MQTTClient.connect` to connect to the broker, in this case ``test.mosquitto.org``.
-Once connected, the coroutine subscribes to some topics, and then waits for 100 messages. Each message received is simply written to output.
-Finally, the coroutine unsubscribes from topics and disconnects from the broker.
+This code has a problem: there's one central dispatcher which needs to know
+all message types. Fortunately `distmqtt` has a built-in dispatcher::
+
+
+    async def show(C, topic, qos):
+        async with C.subscription(topic, qos) as sub):
+            count = 0
+            async for message in sub:
+                packet = message.publish_packet
+                print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
+                count += 1
+                if count >= 100:
+                break
+
+    async def uptime_coro():
+        async with open_mqttclient() as C:
+            await C.connect('mqtt://test.mosquitto.org/')
+            # Subscribe to '$SYS/broker/uptime' with QOS=1
+            # Subscribe to '$SYS/broker/load/#' with QOS=2
+            async with anyio.create_task_group() as tg:
+               await tg.spawn(show, C, '$SYS/broker/uptime', QOS_1);
+               await tg.spawn(show, C, '$SYS/broker/load/#', QOS_2);
+
+    if __name__ == '__main__':
+        formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
+        logging.basicConfig(level=logging.DEBUG, format=formatter)
+        anyio.run(uptime_coro)
+
 
 Publisher
 .........
@@ -55,7 +77,6 @@ Publisher
 The example below uses the :class:`~distmqtt.client.MQTTClient` class to implement a publisher.
 This test publish 3 messages asynchronously to the broker on a test topic.
 For the purposes of the test, each message is published with a different Quality Of Service.
-This example also shows to method for publishing message asynchronously.
 
 .. code-block:: python
 
@@ -81,9 +102,9 @@ This example also shows to method for publishing message asynchronously.
         try:
             async with open_mqttclient() as C:
                await C.connect('mqtt://test.mosquitto.org:1883/')
-               message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=QOS_0)
-               message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
-               message = await C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
+               await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=QOS_0)
+               await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
+               await C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
                #print(message)
                logger.info("messages published")
         except ConnectException as ce:
@@ -96,33 +117,8 @@ This example also shows to method for publishing message asynchronously.
         anyio.run(test_coro)
         anyio.run(test_coro2)
 
-``test_coro()`` and ``test_coro()`` are executed in sequence.
-Both do the same job. ``test_coro()`` publishes 3 messages in sequence. ``test_coro2()`` publishes the same message asynchronously.
-The difference appears when looking at the sequence of MQTT messages sent.
+Both coroutines have the same results except that ``test_coro2()`` sends its messages in parallel.
 
-``test_coro()`` achieves:
-::
-
-    distmqtt/YDYY;NNRpYQSy3?o -out-> PublishPacket(ts=2015-11-11 21:54:48.843901, fixed=MQTTFixedHeader(length=28, flags=0x0), variable=PublishVariableHeader(topic=a/b, packet_id=None), payload=PublishPayload(data="b'TEST MESSAGE WITH QOS_0'"))
-    distmqtt/YDYY;NNRpYQSy3?o -out-> PublishPacket(ts=2015-11-11 21:54:48.844152, fixed=MQTTFixedHeader(length=30, flags=0x2), variable=PublishVariableHeader(topic=a/b, packet_id=1), payload=PublishPayload(data="b'TEST MESSAGE WITH QOS_1'"))
-    distmqtt/YDYY;NNRpYQSy3?o <-in-- PubackPacket(ts=2015-11-11 21:54:48.979665, fixed=MQTTFixedHeader(length=2, flags=0x0), variable=PacketIdVariableHeader(packet_id=1), payload=None)
-    distmqtt/YDYY;NNRpYQSy3?o -out-> PublishPacket(ts=2015-11-11 21:54:48.980886, fixed=MQTTFixedHeader(length=30, flags=0x4), variable=PublishVariableHeader(topic=a/b, packet_id=2), payload=PublishPayload(data="b'TEST MESSAGE WITH QOS_2'"))
-    distmqtt/YDYY;NNRpYQSy3?o <-in-- PubrecPacket(ts=2015-11-11 21:54:49.029691, fixed=MQTTFixedHeader(length=2, flags=0x0), variable=PacketIdVariableHeader(packet_id=2), payload=None)
-    distmqtt/YDYY;NNRpYQSy3?o -out-> PubrelPacket(ts=2015-11-11 21:54:49.030823, fixed=MQTTFixedHeader(length=2, flags=0x2), variable=PacketIdVariableHeader(packet_id=2), payload=None)
-    distmqtt/YDYY;NNRpYQSy3?o <-in-- PubcompPacket(ts=2015-11-11 21:54:49.092514, fixed=MQTTFixedHeader(length=2, flags=0x0), variable=PacketIdVariableHeader(packet_id=2), payload=None)fixed=MQTTFixedHeader(length=2, flags=0x0), variable=PacketIdVariableHeader(packet_id=2), payload=None)
-
-while ``test_coro2()`` runs:
-::
-
-    distmqtt/LYRf52W[56SOjW04 -out-> PublishPacket(ts=2015-11-11 21:54:48.466123, fixed=MQTTFixedHeader(length=28, flags=0x0), variable=PublishVariableHeader(topic=a/b, packet_id=None), payload=PublishPayload(data="b'TEST MESSAGE WITH QOS_0'"))
-    distmqtt/LYRf52W[56SOjW04 -out-> PublishPacket(ts=2015-11-11 21:54:48.466432, fixed=MQTTFixedHeader(length=30, flags=0x2), variable=PublishVariableHeader(topic=a/b, packet_id=1), payload=PublishPayload(data="b'TEST MESSAGE WITH QOS_1'"))
-    distmqtt/LYRf52W[56SOjW04 -out-> PublishPacket(ts=2015-11-11 21:54:48.466695, fixed=MQTTFixedHeader(length=30, flags=0x4), variable=PublishVariableHeader(topic=a/b, packet_id=2), payload=PublishPayload(data="b'TEST MESSAGE WITH QOS_2'"))
-    distmqtt/LYRf52W[56SOjW04 <-in-- PubackPacket(ts=2015-11-11 21:54:48.613062, fixed=MQTTFixedHeader(length=2, flags=0x0), variable=PacketIdVariableHeader(packet_id=1), payload=None)
-    distmqtt/LYRf52W[56SOjW04 <-in-- PubrecPacket(ts=2015-11-11 21:54:48.661073, fixed=MQTTFixedHeader(length=2, flags=0x0), variable=PacketIdVariableHeader(packet_id=2), payload=None)
-    distmqtt/LYRf52W[56SOjW04 -out-> PubrelPacket(ts=2015-11-11 21:54:48.661925, fixed=MQTTFixedHeader(length=2, flags=0x2), variable=PacketIdVariableHeader(packet_id=2), payload=None)
-    distmqtt/LYRf52W[56SOjW04 <-in-- PubcompPacket(ts=2015-11-11 21:54:48.713107, fixed=MQTTFixedHeader(length=2, flags=0x0), variable=PacketIdVariableHeader(packet_id=2), payload=None)
-
-Both coroutines have the same results except that ``test_coro2()`` manages messages flow in parallel which may be more efficient.
 
 Reference
 ---------
@@ -144,6 +140,8 @@ MQTTClient API
         .. automethod:: subscribe
         .. automethod:: unsubscribe
         .. automethod:: deliver_message
+        .. automethod:: subscription
+
 
 MQTTClient configuration
 ........................
