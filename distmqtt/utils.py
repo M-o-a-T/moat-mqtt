@@ -121,3 +121,21 @@ class Future:
         """Report whether this Future has been set.
         """
         return self.event.is_set()
+
+
+def match_topic(topic, subscription):
+    """
+    Match @topic to @subscription. Both must be lists/tuples.
+    """
+    if topic[0].startswith('$') != subscription[0].startswith('$'):
+        return False
+    if len(topic) < len(subscription):
+        return False
+    if len(topic) > len(subscription) and subscription[-1] != '#':
+        return False
+    for a,b in zip(topic,subscription):
+        if a != b and b not in ('+','#'):
+            return False
+    return True
+
+
