@@ -163,6 +163,13 @@ class Session:
         self.transitions.add_transition(trigger='disconnect', source='new', dest='disconnected')
         self.transitions.add_transition(trigger='disconnect', source='disconnected', dest='disconnected')
 
+    def __hash__(self):
+        return hash(self.client_id)
+
+    def __eq__(self, other):
+        other = getattr(other,'client_id', other)
+        return self.client_id == other
+
     async def start(self, broker=None):
         if broker is not None:
             self._broker = broker
