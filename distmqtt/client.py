@@ -94,13 +94,12 @@ async def open_mqttclient(client_id=None, config=None):
 
         :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
         :param config: Client configuration
-        :return: class instance
+        :param codec: Codec to default to, the config or "no-op" if not given.
+        :return: async context manager returning a class instance
 
-        This is an async context manager.
-        
         Example usage::
 
-            async with open_mqttclient(uri="mqtt://my-broker.example") as client:
+            async with open_mqttclient(config=dict(uri="mqtt://my-broker.example")) as client:
                 # await client.connect("mqtt://my-broker.example")  # alternate use
                 await C.subscribe([
                         ('$SYS/broker/uptime', QOS_1),
