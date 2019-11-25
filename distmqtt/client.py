@@ -24,6 +24,7 @@ from distmqtt.adapters import StreamAdapter, WebSocketsAdapter
 from distmqtt.plugins.manager import PluginManager, BaseContext
 from distmqtt.mqtt.protocol.handler import ProtocolHandlerException
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+from distmqtt import codecs
 from collections import deque
 
 
@@ -35,6 +36,15 @@ _defaults = {
     'auto_reconnect': True,
     'reconnect_max_interval': 10,
     'reconnect_retries': 2,
+    'codec': 'noop',
+}
+
+_codecs = {
+    'noop': codecs.NoopCodec,
+    'no-op': codecs.NoopCodec,
+    'utf8': codecs.UTF8Codec,
+    'utf-8': codecs.UTF8Codec,
+    'msgpack': codecs.MsgPackCodec,
 }
 
 _handler_id = 0
@@ -131,13 +141,14 @@ class MQTTClient:
         :param tg: The task group in which to run open-ended subtasks.
         :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
         :param config: Client configuration
+        :param codec: Codec to default to, the config or "no-op" if not given.
         :return: class instance
 
         You should use :func:`open_mqttclient` to create an instance of
         this class.
     """
 
-    def __init__(self, tg: anyio.abc.TaskGroup, client_id=None, config=None):
+    def __init__(self, tg: anyio.abc.TaskGroup, client_id=None, config=None, codec=None):
         self.logger = logging.getLogger(__name__)
         self.config = copy.deepcopy(_defaults)
         if config is not None:
@@ -156,6 +167,7 @@ class MQTTClient:
         self._connected_state = anyio.create_event()
         self._no_more_connections = anyio.create_event()
         self.extra_headers = {}
+        self.codec = _codecs[codec or self.config['codec']]()
 
         self._subscriptions = None
 
@@ -299,7 +311,7 @@ class MQTTClient:
                                 self.session.transitions.state)
 
     @mqtt_connected
-    async def publish(self, topic, message, qos=None, retain=None):
+    async def publish(self, topic, message, qos=None, retain=None, codec=None):
         """
             Publish a message to the broker.
 
@@ -311,7 +323,14 @@ class MQTTClient:
             :param message: payload message (as bytes) to send.
             :param qos: requested publish quality of service : QOS_0, QOS_1 or QOS_2. Defaults to ``default_qos`` config parameter or QOS_0.
             :param retain: retain flag. Defaults to ``default_retain`` config parameter or False.
+            :param codec: Codec to encode the message with. Defaults to the connection's.
         """
+
+        if codec is None:
+            codec = self.codec
+        elif isinstance(code,str):
+            codec = _codecs[codec]()
+        message = codec.encode(message)
 
         if qos is not None:
             assert qos in (QOS_0, QOS_1, QOS_2)
@@ -367,9 +386,13 @@ class MQTTClient:
         """
         await self._handler.mqtt_unsubscribe(topics, self.session.next_packet_id)
 
-    def subscription(self, topic, qos=QOS_0):
+    def subscription(self, topic, qos=QOS_0, codec=None):
         """
-            Iterate over a message.
+        Iterate over a message.
+
+            :param topic: topic (including wildcards) to receive from.
+            :param qos: minimum QOS to receive with.
+            :param codec: Codec to decode incoming mssages with.
 
             Usage::
 
@@ -383,10 +406,15 @@ class MQTTClient:
 
         """
         class _Subscription:
-            def __init__(self,client,topic,qos):
+            def __init__(self,client,topic,qos, codec=None):
                 self.client = client
                 self.topic = topic
                 self.qos = qos
+                if codec is None:
+                    codec = client.codec
+                elif isinstance(code,str):
+                    codec = _codecs[codec]()
+                self.codec = codec
                 self._q = None
 
                 global _handler_id
@@ -415,7 +443,25 @@ class MQTTClient:
             async def __anext__(self):
                 if self._q is None:
                     raise RuntimeError("Overflow. Please resubscribe.")
-                return await self._q.get()
+                message = await self._q.get()
+                message.data = self.codec.decode(message.publish_packet.data)
+                return message
+            
+            async def publish(self, topic, message, *a, **kw):
+                """
+                    Publish a message.
+
+                    :param topic: topic name to which message data is published
+                    :param message: payload message (as bytes) to send.
+                    :param qos: requested publish quality of service : QOS_0, QOS_1 or QOS_2. Defaults to ``default_qos`` config parameter or QOS_0.
+                    :param retain: retain flag. Defaults to ``default_retain`` config parameter or False.
+                    :param codec: Codec to encode the message with. Defaults to the subscription's.
+                """
+                if topic is None:
+                    topic = self.topic
+                if 'codec' not in kw:
+                    kw['codec'] = self.codec
+                await self.client.publish(topic, message, *a, **kw)
 
         return _Subscription(self,topic,qos)
 
@@ -480,7 +526,7 @@ class MQTTClient:
                 self.client_task = None
 
 
-    async def deliver_message(self):
+    async def deliver_message(self, codec=None):
         """
             Deliver next received message.
 
@@ -491,9 +537,16 @@ class MQTTClient:
             :return: instance of :class:`distmqtt.session.ApplicationMessage` containing received message information flow.
             :raises: :class:`TimeoutError` if timeout occurs before a message is delivered
 
+            :param codec: Codec to decode the message with.
+            
             This method returns ``None`` if it is cancelled by closing the
             connection.
         """
+        if codec is None:
+            codec = self.codec
+        elif isinstance(code,str):
+            codec = _codecs[codec]()
+
         async with anyio.open_cancel_scope() as scope:
             if self.session is None:
                 return None
@@ -502,6 +555,7 @@ class MQTTClient:
             self.client_task = scope
             try:
                 msg = await self.session.get_next_message()
+                msg.data = codec.decode(msg.publish_packet.data)
                 return msg
 
             finally:
