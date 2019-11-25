@@ -13,7 +13,7 @@ PACKAGE = distmqtt
 PYTHON ?= python3
 export PYTHONPATH=$(shell pwd)
 
-PYTEST ?= ${PYTHON} $(shell which pytest)
+PYTEST ?= ${PYTHON} -mpytest
 TEST_OPTIONS ?= -xvvv --full-trace
 
 BUILD_DIR ?= build
