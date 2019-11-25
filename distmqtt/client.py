@@ -96,7 +96,7 @@ def mqtt_connected(func):
     return wrapper
 
 @asynccontextmanager
-async def open_mqttclient(client_id=None, config=None):
+async def open_mqttclient(client_id=None, config=None, codec=None):
     """
         MQTT client implementation.
 
@@ -121,7 +121,7 @@ async def open_mqttclient(client_id=None, config=None):
 
     """
     async with anyio.create_task_group() as tg:
-        C = MQTTClient(tg, client_id, config)
+        C = MQTTClient(tg, client_id, config=config, codec=codec)
         try:
             if 'uri' in config:
                 await C.connect(**config)
