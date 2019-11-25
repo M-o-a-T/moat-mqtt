@@ -299,7 +299,7 @@ class MQTTClient:
                                 self.session.transitions.state)
 
     @mqtt_connected
-    async def publish(self, topic, message, qos=None, retain=None, ack_timeout=None):
+    async def publish(self, topic, message, qos=None, retain=None):
         """
             Publish a message to the broker.
 
@@ -325,7 +325,7 @@ class MQTTClient:
                 retain = self.config['topics'][topic]['retain']
             except KeyError:
                 retain = self.config['default_retain']
-        return await self._handler.mqtt_publish(topic, message, qos, retain, ack_timeout)
+        return await self._handler.mqtt_publish(topic, message, qos, retain)
 
     @mqtt_connected
     async def subscribe(self, topics):

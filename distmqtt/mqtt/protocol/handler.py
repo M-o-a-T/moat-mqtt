@@ -190,7 +190,7 @@ class ProtocolHandler:
         self.logger.debug("%d messages not redelivered due to timeout", pending)
         self.logger.debug("End messages delivery retries")
 
-    async def mqtt_publish(self, topic, data, qos, retain, ack_timeout=None):
+    async def mqtt_publish(self, topic, data, qos, retain):
         """
         Sends a MQTT publish message and manages messages flows.
         This methods doesn't return until the message has been acknowledged by receiver or timeout occur
@@ -210,12 +210,7 @@ class ProtocolHandler:
             packet_id = None
 
         message = OutgoingApplicationMessage(packet_id, topic, qos, data, retain)
-        # Handle message flow
-        if ack_timeout is not None and ack_timeout > 0:
-            async with anyio.move_on_after(ack_timeout):
-                await self._handle_message_flow(message)
-        else:
-            await self._handle_message_flow(message)
+        await self._handle_message_flow(message)
 
         return message
 
