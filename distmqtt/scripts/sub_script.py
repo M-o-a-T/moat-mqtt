@@ -100,7 +100,7 @@ async def run_sub(client,topic, arguments):
     async with client.subscription(topic, qos) as sub:
         async for message in sub:
             count += 1
-            print(message.data)
+            print(message.topic,message.data,sep="\t")
             if max_count and count >= max_count:
                 break
 
