@@ -437,8 +437,11 @@ class MQTTClient:
 
             async def __aexit__(self, *tb):
                 self._q = None
-                async with anyio.fail_after(2,shield=True):
-                    await self.client._unsubscribe(self)
+                try:
+                    async with anyio.fail_after(2,shield=True):
+                        await self.client._unsubscribe(self)
+                except ClientException:
+                    pass
 
             def __aiter__(self):
                 return self
