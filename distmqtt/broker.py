@@ -165,8 +165,9 @@ async def create_broker(config=None, plugin_namespace=None):
             await b.start()
             yield b
         finally:
-            await b.shutdown()
-            await tg.cancel_scope.cancel()
+            async with anyio.fail_after(2, shield=True):
+                await b.shutdown()
+                await tg.cancel_scope.cancel()
 
 
 class Broker:
@@ -185,8 +186,9 @@ class Broker:
                 await b.start()
                 pass ## do something with the broker
             finally:
-                await b.shutdown()
-                await tg.cancel_scope.cancel()
+                async with anyio.fail_after(2, shield=True):
+                    await b.shutdown()
+                    await tg.cancel_scope.cancel()
 
     Typically, though, you'll want to use :func:`create_broker`, which does
     this for you.
@@ -529,7 +531,7 @@ class Broker:
                 client_session.transitions.disconnect()
                 await self.plugins_manager.fire_event(EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client_session.client_id)
             finally:
-                async with anyio.open_cancel_scope(shield=True):
+                async with anyio.fail_after(2, shield=True):
                     await tg.cancel_scope.cancel()
             pass # end taskgroup
 
@@ -681,8 +683,7 @@ class Broker:
         except KeyError:
             # Unsubscribe topic not found in current subscribed topics
             pass
-        finally:
-            return deleted
+        return deleted
 
     def _del_all_subscriptions(self, session):
         """

@@ -7,7 +7,7 @@ distmqtt_pub - MQTT 3.1.1 publisher
 Usage:
     distmqtt_pub --version
     distmqtt_pub (-h | --help)
-    distmqtt_pub --url BROKER_URL -t TOPIC (-f FILE | -l | -m MESSAGE | -n | -s) [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER] [-r]
+    distmqtt_pub --url BROKER_URL -t TOPIC (-f FILE | -l | -m MESSAGE | -M message | -n | -s | -S) [-C codec] [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER] [-r]
 
 Options:
     -h --help           Show this screen.
@@ -19,8 +19,11 @@ Options:
     -r                  Set retain flag on connect
     -t TOPIC            Message topic
     -m MESSAGE          Message data to send
+    -M MESSAGE          data to evaluate and send
     -f FILE             Read file by line and publish message for each line
     -s                  Read from stdin and publish message for each line
+    -S                  Read from stdin, eval, send the result
+    -C codec            Codec to send the result with
     -k KEEP_ALIVE       Keep alive timeout in second
     --clean-session     Clean session on connect (defaults to False)
     --ca-file CAFILE]   CA file
@@ -39,7 +42,7 @@ import logging
 import anyio
 import os
 import json
-from distmqtt.client import open_mqttclient, ConnectException
+from distmqtt.client import open_mqttclient, ConnectException, _codecs
 from distmqtt.version import get_version
 from docopt import docopt
 from distmqtt.utils import read_yaml_config
@@ -69,10 +72,15 @@ def _get_extra_headers(arguments):
         return {}
 
 def _get_message(arguments):
+    codec = arguments['-C'] or "utf-8"
+    codec = _codecs[codec]()
+
     if arguments['-n']:
         yield b''
     if arguments['-m']:
         yield arguments['-m'].encode(encoding='utf-8')
+    if arguments['-M']:
+        yield codec.encode(eval(arguments['-M']))
     if arguments['-f']:
         try:
             with open(arguments['-f'], 'r') as f:
@@ -91,6 +99,10 @@ def _get_message(arguments):
         for line in sys.stdin:
             message.extend(line.encode(encoding='utf-8'))
         yield message
+    if arguments['-S']:
+        import sys
+        message = sys.stdin.read()
+        yield codecs.encode(eval(message))
 
 
 async def do_pub(client, arguments):
@@ -116,7 +128,8 @@ async def do_pub(client, arguments):
     except ConnectException as ce:
         logger.fatal("connection to '%s' failed: %r", arguments['--url'], ce)
     finally:
-        await client.disconnect()
+        async with anyio.fail_after(2, shield=True):
+            await client.disconnect()
 
 
 async def main(*args, **kwargs):

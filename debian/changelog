@@ -1,3 +1,9 @@
+distmqtt (0.17.2-1) UNRELEASED; urgency=medium
+
+  * Release 0.17.2
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Wed, 27 Nov 2019 13:23:11 +0100
+
 distmqtt (0.17.1-1) unstable; urgency=medium
 
   * Bugfix

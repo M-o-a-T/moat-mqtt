@@ -7,7 +7,7 @@ distmqtt_sub - MQTT 3.1.1 publisher
 Usage:
     distmqtt_sub --version
     distmqtt_sub (-h | --help)
-    distmqtt_sub --url BROKER_URL -t TOPIC... [-n COUNT] [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER]
+    distmqtt_sub --url BROKER_URL -t TOPIC... [-n COUNT] [-c CONFIG_FILE] [-C codec] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER]
 
 Options:
     -h --help           Show this screen.
@@ -19,6 +19,7 @@ Options:
     -q | --qos QOS      Quality of service desired to receive messages, from 0, 1 and 2. Defaults to 0.
     -t TOPIC...         Topic filter to subcribe
     -k KEEP_ALIVE       Keep alive timeout in second
+    -C codec            use this codec
     --clean-session     Clean session on connect (defaults to False)
     --ca-file CAFILE]   CA file
     --ca-path CAPATH]   CA Path
@@ -86,7 +87,8 @@ async def do_sub(client, arguments):
     except ConnectException as ce:
         logger.fatal("connection to '%s' failed: %r", arguments['--url'], ce)
     finally:
-        await client.disconnect()
+        async with anyio.fail_after(2, shield=True):
+            await client.disconnect()
 
 async def run_sub(client,topic, arguments):
     qos = _get_qos(arguments)
@@ -99,8 +101,7 @@ async def run_sub(client,topic, arguments):
     async with client.subscription(topic, qos) as sub:
         async for message in sub:
             count += 1
-            sys.stdout.buffer.write(message.publish_packet.data)
-            sys.stdout.write('\n')
+            print(message.topic,message.data,sep="\t")
             if max_count and count >= max_count:
                 break
 
@@ -138,7 +139,7 @@ async def main(*args, **kwargs):
         config['will']['qos'] = int(arguments['--will-qos'])
         config['will']['retain'] = arguments['--will-retain']
 
-    async with open_mqttclient(client_id=client_id, config=config) as C:
+    async with open_mqttclient(client_id=client_id, config=config, codec=arguments['-C']) as C:
         await do_sub(C, arguments)
 
 

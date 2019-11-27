@@ -84,19 +84,18 @@ def mqtt_connected(func):
         if not self._connected_state.is_set():
             base_logger.warning("Client not connected, waiting for it")
             async with anyio.create_task_group() as tg:
-                async def wait_connected():
-                    await self._connected_state.wait()
-                    await tg.cancel_scope.cancel()
                 async def wait_no_more():
                     await self._no_more_connections.wait()
                     raise ClientException("Will not reconnect")
-                await tg.spawn(wait_connected)
                 await tg.spawn(wait_no_more)
+
+                await self._connected_state.wait()
+                await tg.cancel_scope.cancel()
         return await func(self, *args, **kwargs)
     return wrapper
 
 @asynccontextmanager
-async def open_mqttclient(client_id=None, config=None):
+async def open_mqttclient(client_id=None, config=None, codec=None):
     """
         MQTT client implementation.
 
@@ -121,13 +120,13 @@ async def open_mqttclient(client_id=None, config=None):
 
     """
     async with anyio.create_task_group() as tg:
-        C = MQTTClient(tg, client_id, config)
+        C = MQTTClient(tg, client_id, config=config, codec=codec)
         try:
             if 'uri' in config:
                 await C.connect(**config)
             yield C
         finally:
-            async with anyio.open_cancel_scope(shield=True):
+            async with anyio.fail_after(2, shield=True):
                 await C.disconnect()
                 await tg.cancel_scope.cancel()
 
@@ -167,7 +166,11 @@ class MQTTClient:
         self._connected_state = anyio.create_event()
         self._no_more_connections = anyio.create_event()
         self.extra_headers = {}
-        self.codec = _codecs[codec or self.config['codec']]()
+        if codec is None:
+            codec = self.config['codec']
+        if isinstance(codec, str):
+            codec = _codecs[codec]()
+        self.codec = codec
 
         self._subscriptions = None
 
@@ -434,8 +437,11 @@ class MQTTClient:
 
             async def __aexit__(self, *tb):
                 self._q = None
-                async with anyio.open_cancel_scope(shield=True):
-                    await self.client._unsubscribe(self)
+                try:
+                    async with anyio.fail_after(2,shield=True):
+                        await self.client._unsubscribe(self)
+                except ClientException:
+                    pass
 
             def __aiter__(self):
                 return self
@@ -526,6 +532,7 @@ class MQTTClient:
                 self.client_task = None
 
 
+    @mqtt_connected
     async def deliver_message(self, codec=None):
         """
             Deliver next received message.

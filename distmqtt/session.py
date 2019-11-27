@@ -216,9 +216,10 @@ class Session:
 
                     await broker.broadcast_message(self, app_message.topic, app_message.data, qos=app_message.qos, retain=app_message.publish_packet.retain_flag)
         finally:
-            broker.logger.debug("%s finished message delivery", self.client_id)
-            self._delivery_task = None
-            await self._delivery_stopped.set()
+            async with anyio.fail_after(2, shield=True):
+                broker.logger.debug("%s finished message delivery", self.client_id)
+                self._delivery_task = None
+                await self._delivery_stopped.set()
 
     @property
     def next_packet_id(self):
