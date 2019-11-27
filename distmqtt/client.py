@@ -167,7 +167,11 @@ class MQTTClient:
         self._connected_state = anyio.create_event()
         self._no_more_connections = anyio.create_event()
         self.extra_headers = {}
-        self.codec = _codecs[codec or self.config['codec']]()
+        if codec is None:
+            codec = self.config['codec']
+        if isinstance(codec, str):
+            codec = _codecs[codec]()
+        self.codec = codec
 
         self._subscriptions = None
 
