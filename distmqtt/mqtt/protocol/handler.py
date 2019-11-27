@@ -325,9 +325,8 @@ class ProtocolHandler:
                 # Wait PUBREC
                 if app_message.packet_id in self._pubrec_waiters:
                     # PUBREC waiter already exists for this packet ID
-                    message = "Can't add PUBREC waiter, a waiter already exists for message Id '%s'" \
-                              % app_message.packet_id
-                    self.logger.warning(message)
+                    self.logger.warning("Can't add PUBREC waiter, a waiter already exists for message Id '%s'",
+                        app_message.packet_id)
                     raise DistMQTTException(message)
                 waiter = Future()
                 self._pubrec_waiters[app_message.packet_id] = waiter
@@ -357,9 +356,8 @@ class ProtocolHandler:
             # Wait PUBREL
             if app_message.packet_id in self._pubrel_waiters and not self._pubrel_waiters[app_message.packet_id].done():
                 # PUBREL waiter already exists for this packet ID
-                message = "A waiter already exists for message Id '%s', canceling it" \
-                          % app_message.packet_id
-                self.logger.warning(message)
+                self.logger.warning("A waiter already exists for message Id '%s', canceling it",
+                    app_message.packet_id)
                 await self._pubrel_waiters[app_message.packet_id].cancel()
             waiter = Future()
             self._pubrel_waiters[app_message.packet_id] = waiter
@@ -438,7 +436,7 @@ class ProtocolHandler:
                         raise
                 await tg.cancel_scope.cancel()
         finally:
-            async with anyio.open_cancel_scope(shield=True):
+            async with anyio.fail_after(2, shield=True):
                 self.logger.debug("%s %s coro stopped",
                         'Broker' if 'Broker' in type(self).__name__ else 'Client',
                         self.session.client_id if self.session else '?')
@@ -478,7 +476,7 @@ class ProtocolHandler:
             self.logger.warning("Unhandled exception", exc_info=e)
             raise
         finally:
-            async with anyio.open_cancel_scope(shield=True):
+            async with anyio.fail_after(2, shield=True):
                 await self._sender_stopped.set()
             self._sender_task = None
 

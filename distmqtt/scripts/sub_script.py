@@ -87,7 +87,8 @@ async def do_sub(client, arguments):
     except ConnectException as ce:
         logger.fatal("connection to '%s' failed: %r", arguments['--url'], ce)
     finally:
-        await client.disconnect()
+        async with anyio.fail_after(2, shield=True):
+            await client.disconnect()
 
 async def run_sub(client,topic, arguments):
     qos = _get_qos(arguments)

@@ -84,14 +84,13 @@ def mqtt_connected(func):
         if not self._connected_state.is_set():
             base_logger.warning("Client not connected, waiting for it")
             async with anyio.create_task_group() as tg:
-                async def wait_connected():
-                    await self._connected_state.wait()
-                    await tg.cancel_scope.cancel()
                 async def wait_no_more():
                     await self._no_more_connections.wait()
                     raise ClientException("Will not reconnect")
-                await tg.spawn(wait_connected)
                 await tg.spawn(wait_no_more)
+
+                await self._connected_state.wait()
+                await tg.cancel_scope.cancel()
         return await func(self, *args, **kwargs)
     return wrapper
 
@@ -127,7 +126,7 @@ async def open_mqttclient(client_id=None, config=None, codec=None):
                 await C.connect(**config)
             yield C
         finally:
-            async with anyio.open_cancel_scope(shield=True):
+            async with anyio.fail_after(2, shield=True):
                 await C.disconnect()
                 await tg.cancel_scope.cancel()
 
@@ -438,7 +437,7 @@ class MQTTClient:
 
             async def __aexit__(self, *tb):
                 self._q = None
-                async with anyio.open_cancel_scope(shield=True):
+                async with anyio.fail_after(2,shield=True):
                     await self.client._unsubscribe(self)
 
             def __aiter__(self):
@@ -530,6 +529,7 @@ class MQTTClient:
                 self.client_task = None
 
 
+    @mqtt_connected
     async def deliver_message(self, codec=None):
         """
             Deliver next received message.
