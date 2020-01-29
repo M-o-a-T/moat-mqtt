@@ -499,7 +499,7 @@ class MQTTClient:
 
     async def _dispatch(self, msg):
         t = msg.topic.split('/')
-        for topic,clients in self._subscriptions.items():
+        for topic,clients in list(self._subscriptions.items()):
             if not match_topic(t, clients.__topic):
                 continue
             for c in clients:
