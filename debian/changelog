@@ -1,3 +1,9 @@
+distmqtt (0.17.4-1) unstable; urgency=medium
+
+  * Release 0.17.4
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Sat, 01 Feb 2020 17:28:59 +0100
+
 distmqtt (0.17.3-1) unstable; urgency=medium
 
   * Release 0.17.3

@@ -502,7 +502,7 @@ class MQTTClient:
         for topic,clients in list(self._subscriptions.items()):
             if not match_topic(t, clients.__topic):
                 continue
-            for c in clients:
+            for c in list(clients):
                 if c._q is None:
                     continue
                 try:
