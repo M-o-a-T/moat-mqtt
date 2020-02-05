@@ -122,7 +122,7 @@ async def open_mqttclient(client_id=None, config=None, codec=None):
     async with anyio.create_task_group() as tg:
         C = MQTTClient(tg, client_id, config=config, codec=codec)
         try:
-            if 'uri' in config:
+            if isinstance(config, dict) and 'uri' in config:
                 await C.connect(**config)
             yield C
         finally:
@@ -150,7 +150,7 @@ class MQTTClient:
     def __init__(self, tg: anyio.abc.TaskGroup, client_id=None, config=None, codec=None):
         self.logger = logging.getLogger(__name__)
         self.config = copy.deepcopy(_defaults)
-        if config is not None:
+        if isinstance(config, dict):
             self.config.update(config)
         if client_id is not None:
             self.client_id = client_id
