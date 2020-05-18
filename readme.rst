@@ -16,7 +16,7 @@ Features
 
 DistMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and provides the following features:
 
-- Routing of MQTT messages via `Serf`_
+- Routing of MQTT messages, either via `Serf`_ or MQTT.
 - Storage of retained messages in DistKV
 - Support QoS 0, QoS 1 and QoS 2 messages flow
 - Client auto-reconnection on network lost

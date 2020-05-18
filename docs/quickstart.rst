@@ -5,18 +5,85 @@ A quick way for getting started with ``DistMQTT`` is to use console scripts prov
 
 * publishing a message on some topic on an external MQTT broker.
 * subscribing some topics and getting published messages.
-* running a autonomous MQTT broker
+* running an autonomous MQTT broker
 
-These scripts are installed automatically when installing ``DistMQTT`` with the following command ::
+
+Installation
+++++++++++++
+
+That's easy::
 
   (venv) $ pip install distmqtt
+
+
+Sample code
++++++++++++
+
+As ``DistMQTT`` is async Python, you need to wrap all examples with::
+
+   async def main():
+      [ actual sample code here ]
+   anyio.run(main)
+
+The easiest way to do this is to use the ``asyncclick`` package::
+
+   import asyncclick as click
+   @click.command()
+   @click.option('-t','--test',is_flag=True, help="Set Me")
+   async def main(test):
+      if not test:
+         raise click.UsageError("I told you to set me")  # :-)
+      [ actual sample code here ]
+
+   main()  # click.command() wraps that in a call to anyio.run()
+
+
+Connecting to a broker
+----------------------
+
+An MQTT connection is typically used as a context manager::
+
+   async with open_mqttclient(uri='mqtt://localhost:1883', codec='utf8') as C:
+      await some_mqtt_commands()
+
+Sending messages
+----------------
+
+That's easy::
+
+   async with open_mqttclient(…) as C:
+      async C.publish("one/two/three/four", [1,2,3,4], codec="msgpack")
+
+Receiving messages
+------------------
+
+Receiving uses another context manager::
+
+   async with open_mqttclient(…) as C:
+      async with C.subscription("one/two/#", codec="msgpack") as S:
+         async for msg in S:
+            print("I got",msg)
+
+The subscription affords a ``publish`` method which inherits its codec
+and QoS settings.
+
+If you want to process multiple subscriptions in parallel, the easiest way
+is to use multiple tasks.
+
+Console scripts
++++++++++++++++
+
+A quick way for getting started with ``DistMQTT`` is to examine the code in
+``DistMQTT``'s console scripts.
+
+These scripts are installed automatically when installing ``DistMQTT``.
 
 Publishing messages
 -------------------
 
 ``distmqtt_pub`` is a command-line tool which can be used for publishing some messages on a topic. It requires a few arguments like broker URL, topic name, QoS and data to send. Additional options allow more complex use case.
 
-Publishing ```some_data`` to as ``/test`` topic on is as simple as :
+Publishing ```some_data`` to a ``/test`` topic on is as simple as :
 ::
 
     $ distmqtt_pub --url mqtt://test.mosquitto.org -t /test -m some_data
