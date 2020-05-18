@@ -24,10 +24,7 @@ def bytes_to_int(data):
     :param data: byte sequence
     :return: integer value
     """
-    try:
-        return int.from_bytes(data, byteorder='big')
-    except:
-        return data
+    return int.from_bytes(data, byteorder='big')
 
 
 def int_to_bytes(int_value: int, length: int) -> bytes:
@@ -66,16 +63,7 @@ async def decode_string(reader) -> bytes:
     :param reader: Stream reader
     :return: UTF-8 string read from stream
     """
-    length_bytes = await read_or_raise(reader, 2)
-    str_length = unpack("!H", length_bytes)
-    if str_length[0]:
-        byte_str = await read_or_raise(reader, str_length[0])
-        try:
-            return byte_str.decode(encoding='utf-8')
-        except:
-            return str(byte_str)
-    else:
-        return ''
+    return (await decode_data_with_length(reader)).decode("utf-8")
 
 
 async def decode_data_with_length(reader) -> bytes:
@@ -91,9 +79,7 @@ async def decode_data_with_length(reader) -> bytes:
 
 
 def encode_string(string: str) -> bytes:
-    data = string.encode(encoding='utf-8')
-    data_length = len(data)
-    return int_to_bytes(data_length, 2) + data
+    return encode_data_with_length(string.encode("utf-8"))
 
 
 def encode_data_with_length(data: bytes) -> bytes:
