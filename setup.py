@@ -25,7 +25,8 @@ setup(
         'pyyaml',
         'anyio',
         'attrs',
-        'distkv >= 0.7.0',
+        'distkv >= 0.18',
+        'simplejson',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

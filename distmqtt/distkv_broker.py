@@ -41,7 +41,7 @@ class DistKVbroker(Broker):
             self.__topic = cfg['topic']
 
             try:
-                async with self.__client.serf_mon(tag=self.__topic) as q:
+                async with self.__client.msg_monitor(self.__topic) as q:
                     await evt.set()
                     async for m in q:
                         d = m.data
@@ -90,5 +90,5 @@ class DistKVbroker(Broker):
             await self.__client.set(*(self.__retain + topic.split('/')), value=data)
             return
         msg = dict(session=session.client_id, topic=topic, data=data, qos=qos, force_qos=force_qos, retain=retain)
-        await self.__client.serf_send(tag=self.__topic, data=msg)
+        await self.__client.msg_send(topic=self.__topic, data=msg)
 
