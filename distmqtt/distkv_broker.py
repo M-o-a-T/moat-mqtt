@@ -54,7 +54,7 @@ class DistKVbroker(Broker):
             finally:
                 self.__client = None
 
-    async def __retain(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
+    async def __retain_task(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
         path = cfg['retain']
         if isinstance(path,str):
             path = path.split('/')
@@ -81,7 +81,7 @@ class DistKVbroker(Broker):
         await evt.wait()
         if 'retain' in cfg:
             evt = anyio.create_event()
-            await self._tg.spawn(self.__retain, cfg, evt)
+            await self._tg.spawn(self.__retain_task, cfg, evt)
             await evt.wait()
         await super().start()
 
