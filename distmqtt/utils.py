@@ -127,6 +127,8 @@ def match_topic(topic, subscription):
     """
     Match @topic to @subscription. Both must be lists/tuples.
     """
+    if isinstance(topic,str) or isinstance(subscription,str):
+        raise RuntimeError("Subscriptions need to be pre-split")
     if topic[0].startswith('$') != subscription[0].startswith('$'):
         return False
     if len(topic) < len(subscription):

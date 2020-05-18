@@ -17,7 +17,7 @@ from distmqtt.broker import Broker
 from distmqtt.session import ApplicationMessage
 
 from distkv.client import open_client as open_distkv_client
-from distkv.util import PathLongener
+from distkv.util import PathLongener, NotGiven
 
 
 class DistKVbroker(Broker):
@@ -36,12 +36,12 @@ class DistKVbroker(Broker):
         super().__init__(tg, config=config, plugin_namespace=plugin_namespace)
 
     async def __session(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
-        async with open_distkv_client(**cfg['server']) as client:
+        async with open_distkv_client(**cfg) as client:
             self.__client = client
             self.__topic = cfg['topic']
 
             try:
-                async with self.__client.serf_mon(tag=self.__topic) as q:
+                async with self.__client.msg_monitor(self.__topic) as q:
                     await evt.set()
                     async for m in q:
                         d = m.data
@@ -54,7 +54,7 @@ class DistKVbroker(Broker):
             finally:
                 self.__client = None
 
-    async def __retain(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
+    async def __retain_task(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
         path = cfg['retain']
         if isinstance(path,str):
             path = path.split('/')
@@ -63,15 +63,12 @@ class DistKVbroker(Broker):
         async with self.__client.watch(*path, fetch=True, long_path=False) as w:
             await evt.set()
             async for msg in w:
-                if 'path' not in msg or msg.get('value', None) is None:
+                if 'path' not in msg or msg.get('value', NotGiven) is NotGiven:
                     continue
                 pl(msg)
                 topic = '/'.join(msg.path)
-                data = msg.get('value', None)
-                super().retain_message(None, topic, data, qos=None)
-                if not data:
-                    continue
-                await super().broadcast_message(session=None, topic=topic, data=data)
+                data = msg['value']
+                await super().broadcast_message(session=None, topic=topic, data=data, retain=True)
             
     async def start(self):
         cfg = self.config['distkv']
@@ -81,7 +78,7 @@ class DistKVbroker(Broker):
         await evt.wait()
         if 'retain' in cfg:
             evt = anyio.create_event()
-            await self._tg.spawn(self.__retain, cfg, evt)
+            await self._tg.spawn(self.__retain_task, cfg, evt)
             await evt.wait()
         await super().start()
 
@@ -90,5 +87,5 @@ class DistKVbroker(Broker):
             await self.__client.set(*(self.__retain + topic.split('/')), value=data)
             return
         msg = dict(session=session.client_id, topic=topic, data=data, qos=qos, force_qos=force_qos, retain=retain)
-        await self.__client.serf_send(tag=self.__topic, data=msg)
+        await self.__client.msg_send(topic=self.__topic, data=msg)
 

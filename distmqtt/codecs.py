@@ -8,6 +8,7 @@ from distmqtt.errors import NoDataException
 # Collection of basic codecs for the messages' payload
 
 import msgpack
+import simplejson as json
 
 def bytes_to_hex_str(data):
     """
@@ -24,10 +25,7 @@ def bytes_to_int(data):
     :param data: byte sequence
     :return: integer value
     """
-    try:
-        return int.from_bytes(data, byteorder='big')
-    except:
-        return data
+    return int.from_bytes(data, byteorder='big')
 
 
 def int_to_bytes(int_value: int, length: int) -> bytes:
@@ -66,16 +64,7 @@ async def decode_string(reader) -> bytes:
     :param reader: Stream reader
     :return: UTF-8 string read from stream
     """
-    length_bytes = await read_or_raise(reader, 2)
-    str_length = unpack("!H", length_bytes)
-    if str_length[0]:
-        byte_str = await read_or_raise(reader, str_length[0])
-        try:
-            return byte_str.decode(encoding='utf-8')
-        except:
-            return str(byte_str)
-    else:
-        return ''
+    return (await decode_data_with_length(reader)).decode("utf-8")
 
 
 async def decode_data_with_length(reader) -> bytes:
@@ -91,9 +80,7 @@ async def decode_data_with_length(reader) -> bytes:
 
 
 def encode_string(string: str) -> bytes:
-    data = string.encode(encoding='utf-8')
-    data_length = len(data)
-    return int_to_bytes(data_length, 2) + data
+    return encode_data_with_length(string.encode("utf-8"))
 
 
 def encode_data_with_length(data: bytes) -> bytes:
@@ -122,16 +109,29 @@ def int_to_bytes_str(value: int) -> bytes:
     return str(value).encode('utf-8')
 
 
+class BaseCodec:
+    # name = None
+    def __init__(self, name=None):
+        if name is not None and name != self.name:
+            raise RuntimeError("Codec name mismatch")
 
-class NoopCodec:
+    def encode(self, data):
+        raise RuntimeError("You need to override me")
+
+    def decode(self, data):
+        raise RuntimeError("You need to override me")
+
+
+class NoopCodec(BaseCodec):
     """A codec that does nothing.
 
     Your payload needs to consist of bytes.
     """
+    name = "noop"
 
     @staticmethod
     def encode(data):
-        assert isinstance(data, bytes)
+        assert isinstance(data, (bytearray,bytes))
         return data
 
     @staticmethod
@@ -146,6 +146,7 @@ class UTF8Codec:
 
     This codec will *not* stringify other data types for you.
     """
+    name = "utf8"
 
     @staticmethod
     def encode(data):
@@ -173,11 +174,13 @@ class MsgPackCodec:
                     (i.e. modifyable). Defaults to ``False``, which uses
                     immutable tuples (this is faster).
     """
+    name = "msgpack"
 
     use_bin_type = True
     use_list = False
 
-    def __init__(self, use_bin_type=None, use_list=None):
+    def __init__(self, use_bin_type=None, use_list=None, **kw):
+        super().__init__(**kw)
         if use_bin_type is not None:
             self.use_bin_type = use_bin_type
         if use_list is not None:
@@ -191,4 +194,86 @@ class MsgPackCodec:
         # raw=False would try to decode input bytes, which is not what you
         # want when the input is a bytestring. So we only use that if
         # bytestring input has been marked as such.
+
+
+class JSONCodec:
+    """A codec that encodes to JSON+utf8.
+
+    Your payload must consist of whatever simplejson accepts.
+    """
+    name = "json"
+
+    @staticmethod
+    def encode(data):
+        return json.dumps(data).encode("utf-8")
+
+    @staticmethod
+    def decode(data):
+        return json.loads(data.decode("utf-8"))
+
+
+class MsgPackJSONCodec:
+    """A codec that encodes JSON strings to MsgPack.
+
+    Your payload must consist of a valid JSON string. The wire format will
+    be msgpack.
+
+    This codec is useful for legacy code which wants messages as JSON strings
+    when the rest of your world talks msgpack.
+    """
+    name = "msgpack+json"
+
+    use_bin_type = True
+    use_list = False
+
+    def __init__(self, use_bin_type=None, use_list=None, **kw):
+        super().__init__(**kw)
+        if use_bin_type is not None:
+            self.use_bin_type = use_bin_type
+        if use_list is not None:
+            self.use_list = use_list
+
+    def encode(self, data):
+        return msgpack.packb(json.loads(data), use_bin_type=self.use_bin_type, use_list=self.use_list)
+
+    def decode(self, data):
+        return json.dumps(msgpack.unpackb(data, raw=not self.use_bin_type, use_list=self.use_list))
+
+class BoolCodec:
+    """A codec that recognizes two strings ("on" and "off") and bool-ifies them.
+
+    Or maybe three ("null") but you need to tell it to do that.
+    """
+    name = "bool"
+
+    on="on"
+    off="off"
+    null=None
+
+    def __init__(self, on=None, off=None, null=None, **kw):
+        super().__init__(**kw)
+        if on is not None:
+            self.on = on.encode("utf-8")
+        if off is not None:
+            self.off = off.encode("utf-8")
+        if null is not None:
+            self.null = null.encode("utf-8")
+
+    def encode(self,data):
+        if data is None and self.null is not None:
+            return self.null
+        if data == 0:
+            return self.off
+        if data == 1:
+            return self.on
+        raise ValueError(data)
+
+    def decode(self, data):
+        if data == self.on:
+            return True
+        if data == self.off:
+            return False
+        if self.null is not None and data == self.null:
+            return None
+        raise ValueError(data)
 

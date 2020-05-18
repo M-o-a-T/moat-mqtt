@@ -620,13 +620,13 @@ class Broker:
     def retain_message(self, source_session, topic_name, data, qos=None):
         if data is not None and data != b'':
             # If retained flag set, store the message for further subscriptions
-            self.logger.debug("Retaining message on topic %s", topic_name)
+            self.logger.debug("Retaining %s: %r", topic_name, data)
             retained_message = RetainedApplicationMessage(source_session, topic_name, data, qos)
             self._retained_messages[topic_name] = retained_message
         else:
             # [MQTT-3.3.1-10]
             if topic_name in self._retained_messages:
-                self.logger.debug("Clear retained messages for topic '%s'", topic_name)
+                self.logger.debug("Retaining %s:‹deleted›", topic_name)
                 del self._retained_messages[topic_name]
 
     async def add_subscription(self, subscription, session):
@@ -757,12 +757,13 @@ class Broker:
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug("Begin broadcasting messages retained due to subscription on '%s' from %s",
                               subscription[0], format_client_message(session=session))
+        sub = subscription[0].split('/')
         handler = self._get_handler(session)
         async with anyio.create_task_group() as tg:
             for d_topic in self._retained_messages:
                 topic = d_topic.split('/')
                 self.logger.debug("matching : %s %s", d_topic, subscription[0])
-                if match_topic(topic, subscription[0]):
+                if match_topic(topic, sub):
                     self.logger.debug("%s and %s match", d_topic, subscription[0])
                     retained = self._retained_messages[d_topic]
                     await tg.spawn(handler.mqtt_publish,

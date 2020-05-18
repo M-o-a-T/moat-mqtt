@@ -27,7 +27,7 @@ class ConnackVariableHeader(MQTTVariableHeader):
     async def from_stream(cls, reader: StreamAdapter, fixed_header: MQTTFixedHeader):
         data = await read_or_raise(reader, 2)
         session_parent = data[0] & 0x01
-        return_code = bytes_to_int(data[1])
+        return_code = data[1]
         return cls(session_parent, return_code)
 
     def to_bytes(self):

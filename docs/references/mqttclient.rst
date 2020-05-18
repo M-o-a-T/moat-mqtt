@@ -23,8 +23,7 @@ The example below shows how to write a simple MQTT client which subscribes a top
     logger = logging.getLogger(__name__)
 
     async def uptime_coro():
-        async with open_mqttclient() as C:
-            await C.connect('mqtt://test.mosquitto.org/')
+        async with open_mqttclient(uri='mqtt://test.mosquitto.org/') as C:
             # Subscribe to '$SYS/broker/uptime' with QOS=1
             # Subscribe to '$SYS/broker/load/#' with QOS=2
             await C.subscribe([
@@ -43,11 +42,12 @@ The example below shows how to write a simple MQTT client which subscribes a top
         anyio.run(uptime_coro)
 
 This code has a problem: there's one central dispatcher which needs to know
-all message types. Fortunately `distmqtt` has a built-in dispatcher::
+all message types. Fortunately `distmqtt` has a built-in dispatcher.
 
+.. code-block:: python
 
     async def show(C, topic, qos):
-        async with C.subscription(topic, qos) as sub):
+        async with C.subscription(topic, qos) as sub:
             count = 0
             async for message in sub:
                 packet = message.publish_packet
@@ -57,8 +57,7 @@ all message types. Fortunately `distmqtt` has a built-in dispatcher::
                 break
 
     async def uptime_coro():
-        async with open_mqttclient() as C:
-            await C.connect('mqtt://test.mosquitto.org/')
+        async with open_mqttclient(uri='mqtt://test.mosquitto.org/') as C:
             # Subscribe to '$SYS/broker/uptime' with QOS=1
             # Subscribe to '$SYS/broker/load/#' with QOS=2
             async with anyio.create_task_group() as tg:
@@ -89,8 +88,8 @@ For the purposes of the test, each message is published with a different Quality
     logger = logging.getLogger(__name__)
     
     async def test_coro():
-        async with open_mqttclient() as C:
-            await C.connect('mqtt://test.mosquitto.org/')
+        """Publish in parallel"""
+        async with open_mqttclient(uri='mqtt://test.mosquitto.org/') as C:
             async with anyio.create_task_group() as tg:
                 await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_0')
                 await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)),
@@ -99,13 +98,12 @@ For the purposes of the test, each message is published with a different Quality
 
 
     async def test_coro2():
+        """Publish sequentially"""
         try:
-            async with open_mqttclient() as C:
-               await C.connect('mqtt://test.mosquitto.org:1883/')
+            async with open_mqttclient(uri='mqtt://test.mosquitto.org/') as C:
                await C.publish('a/b', b'TEST MESSAGE WITH QOS_0', qos=QOS_0)
                await C.publish('a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)
                await C.publish('a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)
-               #print(message)
                logger.info("messages published")
         except ConnectException as ce:
             logger.error("Connection failed: %s", ce)
@@ -117,7 +115,8 @@ For the purposes of the test, each message is published with a different Quality
         anyio.run(test_coro)
         anyio.run(test_coro2)
 
-Both coroutines have the same results except that ``test_coro2()`` sends its messages in parallel.
+Both coroutines have the same results except that ``test_coro()`` sends its
+messages in parallel, and thus is probably a bit faster.
 
 
 Reference
@@ -146,7 +145,7 @@ MQTTClient API
 MQTTClient configuration
 ........................
 
-Typically, you create a :class:`~distmqtt.client.MQTTClient` instance by way of ``async with`` :func:`~distmqtt.client.open_mqttclient`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+Typically, you create a :class:`~distmqtt.client.MQTTClient` instance with an async context manager, i.e. by way of ``async with`` :func:`~distmqtt.client.open_mqttclient`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
 
 :func:`~distmqtt.client.open_mqttclient` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary which may contain the following entries:
 
@@ -157,6 +156,8 @@ Typically, you create a :class:`~distmqtt.client.MQTTClient` instance by way of 
 * ``auto_reconnect``: enable or disable auto-reconnect feature (defaults to ``True``).
 * ``reconnect_max_interval``: maximum interval (in seconds) to wait before two connection retries (defaults to ``10``).
 * ``reconnect_retries``: maximum number of connect retries (defaults to ``2``). Negative value will cause client to reconnect infinietly.
+* ``codec``: the codec to use by default. May be overridden.
+* ``codec_params``: Config values to use with a particular codec. Indexed by codec name.
 
 Default QoS and default retain can also be overriden by adding a ``topics`` entry with may contain QoS and retain values for specific topics. See the following example:
 
@@ -170,6 +171,12 @@ Default QoS and default retain can also be overriden by adding a ``topics`` entr
         'auto_reconnect': True,
         'reconnect_max_interval': 5,
         'reconnect_retries': 10,
+        'codec': 'utf8',
+        'codec_params': {
+            'bool': {on='on',off='off'}, ## default, actually
+            'BOOL': {on='ON',off='OFF',name='bool'}
+            'yesno': {on='yes',off='no', name='bool'}
+        },
         'topics': {
             '/test': { 'qos': 1 },
             '/some_topic': { 'qos': 2, 'retain': True }
@@ -180,5 +187,8 @@ With this setting any message published will set with QOS_0 and retain flag unse
 
 * messages sent to ``/test`` topic will be sent with QOS_1
 * messages sent to ``/some_topic`` topic will be sent with QOS_2 and retained
+
+Also, 'codec="yesno"' will only accept a ``bool`` as message, and translate
+that to "yes" and "no" messages.
 
 In any case, any ``qos`` and ``retain`` arguments passed to method :meth:`~distmqtt.client.MQTTClient.publish` will override these settings.

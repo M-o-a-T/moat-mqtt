@@ -21,8 +21,8 @@ Options:
     -k KEEP_ALIVE       Keep alive timeout in second
     -C codec            use this codec
     --clean-session     Clean session on connect (defaults to False)
-    --ca-file CAFILE]   CA file
-    --ca-path CAPATH]   CA Path
+    --ca-file CAFILE    CA file
+    --ca-path CAPATH    CA Path
     --ca-data CADATA    CA data
     --will-topic WILL_TOPIC
     --will-message WILL_MESSAGE
@@ -57,14 +57,14 @@ def _gen_client_id():
 
 def _get_qos(arguments):
     try:
-        return int(arguments['--qos'][0])
-    except:
+        return int(arguments['--qos'])
+    except KeyError:
         return QOS_0
 
 def _get_extra_headers(arguments):
     try:
         return json.loads(arguments['--extra-headers'])
-    except:
+    except Exception:
         return {}
 
 
@@ -132,11 +132,11 @@ async def main(*args, **kwargs):
     if arguments['-k']:
         config['keep_alive'] = int(arguments['-k'])
 
-    if arguments['--will-topic'] and arguments['--will-message'] and arguments['--will-qos']:
+    if arguments['--will-topic'] and arguments['--will-message']:
         config['will'] = dict()
         config['will']['topic'] = arguments['--will-topic']
         config['will']['message'] = arguments['--will-message'].encode('utf-8')
-        config['will']['qos'] = int(arguments['--will-qos'])
+        config['will']['qos'] = _get_qos(arguments)
         config['will']['retain'] = arguments['--will-retain']
 
     async with open_mqttclient(client_id=client_id, config=config, codec=arguments['-C']) as C:

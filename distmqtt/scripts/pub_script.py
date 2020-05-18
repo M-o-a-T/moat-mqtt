@@ -23,11 +23,11 @@ Options:
     -f FILE             Read file by line and publish message for each line
     -s                  Read from stdin and publish message for each line
     -S                  Read from stdin, eval, send the result
-    -C codec            Codec to send the result with
+    -C codec            Codec to send the result with (default: UTF8-encode)
     -k KEEP_ALIVE       Keep alive timeout in second
     --clean-session     Clean session on connect (defaults to False)
-    --ca-file CAFILE]   CA file
-    --ca-path CAPATH]   CA Path
+    --ca-file CAFILE    CA file
+    --ca-path CAPATH    CA Path
     --ca-data CADATA    CA data
     --will-topic WILL_TOPIC
     --will-message WILL_MESSAGE
@@ -61,14 +61,14 @@ def _gen_client_id():
 
 def _get_qos(arguments):
     try:
-        return int(arguments['--qos'][0])
-    except:
+        return int(arguments['--qos'])
+    except Exception:
         return None
 
 def _get_extra_headers(arguments):
     try:
         return json.loads(arguments['--extra-headers'])
-    except:
+    except Exception:
         return {}
 
 def _get_message(arguments):
@@ -86,8 +86,8 @@ def _get_message(arguments):
             with open(arguments['-f'], 'r') as f:
                 for line in f:
                     yield line.encode(encoding='utf-8')
-        except:
-            logger.error("Failed to read file '%s'", arguments['-f'])
+        except Exception:
+            logger.exception("Failed to read file '%s'", arguments['-f'])
     if arguments['-l']:
         import sys
         for line in sys.stdin:
@@ -157,12 +157,12 @@ async def main(*args, **kwargs):
     if arguments['-k']:
         config['keep_alive'] = int(arguments['-k'])
 
-    if arguments['--will-topic'] and arguments['--will-message'] and arguments['--will-qos']:
+    if arguments['--will-topic'] and arguments['--will-message']:
         config['will'] = dict()
         config['will']['topic'] = arguments['--will-topic']
         config['will']['message'] = arguments['--will-message'].encode('utf-8')
-        config['will']['qos'] = int(arguments['--will-qos'])
-        config['will']['retain'] = arguments['--will-retain']
+        config['will']['qos'] = _get_qos(arguments)
+        config['will']['retain'] = arguments.get('--will-retain',False)
 
     async with open_mqttclient(client_id=client_id, config=config) as C:
         await do_pub(C, arguments)
