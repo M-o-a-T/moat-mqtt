@@ -109,7 +109,7 @@ def mqtt_connected(func):
     return wrapper
 
 @asynccontextmanager
-async def open_mqttclient(client_id=None, config=None, codec=None):
+async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
     """
         MQTT client implementation.
 
@@ -136,6 +136,8 @@ async def open_mqttclient(client_id=None, config=None, codec=None):
     async with anyio.create_task_group() as tg:
         C = MQTTClient(tg, client_id, config=config, codec=codec)
         try:
+            if uri is not None:
+                config['uri'] = uri
             if 'uri' in config:
                 await C.connect(**config)
             yield C

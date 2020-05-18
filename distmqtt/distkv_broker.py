@@ -17,7 +17,7 @@ from distmqtt.broker import Broker
 from distmqtt.session import ApplicationMessage
 
 from distkv.client import open_client as open_distkv_client
-from distkv.util import PathLongener
+from distkv.util import PathLongener, NotGiven
 
 
 class DistKVbroker(Broker):
@@ -36,7 +36,7 @@ class DistKVbroker(Broker):
         super().__init__(tg, config=config, plugin_namespace=plugin_namespace)
 
     async def __session(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
-        async with open_distkv_client(**cfg['server']) as client:
+        async with open_distkv_client(**cfg) as client:
             self.__client = client
             self.__topic = cfg['topic']
 
@@ -63,15 +63,12 @@ class DistKVbroker(Broker):
         async with self.__client.watch(*path, fetch=True, long_path=False) as w:
             await evt.set()
             async for msg in w:
-                if 'path' not in msg or msg.get('value', None) is None:
+                if 'path' not in msg or msg.get('value', NotGiven) is NotGiven:
                     continue
                 pl(msg)
                 topic = '/'.join(msg.path)
-                data = msg.get('value', None)
-                super().retain_message(None, topic, data, qos=None)
-                if not data:
-                    continue
-                await super().broadcast_message(session=None, topic=topic, data=data)
+                data = msg['value']
+                await super().broadcast_message(session=None, topic=topic, data=data, retain=True)
             
     async def start(self):
         cfg = self.config['distkv']
