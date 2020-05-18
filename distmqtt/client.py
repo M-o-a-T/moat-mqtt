@@ -39,13 +39,27 @@ _defaults = {
     'codec': 'noop',
 }
 
-_codecs = {
-    'noop': codecs.NoopCodec,
-    'no-op': codecs.NoopCodec,
-    'utf8': codecs.UTF8Codec,
-    'utf-8': codecs.UTF8Codec,
-    'msgpack': codecs.MsgPackCodec,
-}
+_codecs = {}
+for t in dir(codecs):
+    c = getattr(codecs,t)
+    if isinstance(c,type) and issubclass(c,codecs.BaseCodec):
+        try:
+            _codecs[c.name] = c
+        except AttributeError:
+            pass
+
+
+def get_codec(codec, fallback=None, config={}):
+    if codec is None:
+        codec = fallback
+    if codec is None:
+        codec = config['codec']
+    if isinstance(codec, str):
+        codec = config.get('codec_params',{}).get('name',codec)
+        codec = _codecs[codec]
+    if isinstance(codec,type):
+        codec = codec(**config.get('codec_params',{}).get(codec.name,{}))
+    return codec
 
 _handler_id = 0
 
@@ -166,11 +180,7 @@ class MQTTClient:
         self._connected_state = anyio.create_event()
         self._no_more_connections = anyio.create_event()
         self.extra_headers = {}
-        if codec is None:
-            codec = self.config['codec']
-        if isinstance(codec, str):
-            codec = _codecs[codec]()
-        self.codec = codec
+        self.codec = get_codec(codec, config=self.config)
 
         self._subscriptions = None
 
@@ -329,10 +339,7 @@ class MQTTClient:
             :param codec: Codec to encode the message with. Defaults to the connection's.
         """
 
-        if codec is None:
-            codec = self.codec
-        elif isinstance(code,str):
-            codec = _codecs[codec]()
+        codec = get_codec(codec, self.codec, config=self.config)
         message = codec.encode(message)
 
         if qos is not None:

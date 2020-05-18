@@ -108,12 +108,25 @@ def int_to_bytes_str(value: int) -> bytes:
     return str(value).encode('utf-8')
 
 
+class BaseCodec:
+    # name = None
+    def __init__(self, name=None):
+        if name is not None and name != self.name:
+            raise RuntimeError("Codec name mismatch")
 
-class NoopCodec:
+    def encode(self, data):
+        raise RuntimeError("You need to override me")
+
+    def decode(self, data):
+        raise RuntimeError("You need to override me")
+
+
+class NoopCodec(BaseCodec):
     """A codec that does nothing.
 
     Your payload needs to consist of bytes.
     """
+    name = "noop"
 
     @staticmethod
     def encode(data):
@@ -132,6 +145,7 @@ class UTF8Codec:
 
     This codec will *not* stringify other data types for you.
     """
+    name = "utf8"
 
     @staticmethod
     def encode(data):
@@ -159,11 +173,13 @@ class MsgPackCodec:
                     (i.e. modifyable). Defaults to ``False``, which uses
                     immutable tuples (this is faster).
     """
+    name = "msgpack"
 
     use_bin_type = True
     use_list = False
 
-    def __init__(self, use_bin_type=None, use_list=None):
+    def __init__(self, use_bin_type=None, use_list=None, **kw):
+        super().__init__(**kw)
         if use_bin_type is not None:
             self.use_bin_type = use_bin_type
         if use_list is not None:
