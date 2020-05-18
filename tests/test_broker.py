@@ -155,8 +155,7 @@ class BrokerTest(unittest.TestCase):
                     await client.subscribe([('/topic', QOS_0)])
 
                     # Test if the client test client subscription is registered
-                    self.assertIn('/topic', broker._subscriptions)
-                    subs = broker._subscriptions['/topic']
+                    subs = broker._subscriptions[('','topic')]
                     self.assertEqual(len(subs), 1)
                     (s, qos) = subs[0]
                     self.assertEqual(s, client.session)
@@ -182,8 +181,7 @@ class BrokerTest(unittest.TestCase):
                     await client.subscribe([('/topic', QOS_0)])
 
                     # Test if the client test client subscription is registered
-                    self.assertIn('/topic', broker._subscriptions)
-                    subs = broker._subscriptions['/topic']
+                    subs = broker._subscriptions[('','topic')]
                     self.assertEqual(len(subs), 1)
                     (s, qos) = subs[0]
                     self.assertEqual(s, client.session)
@@ -215,15 +213,14 @@ class BrokerTest(unittest.TestCase):
                     await client.subscribe([('/topic', QOS_0)])
 
                     # Test if the client test client subscription is registered
-                    self.assertIn('/topic', broker._subscriptions)
-                    subs = broker._subscriptions['/topic']
+                    subs = broker._subscriptions[('','topic')]
                     self.assertEqual(len(subs), 1)
                     (s, qos) = subs[0]
                     self.assertEqual(s, client.session)
                     self.assertEqual(qos, QOS_0)
 
                     await client.unsubscribe(['/topic'])
-                    self.assertEqual(broker._subscriptions['/topic'], [])
+                    self.assertEqual(broker._subscriptions[('','topic')], [])
             self.assertTrue(broker.transitions.is_stopped())
             MockPluginManager.assert_has_calls(
                 [
@@ -434,7 +431,7 @@ class BrokerTest(unittest.TestCase):
                     await self._client_publish('$topic', b'data', QOS_0)
                     message = None
                     with self.assertRaises(TimeoutError):
-                        async with anyio.fail_after(2):
+                        async with anyio.fail_after(1):
                             message = await sub_client.deliver_message()
                     self.assertIsNone(message)
             self.assertTrue(broker.transitions.is_stopped())
@@ -452,14 +449,14 @@ class BrokerTest(unittest.TestCase):
                     ret = await sub_client.subscribe([('+/monitor/Clients', QOS_0)])
                     self.assertEqual(ret, [QOS_0])
 
-                    await self._client_publish('/test/monitor/Clients', b'data', QOS_0)
+                    await self._client_publish('test/monitor/Clients', b'data', QOS_0)
                     message = await sub_client.deliver_message()
                     self.assertIsNotNone(message)
 
                     await self._client_publish('$SYS/monitor/Clients', b'data', QOS_0)
                     message = None
                     with self.assertRaises(TimeoutError):
-                        async with anyio.fail_after(2):
+                        async with anyio.fail_after(1):
                             message = await sub_client.deliver_message()
                     self.assertIsNone(message)
             self.assertTrue(broker.transitions.is_stopped())
