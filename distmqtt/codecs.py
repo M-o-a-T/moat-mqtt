@@ -117,7 +117,7 @@ class NoopCodec:
 
     @staticmethod
     def encode(data):
-        assert isinstance(data, bytes)
+        assert isinstance(data, (bytearray,bytes))
         return data
 
     @staticmethod
