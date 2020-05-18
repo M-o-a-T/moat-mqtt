@@ -620,13 +620,13 @@ class Broker:
     def retain_message(self, source_session, topic_name, data, qos=None):
         if data is not None and data != b'':
             # If retained flag set, store the message for further subscriptions
-            self.logger.debug("Retaining message on topic %s", topic_name)
+            self.logger.debug("Retaining %s: %r", topic_name, data)
             retained_message = RetainedApplicationMessage(source_session, topic_name, data, qos)
             self._retained_messages[topic_name] = retained_message
         else:
             # [MQTT-3.3.1-10]
             if topic_name in self._retained_messages:
-                self.logger.debug("Clear retained messages for topic '%s'", topic_name)
+                self.logger.debug("Retaining %s:‹deleted›", topic_name)
                 del self._retained_messages[topic_name]
 
     async def add_subscription(self, subscription, session):
