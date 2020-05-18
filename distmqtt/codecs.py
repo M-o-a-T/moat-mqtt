@@ -8,6 +8,7 @@ from distmqtt.errors import NoDataException
 # Collection of basic codecs for the messages' payload
 
 import msgpack
+import simplejson as json
 
 def bytes_to_hex_str(data):
     """
@@ -193,4 +194,86 @@ class MsgPackCodec:
         # raw=False would try to decode input bytes, which is not what you
         # want when the input is a bytestring. So we only use that if
         # bytestring input has been marked as such.
+
+
+class JSONCodec:
+    """A codec that encodes to JSON+utf8.
+
+    Your payload must consist of whatever simplejson accepts.
+    """
+    name = "json"
+
+    @staticmethod
+    def encode(data):
+        return json.dumps(data).encode("utf-8")
+
+    @staticmethod
+    def decode(data):
+        return json.loads(data.decode("utf-8"))
+
+
+class MsgPackJSONCodec:
+    """A codec that encodes JSON strings to MsgPack.
+
+    Your payload must consist of a valid JSON string. The wire format will
+    be msgpack.
+
+    This codec is useful for legacy code which wants messages as JSON strings
+    when the rest of your world talks msgpack.
+    """
+    name = "msgpack+json"
+
+    use_bin_type = True
+    use_list = False
+
+    def __init__(self, use_bin_type=None, use_list=None, **kw):
+        super().__init__(**kw)
+        if use_bin_type is not None:
+            self.use_bin_type = use_bin_type
+        if use_list is not None:
+            self.use_list = use_list
+
+    def encode(self, data):
+        return msgpack.packb(json.loads(data), use_bin_type=self.use_bin_type, use_list=self.use_list)
+
+    def decode(self, data):
+        return json.dumps(msgpack.unpackb(data, raw=not self.use_bin_type, use_list=self.use_list))
+
+class BoolCodec:
+    """A codec that recognizes two strings ("on" and "off") and bool-ifies them.
+
+    Or maybe three ("null") but you need to tell it to do that.
+    """
+    name = "bool"
+
+    on="on"
+    off="off"
+    null=None
+
+    def __init__(self, on=None, off=None, null=None, **kw):
+        super().__init__(**kw)
+        if on is not None:
+            self.on = on.encode("utf-8")
+        if off is not None:
+            self.off = off.encode("utf-8")
+        if null is not None:
+            self.null = null.encode("utf-8")
+
+    def encode(self,data):
+        if data is None and self.null is not None:
+            return self.null
+        if data == 0:
+            return self.off
+        if data == 1:
+            return self.on
+        raise ValueError(data)
+
+    def decode(self, data):
+        if data == self.on:
+            return True
+        if data == self.off:
+            return False
+        if self.null is not None and data == self.null:
+            return None
+        raise ValueError(data)
 
