@@ -55,9 +55,13 @@ async def main(config, debug):
         logger.debug("Using default configuration")
     config = read_yaml_config(config)
 
-    async with create_broker(config) as broker:
-        while True:
-            await anyio.sleep(99999)
+    from distkv.util import as_service
+
+    async with as_service() as evt:
+        async with create_broker(config) as broker:
+            await evt.set()
+            while True:
+                await anyio.sleep(99999)
 
 if __name__ == "__main__":
     main()
