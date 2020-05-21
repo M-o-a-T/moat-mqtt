@@ -1,0 +1,23 @@
+distkv:
+    server:
+        host: '127.0.0.1'
+        port: 27586
+        auth: "password name=hass password=HomeAssIsT"
+    topic: [test, mqtt]
+    transparent:
+    - [test, transp]
+    - [test, also, transp]
+    retain: [test, retain]
+listeners:
+    default:
+        max-connections: 50000
+        type: tcp
+    my-tcp-1:
+        bind: 127.0.0.1:1883
+timeout-disconnect-delay: 2
+plugins: ['auth_anonymous','broker_sys'] # auth.file
+auth:
+    allow-anonymous: true
+    password-file: /some/passwd_file
+topic-check:
+    enabled: false
