@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+
+import sys
+sys.path[0:0] = (".", "../distkv", "../trio", "../distowfs", "../distwago", "../wago","../distmqtt", "../asyncactor","../distinv","../asyncclick")
+
+import trio
+import traceback
+from outcome import Error
+
+from distmqtt.scripts.broker_script import main
+main()
+
+
