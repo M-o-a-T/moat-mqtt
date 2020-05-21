@@ -67,7 +67,9 @@ class DistKVbroker(Broker):
                     continue
                 pl(msg)
                 topic = '/'.join(msg.path)
-                data = msg['value']
+                data = msg.get('value', NotGiven)
+                if data is NotGiven:
+                    data = b''
                 await super().broadcast_message(session=None, topic=topic, data=data, retain=True)
             
     async def start(self):
