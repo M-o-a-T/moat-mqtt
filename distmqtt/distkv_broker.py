@@ -36,7 +36,7 @@ class DistKVbroker(Broker):
         super().__init__(tg, config=config, plugin_namespace=plugin_namespace)
 
     async def __session(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
-        async with open_distkv_client(**cfg) as client:
+        async with open_distkv_client(connect=cfg['server']) as client:
             self.__client = client
             self.__topic = cfg['topic']
 
