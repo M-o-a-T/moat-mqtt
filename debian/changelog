@@ -1,3 +1,9 @@
+distmqtt (0.18.1-3) unstable; urgency=medium
+
+  * Ignore nonsense
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Thu, 21 May 2020 22:27:34 +0200
+
 distmqtt (0.18.1-2) unstable; urgency=medium
 
   * Add a service file.
