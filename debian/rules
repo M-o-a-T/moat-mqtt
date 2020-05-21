@@ -4,7 +4,7 @@
 # Fri, 19 Jul 2019 22:07:17 +0200
 export PYBUILD_NAME=hbmqtt
 %:
-	dh $@ --with python3 --buildsystem=pybuild
+	dh $@ --with python3,systemd --buildsystem=pybuild
 
-dh_auto_test:
+override_dh_auto_test:
 	: no test here
