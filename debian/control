@@ -6,8 +6,11 @@ Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9)
 Standards-Version: 3.9.6
 Homepage: https://github.com/smurfix/distmqtt
 
-Package: python3-distmqtt
+Package: distmqtt
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}
+Replaces: python3-distmqtt
+Provides: python3-distmqtt
+Conflicts: python3-distmqtt
 Description: MQTT client/broker using anyio and distkv
 

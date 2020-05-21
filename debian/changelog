@@ -1,3 +1,9 @@
+distmqtt (0.18.0-2) unstable; urgency=medium
+
+  * rename binary
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Thu, 21 May 2020 19:53:11 +0200
+
 distmqtt (0.18.0-1) unstable; urgency=medium
 
   * Merge
