@@ -35,9 +35,10 @@ class DistKVbroker(Broker):
 
     def __init__(self, tg: anyio.abc.TaskGroup, config=None, plugin_namespace=None):
         self.__client = None
-        self.__topic = None
-        self.__transparent = None
         super().__init__(tg, config=config, plugin_namespace=plugin_namespace)
+        cfg = self.config['distkv']
+        self.__topic = cfg['topic']
+        self.__transparent = cfg['transparent']
 
     async def __read_encap(self, client, cfg: dict, evt: Optional[anyio.abc.Event] = None):
         """
