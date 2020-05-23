@@ -1,3 +1,9 @@
+distmqtt (0.18.3-1) unstable; urgency=medium
+
+  * Merge
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Sat, 23 May 2020 13:59:54 +0200
+
 distmqtt (0.18.2-4) unstable; urgency=medium
 
   * Require setuptools-scm
