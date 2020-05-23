@@ -108,7 +108,7 @@ class DistKVbroker(Broker):
         async with self.__client.watch(*path, fetch=True, long_path=False) as w:
             await evt.set()
             async for msg in w:
-                if 'path' not in msg or msg.get('value', NotGiven) is NotGiven:
+                if 'path' not in msg:
                     continue
                 pl(msg)
                 topic = '/'.join(msg.path)
