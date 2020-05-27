@@ -112,7 +112,7 @@ class DistKVbroker(Broker):
         """
 
         pl = PathLongener(())  # intentionally not including the path
-        async with self.__client.watch(*path, fetch=True, long_path=False) as w:
+        async with self.__client.watch(*self.__base, fetch=True, long_path=False) as w:
             await evt.set()
             async for msg in w:
                 if 'path' not in msg:
