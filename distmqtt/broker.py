@@ -704,7 +704,9 @@ class Broker:
             while True:
                 broadcast = await self._broadcast_queue.get()
                 self.logger.debug("broadcasting %r", broadcast)
-                topic = broadcast['topic'].split('/')
+                topic = broadcast['topic']
+                if isinstance(topic,str):
+                    topic = topic.split('/')
 
                 targets = {}
                 for k_filter,subscriptions in self._subscriptions.items():
