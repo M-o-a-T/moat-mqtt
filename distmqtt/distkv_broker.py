@@ -111,14 +111,13 @@ class DistKVbroker(Broker):
         Read changes from DistKV and broadcast them
         """
 
-        pl = PathLongener(())  # intentionally not including the path
+        pl = PathLongener(self.__base)
         async with self.__client.watch(*self.__base, fetch=True, long_path=False) as w:
             await evt.set()
             async for msg in w:
                 if 'path' not in msg:
                     continue
                 pl(msg)
-                topic = '/'.join(msg.path)
                 data = msg.get('value', NotGiven)
                 if data is NotGiven:
                     data = b''
