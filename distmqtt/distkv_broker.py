@@ -29,16 +29,27 @@ class DistKVbroker(Broker):
         '_distkv_broker__client',
         '_distkv_broker__topic',
         '_distkv_broker__tranparent',
-        '_distkv_broker__retain',
+        '_distkv_broker__base',
     )
-    __retain = False
 
     def __init__(self, tg: anyio.abc.TaskGroup, config=None, plugin_namespace=None):
         self.__client = None
         super().__init__(tg, config=config, plugin_namespace=plugin_namespace)
         cfg = self.config['distkv']
-        self.__topic = cfg['topic']
-        self.__transparent = cfg['transparent']
+
+        def spl(x, from_cfg=True):
+            if from_cfg:
+                x = cfg[x]
+            if isinstance(x,str):
+                x=x.split('/')
+            return x
+
+        self.__topic = spl('topic')
+        self.__base = spl('base')
+        self.__transparent = [ spl(x,False) for x in cfg.get('transparent',()) ]
+
+        if self.__topic[:len(self.__base)] == self.__base:
+            raise ValueError("'topic' must not start with 'base'")
 
     async def __read_encap(self, client, cfg: dict, evt: Optional[anyio.abc.Event] = None):
         """
@@ -72,7 +83,7 @@ class DistKVbroker(Broker):
 
     async def __session(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
         """
-        Read any messages from the real server and forward them
+        Connect to the real server, read messages, forward them
         """
         try:
             async with open_distkv_client(connect=cfg['server']) as client:
@@ -85,7 +96,7 @@ class DistKVbroker(Broker):
 
                     if self.__topic:
                         await start(self.__read_encap)
-                    for t in cfg.get('transparent',()):
+                    for t in self.__transparent:
                         await start(self.__read_topic,t)
                         await start(self.__read_topic,t+['#'])
 
@@ -95,14 +106,10 @@ class DistKVbroker(Broker):
         finally:
             self.__client = None
 
-    async def __retain_task(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
+    async def __retain_reader(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):
         """
         Read changes from DistKV and broadcast them
         """
-        path = cfg['retain']
-        if isinstance(path,str):
-            path = path.split('/')
-        self.__retain = list(path)
 
         pl = PathLongener(())  # intentionally not including the path
         async with self.__client.watch(*path, fetch=True, long_path=False) as w:
@@ -123,10 +130,10 @@ class DistKVbroker(Broker):
         evt = anyio.create_event()
         await self._tg.spawn(self.__session, cfg, evt)
         await evt.wait()
-        if 'retain' in cfg:
-            evt = anyio.create_event()
-            await self._tg.spawn(self.__retain_task, cfg, evt)
-            await evt.wait()
+
+        evt = anyio.create_event()
+        await self._tg.spawn(self.__retain_reader, cfg, evt)
+        await evt.wait()
         await super().start()
 
     async def broadcast_message(self, session, topic, data, force_qos=None, qos=None, retain=False):
@@ -137,9 +144,9 @@ class DistKVbroker(Broker):
             await super().broadcast_message(session, topic, data, retain=retain)
             return
 
-        if retain and self.__retain:
-            # All retained messages get stored in DistKV.
-            await self.__client.set(*(self.__retain + ts), value=data)
+        if ts[:len(self.__base)] == self.__base:
+            # All messages on "base" get stored in DistKV, retained or not.
+            await self.__client.set(*ts, value=data)
             return
 
         for t in self.__transparent:

@@ -65,10 +65,10 @@ Configuration example
             host: '127.0.0.1'
             port: 27586
         topic: [test, mqtt]
-        retain: [test, retain]
+        base: [test, dist]
         transparent:             
-          - [test, transp]
-          - [test, also, transp]
+          - transp
+          - also/transp
 
     listeners:
         default:
@@ -100,14 +100,20 @@ The ``distkv`` section controls routing of messages via DistKV.
 * The ``server`` subsection mimics DistKV's ``connect`` section.
   See the distKV documentation for details.
 
-* The ``retain`` list tells DistMQTT which DistKV subtree to use for
+* The ``base`` list tells DistMQTT which DistKV subtree to use for
   retained messages. Any changes to this subtree will be broadcast to
   DistMQTT's clients.
 
 * Non-retained messages whose topic starts with one of the topics in the
-  ``transparent`` list are exchanged across MQTT as they are.
+  ``transparent`` list are exchanged across MQTT as they are, except that
+  the ``base`` topic is prepended when sending / stripped when receiving.
+  Use a list with an empty list in it to transfer everything that way::
 
-* Other messages are encapsulated using the topic in ``topic``.
+    transparent: [[]]
+
+* Any other messages are encapsulated using the topic in ``topic``.
+  This topic is not prepended with ``base`` and must not have ``base`` as a
+  prefix.
 
 
 The example ``listeners`` section defines 3 bindings :
