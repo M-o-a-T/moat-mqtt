@@ -1,3 +1,9 @@
+distmqtt (0.19.3-1) unstable; urgency=medium
+
+  * Merge
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Thu, 28 May 2020 21:59:19 +0200
+
 distmqtt (0.19.2-1) unstable; urgency=medium
 
   * Merge
