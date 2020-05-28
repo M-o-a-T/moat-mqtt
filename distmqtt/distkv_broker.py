@@ -126,6 +126,8 @@ class DistKVbroker(Broker):
     async def start(self):
         cfg = self.config['distkv']
 
+        await super().start()
+
         evt = anyio.create_event()
         await self._tg.spawn(self.__session, cfg, evt)
         await evt.wait()
@@ -133,7 +135,6 @@ class DistKVbroker(Broker):
         evt = anyio.create_event()
         await self._tg.spawn(self.__retain_reader, cfg, evt)
         await evt.wait()
-        await super().start()
 
     async def broadcast_message(self, session, topic, data, force_qos=None, qos=None, retain=False):
         if isinstance(topic,str):

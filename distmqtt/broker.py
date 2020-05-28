@@ -207,7 +207,7 @@ class Broker:
         self._sessions = dict()
         self._subscriptions = dict()
         self._retained_messages = dict()
-        self._broadcast_queue = anyio.create_queue(9999)
+        self._broadcast_queue = anyio.create_queue(100)
         self._tg = tg
 
         # Init plugins manager
