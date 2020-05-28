@@ -42,7 +42,7 @@ class DistKVbroker(Broker):
                 x = cfg[x]
             if isinstance(x,str):
                 x=x.split('/')
-            return x
+            return tuple(x)
 
         self.__topic = spl('topic')
         self.__base = spl('base')
@@ -140,7 +140,7 @@ class DistKVbroker(Broker):
         if isinstance(topic,str):
             ts = tuple(topic.split('/'))
         else:
-            ts = topic
+            ts = tuple(topic)
             topic = '/'.join(ts)
 
         if topic[0] == '$':
