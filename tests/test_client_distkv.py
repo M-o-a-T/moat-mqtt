@@ -144,13 +144,13 @@ class MQTTClientTest(unittest.TestCase):
                     async with open_mqttclient(config=broker_config['broker']) as client:
                         self.assertIsNotNone(client.session)
                         async with open_mqttclient(config=broker_config['broker']) as client_pub:
-                            await client_pub.publish('test_topic', data, QOS_0, retain=True)
+                            await client_pub.publish('test/retain/test_topic', data, QOS_0, retain=True)
                     await anyio.sleep(1)
 
                     async with open_mqttclient(config=broker_config['broker']) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([
-                            ('test_topic', QOS_0),
+                            ('test/retain/test_topic', QOS_0),
                         ])
                         self.assertEqual(ret[0], QOS_0)
                         async with anyio.fail_after(0.5):
@@ -163,7 +163,7 @@ class MQTTClientTest(unittest.TestCase):
                     async with open_mqttclient(config=broker_config['broker']) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([
-                            ('test_topic', QOS_0),
+                            ('test/retain/test_topic', QOS_0),
                         ])
                         self.assertEqual(ret[0], QOS_0)
                         async with anyio.fail_after(0.5):
