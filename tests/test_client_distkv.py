@@ -31,7 +31,7 @@ broker_config = {
         'server': { "host": '127.0.0.1', "port": None },
         'serf': {'host':"localhost", 'port':7373},
         'topic': 'test_'+''.join(random.choices("abcdefghijklmnopqrstuvwxyz",k=7)),
-        'retain': ('test','retain'),
+        'base': ('test','retain'),
         'connect': {'port':PORT},
         'server': {'bind':[{'host':"localhost", 'port':PORT, 'ssl':False}]},
     },
@@ -134,17 +134,23 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(0) as s:
+                for h, p, *_ in s.ports:
+                    if h[0] != ":":
+                        break
+                broker_config['distkv']['server']['host'] = h
+                broker_config['distkv']['server']['port'] = p
+
                 async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                     async with open_mqttclient(config=broker_config['broker']) as client:
                         self.assertIsNotNone(client.session)
                         async with open_mqttclient(config=broker_config['broker']) as client_pub:
-                            await client_pub.publish('test_topic', data, QOS_0, retain=True)
+                            await client_pub.publish('test/retain/test_topic', data, QOS_0, retain=True)
                     await anyio.sleep(1)
 
                     async with open_mqttclient(config=broker_config['broker']) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([
-                            ('test_topic', QOS_0),
+                            ('test/retain/test_topic', QOS_0),
                         ])
                         self.assertEqual(ret[0], QOS_0)
                         async with anyio.fail_after(0.5):
@@ -157,7 +163,7 @@ class MQTTClientTest(unittest.TestCase):
                     async with open_mqttclient(config=broker_config['broker']) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([
-                            ('test_topic', QOS_0),
+                            ('test/retain/test_topic', QOS_0),
                         ])
                         self.assertEqual(ret[0], QOS_0)
                         async with anyio.fail_after(0.5):
@@ -167,9 +173,6 @@ class MQTTClientTest(unittest.TestCase):
                         self.assertEqual(message.data, data)
 
                 seen = 0
-                for h, p, *_ in s.ports:
-                    if h[0] != ":":
-                        break
                 async with open_client(**broker_config['distkv']) as cl:
                     async for m in cl.get_tree(min_depth=1):
                         del m['tock']

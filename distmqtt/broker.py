@@ -119,10 +119,10 @@ class BrokerContext(BaseContext):
     BrokerContext is used as the context passed to plugins interacting with the broker.
     It act as an adapter to broker services from plugins developed for DistMQTT broker
     """
-    def __init__(self, broker):
+    def __init__(self, broker, config):
         super().__init__()
-        self.config = None
         self._broker_instance = broker
+        self.config = config
 
     async def broadcast_message(self, topic, data, qos=None, retain=False):
         await self._broker_instance.internal_message_broadcast(topic, data, qos, retain=retain)
@@ -207,12 +207,11 @@ class Broker:
         self._sessions = dict()
         self._subscriptions = dict()
         self._retained_messages = dict()
-        self._broadcast_queue = anyio.create_queue(9999)
+        self._broadcast_queue = anyio.create_queue(100)
         self._tg = tg
 
         # Init plugins manager
-        context = BrokerContext(self)
-        context.config = self.config
+        context = BrokerContext(self, self.config)
         if plugin_namespace:
             namespace = plugin_namespace
         else:

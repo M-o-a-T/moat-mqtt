@@ -25,7 +25,7 @@ setup(
         'pyyaml',
         'anyio',
         'attrs',
-        'distkv >= 0.18',
+        'distkv >= 0.20',
         'simplejson',
     ],
     classifiers=[

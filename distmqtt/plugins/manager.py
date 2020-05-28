@@ -22,6 +22,7 @@ Plugin = namedtuple('Plugin', ['name', 'ep', 'object'])
 
 class BaseContext:
     def __init__(self):
+        self.config = {} # compat
         self.logger = None
 
 
