@@ -121,7 +121,7 @@ class DistKVbroker(Broker):
                 data = msg.get('value', NotGiven)
                 if data is NotGiven:
                     data = b''
-                await super().broadcast_message(session=None, topic=topic, data=data, retain=True)
+                await super().broadcast_message(session=None, topic='/'.join(msg['path']), data=data, retain=True)
             
     async def start(self):
         cfg = self.config['distkv']
@@ -136,7 +136,11 @@ class DistKVbroker(Broker):
         await super().start()
 
     async def broadcast_message(self, session, topic, data, force_qos=None, qos=None, retain=False):
-        ts = topic.split('/')
+        if isinstance(topic,str):
+            ts = tuple(topic.split('/'))
+        else:
+            ts = topic
+            topic = '/'.join(ts)
 
         if topic[0] == '$':
             # $SYS and whatever-else-dollar messages are not DistKV's problem.
