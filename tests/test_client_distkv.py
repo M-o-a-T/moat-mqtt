@@ -134,6 +134,12 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(0) as s:
+                for h, p, *_ in s.ports:
+                    if h[0] != ":":
+                        break
+                broker_config['distkv']['server']['host'] = h
+                broker_config['distkv']['server']['port'] = p
+
                 async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                     async with open_mqttclient(config=broker_config['broker']) as client:
                         self.assertIsNotNone(client.session)
@@ -167,9 +173,6 @@ class MQTTClientTest(unittest.TestCase):
                         self.assertEqual(message.data, data)
 
                 seen = 0
-                for h, p, *_ in s.ports:
-                    if h[0] != ":":
-                        break
                 async with open_client(**broker_config['distkv']) as cl:
                     async for m in cl.get_tree(min_depth=1):
                         del m['tock']
