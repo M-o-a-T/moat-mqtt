@@ -98,7 +98,7 @@ class DistKVbroker(Broker):
                         await start(self.__read_encap)
                     for t in self.__transparent:
                         await start(self.__read_topic,t)
-                        await start(self.__read_topic,t+['#'])
+                        await start(self.__read_topic,t+('#',))
 
                     if evt is not None:
                         await evt.set()
