@@ -79,9 +79,9 @@ class ClientContext(BaseContext):
         ClientContext is used as the context passed to plugins interacting with the client.
         It act as an adapter to client services from plugins
     """
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
-        self.config = None
+        self.config = config
 
 
 base_logger = logging.getLogger(__name__)
@@ -187,8 +187,7 @@ class MQTTClient:
         self._subscriptions = None
 
         # Init plugins manager
-        context = ClientContext()
-        context.config = self.config
+        context = ClientContext(self.config)
         self.plugins_manager = PluginManager(tg, 'distmqtt.client.plugins', context)
         self.client_task = None
 
