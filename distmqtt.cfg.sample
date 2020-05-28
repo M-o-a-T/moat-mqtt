@@ -7,7 +7,7 @@ distkv:
     transparent:
     - [test, transp]
     - [test, also, transp]
-    retain: [test, retain]
+    base: [test, retain]
 listeners:
     default:
         max-connections: 50000

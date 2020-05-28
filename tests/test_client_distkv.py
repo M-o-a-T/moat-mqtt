@@ -31,7 +31,7 @@ broker_config = {
         'server': { "host": '127.0.0.1', "port": None },
         'serf': {'host':"localhost", 'port':7373},
         'topic': 'test_'+''.join(random.choices("abcdefghijklmnopqrstuvwxyz",k=7)),
-        'retain': ('test','retain'),
+        'base': ('test','retain'),
         'connect': {'port':PORT},
         'server': {'bind':[{'host':"localhost", 'port':PORT, 'ssl':False}]},
     },
