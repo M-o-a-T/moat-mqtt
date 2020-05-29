@@ -189,6 +189,8 @@ class Session:
         self._broker = None  # break ref loop
 
     async def put_message(self, app_message):
+        if app_message.retain and self._broker is not None and not self._broker._do_retain:
+            raise RuntimeError("The broker doesn't do retains",repr(app_message.__getstate__()))
         if not app_message.topic:
             self.logger.warning("[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection", self.client_id)
             raise MQTTException("[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection" % self.client_id)
