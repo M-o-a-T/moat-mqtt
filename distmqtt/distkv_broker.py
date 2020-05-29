@@ -124,7 +124,7 @@ class DistKVbroker(Broker):
                 if data is NotGiven:
                     data = b''
                 elif not isinstance(data,(bytes,bytearray)):
-                    await ex.record_error("distmqtt", *msg.path, data={'data':data}, message="non-binary data")
+                    await err.record_error("distmqtt", *msg.path, data={'data':data}, message="non-binary data")
                     return
                 else:
                     await super().broadcast_message(session=None, topic='/'.join(msg['path']), data=data, retain=True)
