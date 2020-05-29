@@ -1,0 +1,20 @@
+[Unit]
+Description=DistMQTT main server
+After=distkv.service
+Wants=distkv.service
+
+ConditionFileNotEmpty=/etc/distmqtt.cfg
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/distmqtt -c /etc/distmqtt.cfg
+
+User=distkv
+Group=distkv
+
+TimeoutSec=30
+WatchdogSec=10
+
