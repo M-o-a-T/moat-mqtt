@@ -26,17 +26,15 @@ class PacketLoggerPlugin:
     async def on_mqtt_packet_received(self, *args, **kwargs):
         packet = kwargs.get('packet')
         session = kwargs.get('session', None)
-        if self.context.logger.isEnabledFor(logging.DEBUG):
-            if session:
-                self.context.logger.debug("%s <-in-- %r", session.client_id, packet)
-            else:
-                self.context.logger.debug("<-in-- %r", packet)
+        if session:
+            self.context.logger.debug("%s <-in-- %r", session.client_id, packet)
+        else:
+            self.context.logger.debug("<-in-- %r", packet)
 
     async def on_mqtt_packet_sent(self, *args, **kwargs):
         packet = kwargs.get('packet')
         session = kwargs.get('session', None)
-        if self.context.logger.isEnabledFor(logging.DEBUG):
-            if session:
-                self.context.logger.debug("%s -out-> %r", session.client_id, packet)
-            else:
-                self.context.logger.debug("-out-> %r", packet)
+        if session:
+            self.context.logger.debug("%s -out-> %r", session.client_id, packet)
+        else:
+            self.context.logger.debug("-out-> %r", packet)
