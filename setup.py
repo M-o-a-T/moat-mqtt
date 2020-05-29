@@ -43,13 +43,13 @@ setup(
     ],
     entry_points={
         'distmqtt.test.plugins': [
-            'test_plugin = tests.plugins.test_manager:SimpleTestPlugin',
-            'event_plugin = tests.plugins.test_manager:EventTestPlugin',
-            'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
+#           'test_plugin = tests.plugins.test_manager:SimpleTestPlugin',
+#           'event_plugin = tests.plugins.test_manager:EventTestPlugin',
+#           'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
         ],
         'distmqtt.broker.plugins': [
             # 'event_logger_plugin = distmqtt.plugins.logging:EventLoggerPlugin',
-            'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
+#           'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
             'auth_anonymous = distmqtt.plugins.authentication:AnonymousAuthPlugin',
             'auth_file = distmqtt.plugins.authentication:FileAuthPlugin',
             'topic_taboo = distmqtt.plugins.topic_checking:TopicTabooPlugin',
@@ -57,7 +57,7 @@ setup(
             'broker_sys = distmqtt.plugins.sys.broker:BrokerSysPlugin',
         ],
         'distmqtt.client.plugins': [
-            'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
+#           'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
         ],
         'console_scripts': [
             'distmqtt = distmqtt.scripts.broker_script:main',
