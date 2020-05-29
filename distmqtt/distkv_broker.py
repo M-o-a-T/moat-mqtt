@@ -18,6 +18,7 @@ from distmqtt.session import ApplicationMessage
 
 from distkv.client import open_client as open_distkv_client
 from distkv.util import PathLongener, NotGiven
+from distkv.errors import ErrorRoot
 
 
 class DistKVbroker(Broker):
@@ -112,6 +113,7 @@ class DistKVbroker(Broker):
         """
 
         pl = PathLongener(self.__base)
+        err = await ErrorRoot.as_handler(self.__client)
         async with self.__client.watch(*self.__base, fetch=True, long_path=False) as w:
             await evt.set()
             async for msg in w:
@@ -121,7 +123,12 @@ class DistKVbroker(Broker):
                 data = msg.get('value', NotGiven)
                 if data is NotGiven:
                     data = b''
-                await super().broadcast_message(session=None, topic='/'.join(msg['path']), data=data, retain=True)
+                elif not isinstance(data,(bytes,bytearray)):
+                    await ex.record_error("distmqtt", *msg.path, data={'data':data}, message="non-binary data")
+                    return
+                else:
+                    await super().broadcast_message(session=None, topic='/'.join(msg['path']), data=data, retain=True)
+                err.record_working("distmqtt", *msg.path)
             
     async def start(self):
         cfg = self.config['distkv']
