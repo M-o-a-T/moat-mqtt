@@ -7,12 +7,12 @@ class BaseTopicPlugin:
             self.topic_config = self.context.config['topic-check']
         except KeyError:
             self.context.logger.warning("'topic-check' section not found in context configuration")
+            self.topic_config = None
 
     def topic_filtering(self, *args, **kwargs):
         if not self.topic_config:
             # auth config section not found
-            self.context.logger.warning("'auth' section not found in context configuration")
-            return False
+            return None
         return True
 
 
@@ -60,6 +60,9 @@ class TopicAccessControlListPlugin(BaseTopicPlugin):
         return ret
 
     async def topic_filtering(self, *args, **kwargs):
+        if not self.topic_config:
+            # auth config section not found
+            return None
         filter_result = super().topic_filtering(*args, **kwargs)
         if filter_result:
             session = kwargs.get('session', None)
