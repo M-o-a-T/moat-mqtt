@@ -2,6 +2,7 @@
 #
 # See the file license.txt for copying permission.
 import unittest
+import pytest
 import anyio
 import trio
 import os
@@ -15,8 +16,12 @@ except ImportError:
 from distmqtt.client import open_mqttclient, ConnectException
 from distmqtt.broker import create_broker
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
-from distkv.server import Server
-from distkv.client import open_client
+try:
+    from distkv.server import Server
+    from distkv.client import open_client
+except ImportError:
+    pytestmark = pytest.mark.skip
+
 from functools import partial
 
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
