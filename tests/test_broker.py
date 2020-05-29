@@ -2,6 +2,7 @@
 #
 # See the file license.txt for copying permission.
 import anyio
+import os
 import logging
 import unittest
 from unittest.mock import patch, call, MagicMock
@@ -30,11 +31,14 @@ formatter = "%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=formatter)
 log = logging.getLogger(__name__)
 
+PORT=40000+(os.getpid()+3)%10000
+URL='mqtt://127.0.0.1:%d/'%PORT
+
 test_config = {
     'listeners': {
         'default': {
             'type': 'tcp',
-            'bind': '127.0.0.1:1883',
+            'bind': '127.0.0.1:%d'%PORT,
             'max_connections': 10
         },
     },
@@ -78,7 +82,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as client:
-                    ret = await client.connect('mqtt://127.0.0.1/')
+                    ret = await client.connect(URL)
                     self.assertEqual(ret, 0)
                     self.assertEqual(len(broker._sessions), 1)
                     self.assertIn(client.session.client_id, broker._sessions)
@@ -99,7 +103,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
 
-                async with await anyio.connect_tcp("127.0.0.1", 1883) as conn:
+                async with await anyio.connect_tcp("127.0.0.1", PORT) as conn:
                     stream = StreamAdapter(conn)
 
                     vh = ConnectVariableHeader()
@@ -135,7 +139,7 @@ class BrokerTest(unittest.TestCase):
                 async with open_mqttclient(client_id="", config={'auto_reconnect': False}) as client:
                     return_code = None
                     try:
-                        await client.connect('mqtt://127.0.0.1/', cleansession=False)
+                        await client.connect(URL, cleansession=False)
                     except ConnectException as ce:
                         return_code = ce.return_code
                     self.assertEqual(return_code, 0x02)
@@ -150,7 +154,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as client:
-                    ret = await client.connect('mqtt://127.0.0.1/')
+                    ret = await client.connect(URL)
                     self.assertEqual(ret, 0)
                     await client.subscribe([('/topic', QOS_0)])
 
@@ -176,7 +180,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as client:
-                    ret = await client.connect('mqtt://127.0.0.1/')
+                    ret = await client.connect(URL)
                     self.assertEqual(ret, 0)
                     await client.subscribe([('/topic', QOS_0)])
 
@@ -208,7 +212,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as client:
-                    ret = await client.connect('mqtt://127.0.0.1/')
+                    ret = await client.connect(URL)
                     self.assertEqual(ret, 0)
                     await client.subscribe([('/topic', QOS_0)])
 
@@ -241,7 +245,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as pub_client:
-                    ret = await pub_client.connect('mqtt://127.0.0.1/')
+                    ret = await pub_client.connect(URL)
                     self.assertEqual(ret, 0)
 
                     ret_message = await pub_client.publish('/topic', b'data', QOS_0)
@@ -265,7 +269,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
 
-                async with await anyio.connect_tcp("127.0.0.1", 1883) as conn:
+                async with await anyio.connect_tcp("127.0.0.1", PORT) as conn:
                     stream = StreamAdapter(conn)
 
                     vh = ConnectVariableHeader()
@@ -302,7 +306,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as pub_client:
-                    ret = await pub_client.connect('mqtt://127.0.0.1/')
+                    ret = await pub_client.connect(URL)
                     self.assertEqual(ret, 0)
 
                     await pub_client.publish('/+', b'data', QOS_0)
@@ -318,7 +322,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as pub_client:
-                    ret = await pub_client.connect('mqtt://127.0.0.1/')
+                    ret = await pub_client.connect(URL)
                     self.assertEqual(ret, 0)
 
                     ret_message = await pub_client.publish('/topic', bytearray(b'\x99' * 256 * 1024), QOS_2)
@@ -342,7 +346,7 @@ class BrokerTest(unittest.TestCase):
                 self.assertTrue(broker.transitions.is_started())
 
                 async with open_mqttclient() as pub_client:
-                    ret = await pub_client.connect('mqtt://127.0.0.1/')
+                    ret = await pub_client.connect(URL)
                     self.assertEqual(ret, 0)
                     await pub_client.publish('/topic', b'data', QOS_0, retain=True)
                 await anyio.sleep(0.1) # let the broker task process the packet
@@ -364,7 +368,7 @@ class BrokerTest(unittest.TestCase):
                 self.assertTrue(broker.transitions.is_started())
 
                 async with open_mqttclient() as pub_client:
-                    ret = await pub_client.connect('mqtt://127.0.0.1/')
+                    ret = await pub_client.connect(URL)
                     self.assertEqual(ret, 0)
                     await pub_client.publish('/topic', b'', QOS_0, retain=True)
                 await anyio.sleep(0.1) # let the broker task process the packet
@@ -380,7 +384,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
-                    await sub_client.connect('mqtt://127.0.0.1')
+                    await sub_client.connect(URL)
                     ret = await sub_client.subscribe([('/qos0', QOS_0), ('/qos1', QOS_1), ('/qos2', QOS_2)])
                     self.assertEqual(ret, [QOS_0, QOS_1, QOS_2])
 
@@ -404,7 +408,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
-                    await sub_client.connect('mqtt://127.0.0.1')
+                    await sub_client.connect(URL)
                     ret = await sub_client.subscribe(
                         [('+', QOS_0), ('+/tennis/#', QOS_0), ('sport+', QOS_0), ('sport/+/player1', QOS_0)])
                     self.assertEqual(ret, [QOS_0, QOS_0, 0x80, QOS_0])
@@ -420,7 +424,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
-                    await sub_client.connect('mqtt://127.0.0.1')
+                    await sub_client.connect(URL)
                     ret = await sub_client.subscribe([('#', QOS_0)])
                     self.assertEqual(ret, [QOS_0])
 
@@ -445,7 +449,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
-                    await sub_client.connect('mqtt://127.0.0.1')
+                    await sub_client.connect(URL)
                     ret = await sub_client.subscribe([('+/monitor/Clients', QOS_0)])
                     self.assertEqual(ret, [QOS_0])
 
@@ -470,7 +474,7 @@ class BrokerTest(unittest.TestCase):
                 broker.plugins_manager._tg = broker._tg
                 self.assertTrue(broker.transitions.is_started())
                 async with open_mqttclient() as sub_client:
-                    await sub_client.connect('mqtt://127.0.0.1', cleansession=False)
+                    await sub_client.connect(URL, cleansession=False)
                     ret = await sub_client.subscribe([('/qos0', QOS_0), ('/qos1', QOS_1), ('/qos2', QOS_2)])
                     self.assertEqual(ret, [QOS_0, QOS_1, QOS_2])
                     await sub_client.disconnect()
@@ -493,7 +497,7 @@ class BrokerTest(unittest.TestCase):
 
     async def _client_publish(self, topic, data, qos, retain=False):
         async with open_mqttclient() as pub_client:
-            ret = await pub_client.connect('mqtt://127.0.0.1/')
+            ret = await pub_client.connect(URL)
             self.assertEqual(ret, 0)
             ret = await pub_client.publish(topic, data, qos, retain)
         return ret
