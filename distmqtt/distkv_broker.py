@@ -150,6 +150,10 @@ class DistKVbroker(Broker):
             ts = tuple(topic)
             topic = '/'.join(ts)
 
+        if self.__client is None:
+            self.logger.error("No client, dropping %s",topic)
+            return # can't do anything
+
         if topic[0] == '$':
             # $SYS and whatever-else-dollar messages are not DistKV's problem.
             await super().broadcast_message(session, topic, data, retain=retain)
