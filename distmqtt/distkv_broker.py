@@ -72,11 +72,11 @@ class DistKVbroker(Broker):
         """
         Read topical messages from the real server and forward them
         """
-        async with self.__client.msg_monitor(topic) as q:
+        async with self.__client.msg_monitor(topic, raw=True) as q:
             if evt is not None:
                 await evt.set()
             async for m in q:
-                d = m.data
+                d = m.raw
                 t = m.topic
                 await super().broadcast_message(topic=t,data=d,session=None)
 
@@ -156,7 +156,7 @@ class DistKVbroker(Broker):
         for t in self.__transparent:
             # Messages to be forwarded transparently. The "retain" flag is ignored.
             if len(ts) >= len(t) and t == ts[:len(t)]:
-                await self.__client.msg_send(topic=ts, data=data)
+                await self.__client.msg_send(topic=ts, raw=data)
                 return
 
         if self.__topic:
