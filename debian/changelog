@@ -1,3 +1,9 @@
+distmqtt (0.19.3-2) unstable; urgency=medium
+
+  * Renamed.
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Fri, 29 May 2020 04:38:58 +0200
+
 distmqtt (0.19.3-1) unstable; urgency=medium
 
   * Merge
