@@ -145,6 +145,7 @@ class ProtocolHandler:
             await self.stream.close()
         if self._disconnect_waiter is not None:
             await self._disconnect_waiter.set()
+        self.logger.debug("closed writer")
 
     async def _stop_waiters(self):
         if len(self._puback_waiters):
@@ -402,7 +403,7 @@ class ProtocolHandler:
                             break
                         cls = packet_class(fixed_header)
                         packet = await cls.from_stream(self.stream, fixed_header=fixed_header)
-                        self.logger.debug("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
+                        # self.logger.debug("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
                         await self.plugins_manager.fire_event(
                             EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session)
                         try:
@@ -465,7 +466,7 @@ class ProtocolHandler:
                     if packet is None:  # timeout
                         await self.handle_write_timeout()
                         continue
-                    self.logger.debug("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
+                    # self.logger.debug("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
                     await packet.to_stream(self.stream)
                     await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session)
         except ConnectionResetError as cre:
@@ -576,8 +577,8 @@ class ProtocolHandler:
             else:
                 await self._reader_task.spawn(self._handle_message_flow, incoming_message)
 
-            if self.session is not None:
-                self.logger.debug("Message queue size: %d", self.session._delivered_message_queue.qsize())
+#           if self.session is not None:
+#               self.logger.debug("Message queue size: %d", self.session._delivered_message_queue.qsize())
         except CancelledError:
             pass
 
