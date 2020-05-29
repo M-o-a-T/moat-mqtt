@@ -128,7 +128,7 @@ class DistKVbroker(Broker):
                     return
                 else:
                     await super().broadcast_message(session=None, topic='/'.join(msg['path']), data=data, retain=True)
-                err.record_working("distmqtt", *msg.path)
+                await err.record_working("distmqtt", *msg.path)
             
     async def start(self):
         cfg = self.config['distkv']
