@@ -31,8 +31,7 @@ class ApplicationMessage:
 
     def __init__(self, packet_id, topic, qos, data, retain):
         if not isinstance(data,(bytes,bytearray)):
-            logger.warn("Non-bytes data for %s: %r", topic, data)
-            data = b'ERROR_NON_BIN'
+            raise RuntimeError("Non-bytes data for %s: %r" % (topic, data))
 
         self.packet_id = packet_id
         """ Publish message `packet identifier <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718025>`_"""
