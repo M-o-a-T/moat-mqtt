@@ -4,5 +4,4 @@
 /*.debhelper-build-stamp
 /*.substvars
 /debhelper-build-stamp
-/distmqtt
-/python3-distmqtt
+/distkv-mqtt
