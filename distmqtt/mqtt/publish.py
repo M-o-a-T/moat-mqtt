@@ -16,6 +16,8 @@ class PublishVariableHeader(MQTTVariableHeader):
         super().__init__()
         if '*' in topic_name:
             raise MQTTException("[MQTT-3.3.2-2] Topic name in the PUBLISH Packet MUST NOT contain wildcard characters.")
+        if not isinstance(topic_name,str):
+            topic_name = '/'.join(topic_name)
         self.topic_name = topic_name
         self.packet_id = packet_id
 
