@@ -740,6 +740,9 @@ class Broker:
                         await target_session.retained_messages.put(retained_message)
 
     async def broadcast_message(self, session, topic, data, force_qos=None, qos=None, retain=False):
+        if not isinstance(data,(bytes,bytearray)):
+            logger.error("Not bytes %s:%r",topic,data)
+            return
         if retain and not self._do_retain:
             raise RuntimeError("Support for retained messages is off")
         broadcast = {
