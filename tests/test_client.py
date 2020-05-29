@@ -13,11 +13,14 @@ formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(
 logging.basicConfig(level=logging.ERROR, format=formatter)
 log = logging.getLogger(__name__)
 
+PORT=40000+(os.getpid()+4)%10000
+URI='mqtt://127.0.0.1:%d/'%PORT
+
 broker_config = {
     'listeners': {
         'default': {
             'type': 'tcp',
-            'bind': '127.0.0.1:1883',
+            'bind': '127.0.0.1:%d'%PORT,
             'max_connections': 10
         },
         'ws': {
@@ -67,7 +70,7 @@ class MQTTClientTest(unittest.TestCase):
             try:
                 config = {'auto_reconnect': False}
                 async with open_mqttclient(config=config) as client:
-                    await client.connect('mqtt://127.0.0.1/')
+                    await client.connect(URI)
             except ConnectException as e:
                 pass
             else:
@@ -111,7 +114,7 @@ class MQTTClientTest(unittest.TestCase):
         async def test_coro():
             async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 async with open_mqttclient() as client:
-                    await client.connect('mqtt://127.0.0.1/')
+                    await client.connect(URI)
                     self.assertIsNotNone(client.session)
                     await client.ping()
 
@@ -121,7 +124,7 @@ class MQTTClientTest(unittest.TestCase):
         async def test_coro():
             async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 async with open_mqttclient() as client:
-                    await client.connect('mqtt://127.0.0.1/')
+                    await client.connect(URI)
                     self.assertIsNotNone(client.session)
                     ret = await client.subscribe([
                         ('$SYS/broker/uptime', QOS_0),
@@ -138,7 +141,7 @@ class MQTTClientTest(unittest.TestCase):
         async def test_coro():
             async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 async with open_mqttclient() as client:
-                    await client.connect('mqtt://127.0.0.1/')
+                    await client.connect(URI)
                     self.assertIsNotNone(client.session)
                     ret = await client.subscribe([
                         ('$SYS/broker/uptime', QOS_0),
@@ -154,14 +157,14 @@ class MQTTClientTest(unittest.TestCase):
         async def test_coro():
             async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 async with open_mqttclient() as client:
-                    await client.connect('mqtt://127.0.0.1/')
+                    await client.connect(URI)
                     self.assertIsNotNone(client.session)
                     ret = await client.subscribe([
                         ('test_topic', QOS_0),
                     ])
                     self.assertEqual(ret[0], QOS_0)
                     async with open_mqttclient() as client_pub:
-                        await client_pub.connect('mqtt://127.0.0.1/')
+                        await client_pub.connect(URI)
                         await client_pub.publish('test_topic', data, QOS_0)
                     message = await client.deliver_message()
                     self.assertIsNotNone(message)
@@ -175,7 +178,7 @@ class MQTTClientTest(unittest.TestCase):
         async def test_coro():
             async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins") as broker:
                 async with open_mqttclient() as client:
-                    await client.connect('mqtt://127.0.0.1/')
+                    await client.connect(URI)
                     self.assertIsNotNone(client.session)
                     ret = await client.subscribe([
                         ('test_topic', QOS_0),

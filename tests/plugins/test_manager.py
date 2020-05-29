@@ -2,6 +2,7 @@
 #
 # See the file license.txt for copying permission.
 import unittest
+import pytest
 import logging
 import anyio
 from distmqtt.plugins.manager import PluginManager
@@ -9,6 +10,7 @@ from distmqtt.plugins.manager import PluginManager
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=formatter)
 
+pytestmark = pytest.mark.skip
 
 class SimpleTestPlugin:
     def __init__(self, context):

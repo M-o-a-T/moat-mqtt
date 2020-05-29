@@ -7,6 +7,7 @@ import asyncwebsockets
 import anyio
 import sys
 import re
+from copy import deepcopy
 from collections import deque
 try:
     from contextlib import asynccontextmanager
@@ -197,7 +198,7 @@ class Broker:
 
     def __init__(self, tg: anyio.abc.TaskGroup, config=None, plugin_namespace=None):
         self.logger = logging.getLogger(__name__)
-        self.config = _defaults
+        self.config = deepcopy(_defaults)
         if config is not None:
             self.config.update(config)
         self._build_listeners_config(self.config)
@@ -206,9 +207,12 @@ class Broker:
         self._init_states()
         self._sessions = dict()
         self._subscriptions = dict()
-        self._retained_messages = dict()
+
         self._broadcast_queue = anyio.create_queue(100)
         self._tg = tg
+        self._do_retain = self.config.get('retain', True)
+        if self._do_retain:
+            self._retained_messages = dict()
 
         # Init plugins manager
         context = BrokerContext(self, self.config)
@@ -256,7 +260,8 @@ class Broker:
         try:
             self._sessions = dict()
             self._subscriptions = dict()
-            self._retained_messages = dict()
+            if self._do_retain:
+                self._retained_messages = dict()
             self.transitions.start()
             self.logger.debug("Broker starting")
         except (MachineError, ValueError) as exc:
@@ -357,7 +362,8 @@ class Broker:
 
         self._sessions = dict()
         self._subscriptions = dict()
-        self._retained_messages = dict()
+        if self._do_retain:
+            self._retained_messages = dict()
         try:
             self.transitions.shutdown()
         except MachineError as exc:
@@ -468,8 +474,9 @@ class Broker:
 
         self.logger.debug("%s Start messages handling", client_session.client_id)
         await handler.start()
-        self.logger.debug("Retained messages queue size: %d", client_session.retained_messages.qsize())
-        await self.publish_session_retained_messages(client_session)
+        if self._do_retain:
+            self.logger.debug("Retained messages queue size: %d", client_session.retained_messages.qsize())
+            await self.publish_session_retained_messages(client_session)
 
         # Init and start loop for handling client messages (publish, subscribe/unsubscribe, disconnect)
         async with anyio.create_task_group() as tg:
@@ -502,7 +509,8 @@ class Broker:
                                 client_id=client_session.client_id,
                                 topic=subscription[0],
                                 qos=subscription[1])
-                            await self.publish_retained_messages_for_subscription(subscription, client_session)
+                            if self._do_retain:
+                                await self.publish_retained_messages_for_subscription(subscription, client_session)
                     self.logger.debug(repr(self._subscriptions))
 
             await tg.spawn(handle_unsubscribe)
@@ -611,12 +619,12 @@ class Broker:
                 if res is False:
                     topic_result = False
                     self.logger.debug("Topic filtering failed due to '%s' plugin result: %s", plugin.name, res)
-                else:
-                    self.logger.debug("'%s' plugin result: %s", plugin.name, res)
         # If all plugins returned True, authentication is success
         return topic_result
 
     def retain_message(self, source_session, topic_name, data, qos=None):
+        if not self._do_retain:
+            raise RuntimeError("Support for retained messages is turned off")
         if data is not None and data != b'':
             # If retained flag set, store the message for further subscriptions
             self.logger.debug("Retaining %s: %r", topic_name, data)
@@ -702,7 +710,7 @@ class Broker:
         async with anyio.create_task_group() as tg:
             while True:
                 broadcast = await self._broadcast_queue.get()
-                self.logger.debug("broadcasting %r", broadcast)
+                # self.logger.debug("broadcasting %r", broadcast)
                 topic = broadcast['topic']
                 if isinstance(topic,str):
                     topic = topic.split('/')
@@ -716,7 +724,7 @@ class Broker:
 
                 for target_session, qos in targets.items():
                     if target_session.transitions.state == 'connected':
-                        if self.logger.isEnabledFor(logging.DEBUG):
+                        if False and self.logger.isEnabledFor(logging.DEBUG):
                             self.logger.debug("broadcasting application message from %s on topic '%s' to %s",
                                                 format_client_message(session=broadcast['session']),
                                                 broadcast['topic'], format_client_message(session=target_session))
@@ -732,6 +740,8 @@ class Broker:
                         await target_session.retained_messages.put(retained_message)
 
     async def broadcast_message(self, session, topic, data, force_qos=None, qos=None, retain=False):
+        if retain and not self._do_retain:
+            raise RuntimeError("Support for retained messages is off")
         broadcast = {
             'session': session,
             'topic': topic,
@@ -755,9 +765,9 @@ class Broker:
                     retained.topic, retained.data, retained.qos, True)
 
     async def publish_retained_messages_for_subscription(self, subscription, session):
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug("Begin broadcasting messages retained due to subscription on '%s' from %s",
-                              subscription[0], format_client_message(session=session))
+#       if self.logger.isEnabledFor(logging.DEBUG):
+#           self.logger.debug("Begin broadcasting messages retained due to subscription on '%s' from %s",
+#                             subscription[0], format_client_message(session=session))
         sub = subscription[0].split('/')
         handler = self._get_handler(session)
         async with anyio.create_task_group() as tg:
