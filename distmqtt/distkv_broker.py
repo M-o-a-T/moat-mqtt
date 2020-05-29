@@ -86,7 +86,7 @@ class DistKVbroker(Broker):
         Connect to the real server, read messages, forward them
         """
         try:
-            async with open_distkv_client(connect=cfg['server']) as client:
+            async with open_distkv_client(connect=cfg['connect']) as client:
                 self.__client = client
                 async with anyio.create_task_group() as tg:
                     async def start(p,*a):
