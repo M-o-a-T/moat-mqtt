@@ -16,7 +16,7 @@ except ImportError:
 from wsproto.utilities import ProtocolError
 from asyncwebsockets import create_websocket
 
-from distmqtt.utils import not_in_dict_or_none, match_topic
+from distmqtt.utils import match_topic
 from distmqtt.session import Session
 from distmqtt.errors import NoDataException
 from distmqtt.mqtt.connack import CONNECTION_ACCEPTED, CLIENT_ERROR
@@ -767,7 +767,7 @@ class MQTTClient:
             broker_conf["cleansession"] = cleansession
 
         for key in ["uri"]:
-            if not_in_dict_or_none(broker_conf, key):
+            if broker_conf.get(key, None) is None:
                 raise ClientException("Missing connection parameter '%s'" % key)
 
         s = Session(self.plugins_manager)

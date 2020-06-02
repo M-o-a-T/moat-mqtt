@@ -11,19 +11,6 @@ from .errors import InvalidStateError
 logger = logging.getLogger(__name__)
 
 
-def not_in_dict_or_none(d, key):
-    """
-    Check if a key exists in a map and if it's not None
-    :param dict: map to look for key
-    :param key: key to find
-    :return: true if key is in dict and not None
-    """
-    if key not in d or d[key] is None:
-        return True
-    else:
-        return False
-
-
 def format_client_message(session=None, address=None, port=None):
     if session:
         return "(client id=%s)" % session.client_id
