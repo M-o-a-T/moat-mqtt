@@ -100,7 +100,9 @@ class ProtocolHandler:
             raise ProtocolHandlerException("Handler is already attached to a session")
         self._init_session(session)
         self.stream = stream
-        await self._tg.spawn(self._sender_loop)
+        evt = anyio.create_event()
+        await self._tg.spawn(self._sender_loop, evt)
+        await evt.wait()
 
     async def detach(self):
         self.session = None
@@ -116,7 +118,9 @@ class ProtocolHandler:
         self._disconnect_waiter = anyio.create_event()
         if not self._is_attached():
             raise ProtocolHandlerException("Handler is not attached to a stream")
-        await self._tg.spawn(self._reader_loop)
+        evt = anyio.create_event()
+        await self._tg.spawn(self._reader_loop, evt)
+        await evt.wait()
 
         self.logger.debug("Handler tasks started")
         await self._retry_deliveries()
@@ -379,7 +383,7 @@ class ProtocolHandler:
             await self._send_packet(pubcomp_packet)
             app_message.pubcomp_packet = pubcomp_packet
 
-    async def _reader_loop(self):
+    async def _reader_loop(self, evt):
         self.logger.debug("%s Starting reader coro", self.session.client_id)
         keepalive_timeout = self.session.keep_alive
         if keepalive_timeout <= 0:
@@ -388,6 +392,7 @@ class ProtocolHandler:
         try:
             async with anyio.create_task_group() as tg:
                 self._reader_task = tg
+                await evt.set()
                 while True:
                     try:
                         async with anyio.fail_after(keepalive_timeout):
@@ -449,7 +454,7 @@ class ProtocolHandler:
     async def _send_packet(self, packet):
         await self._send_q.put(packet)
 
-    async def _sender_loop(self):
+    async def _sender_loop(self, evt):
         keepalive_timeout = self.session.keep_alive
         if keepalive_timeout <= 0:
             keepalive_timeout = None
@@ -457,6 +462,7 @@ class ProtocolHandler:
         try:
             async with anyio.open_cancel_scope() as scope:
                 self._sender_task = scope
+                await evt.set()
                 while True:
                     packet = None
                     async with anyio.move_on_after(keepalive_timeout):
