@@ -16,17 +16,15 @@ Features
 
 DistMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and provides the following features:
 
-- Routing of MQTT messages, either via `Serf`_ or MQTT.
-- Storage of retained messages in DistKV
-- Support QoS 0, QoS 1 and QoS 2 messages flow
-- Client auto-reconnection on network lost
-- Authentication through password file (more methods can be added through a plugin system)
+- Support for QoS 0, QoS 1 and QoS 2 messages flows
+- Client auto-reconnection
+- Authentication via password file (more methods can be added through a plugin system)
 - Basic ``$SYS`` topics
 - TCP and websocket support
 - SSL support over TCP and websocket
 - Plugin system
-
-.. _Serf: https://www.serf.io
+- Optional: Storage of retained messages in DistKV
+- Testing: DistKV test server
 
 Build status
 ------------
