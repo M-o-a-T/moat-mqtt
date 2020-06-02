@@ -47,9 +47,10 @@ class WebSocketsAdapter(BaseAdapter):
     """
     WebSockets API reader adapter
     """
+
     def __init__(self, websocket: Websocket):
         self._websocket = websocket
-        self._buffer = io.BytesIO(b'')
+        self._buffer = io.BytesIO(b"")
 
     async def read(self, n=-1) -> bytes:
         await self._feed_buffer(n)
@@ -98,6 +99,7 @@ class StreamAdapter(BaseAdapter):
     This adapter relies on anyio.Stream to read from a TCP socket.
     Because API is very close, this class is trivial
     """
+
     def __init__(self, stream: anyio.abc.Stream):
         self.logger = logging.getLogger(__name__)
         self._stream = stream
@@ -126,9 +128,10 @@ class BufferAdapter(BaseAdapter):
     Byte Buffer reader adapter
     This adapter simply adapt reading a byte buffer.
     """
+
     def __init__(self, buffer: bytes):
         self._rstream = io.BytesIO(buffer)
-        self._wstream = io.BytesIO(b'')
+        self._wstream = io.BytesIO(b"")
 
     async def read(self, n=-1) -> bytes:
         return self._rstream.read(n)

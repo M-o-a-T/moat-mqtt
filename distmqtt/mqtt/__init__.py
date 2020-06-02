@@ -3,9 +3,22 @@
 # See the file license.txt for copying permission.
 from distmqtt.errors import DistMQTTException
 from distmqtt.mqtt.packet import (
-    CONNECT, CONNACK, PUBLISH, PUBACK, PUBREC, PUBREL, PUBCOMP, SUBSCRIBE,
-    SUBACK, UNSUBSCRIBE, UNSUBACK, PINGREQ, PINGRESP, DISCONNECT,
-    MQTTFixedHeader)
+    CONNECT,
+    CONNACK,
+    PUBLISH,
+    PUBACK,
+    PUBREC,
+    PUBREL,
+    PUBCOMP,
+    SUBSCRIBE,
+    SUBACK,
+    UNSUBSCRIBE,
+    UNSUBACK,
+    PINGREQ,
+    PINGRESP,
+    DISCONNECT,
+    MQTTFixedHeader,
+)
 from distmqtt.mqtt.connect import ConnectPacket
 from distmqtt.mqtt.connack import ConnackPacket
 from distmqtt.mqtt.disconnect import DisconnectPacket
@@ -35,7 +48,7 @@ packet_dict = {
     UNSUBACK: UnsubackPacket,
     PINGREQ: PingReqPacket,
     PINGRESP: PingRespPacket,
-    DISCONNECT: DisconnectPacket
+    DISCONNECT: DisconnectPacket,
 }
 
 
@@ -44,4 +57,6 @@ def packet_class(fixed_header: MQTTFixedHeader):
         cls = packet_dict[fixed_header.packet_type]
         return cls
     except KeyError:
-        raise DistMQTTException("Unexpected packet Type '%s'" % fixed_header.packet_type)
+        raise DistMQTTException(
+            "Unexpected packet Type '%s'" % fixed_header.packet_type
+        )

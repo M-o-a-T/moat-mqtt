@@ -42,6 +42,7 @@ import logging
 import anyio
 import os
 import json
+import socket
 from distmqtt.client import open_mqttclient, ConnectException, _codecs
 from distmqtt.version import get_version
 from docopt import docopt
@@ -52,8 +53,6 @@ logger = logging.getLogger(__name__)
 
 
 def _gen_client_id():
-    import os
-    import socket
     pid = os.getpid()
     hostname = socket.gethostname()
     return "distmqtt_pub/%d-%s" % (pid, hostname)
@@ -61,63 +60,64 @@ def _gen_client_id():
 
 def _get_qos(arguments):
     try:
-        return int(arguments['--qos'])
+        return int(arguments["--qos"])
     except Exception:
         return None
 
+
 def _get_extra_headers(arguments):
     try:
-        return json.loads(arguments['--extra-headers'])
+        return json.loads(arguments["--extra-headers"])
     except Exception:
         return {}
 
+
 def _get_message(arguments):
-    codec = arguments['-C'] or "utf-8"
+    codec = arguments["-C"] or "utf-8"
     codec = _codecs[codec]()
 
-    if arguments['-n']:
-        yield b''
-    if arguments['-m']:
-        yield arguments['-m'].encode(encoding='utf-8')
-    if arguments['-M']:
-        yield codec.encode(eval(arguments['-M']))
-    if arguments['-f']:
+    if arguments["-n"]:
+        yield b""
+    if arguments["-m"]:
+        yield arguments["-m"].encode(encoding="utf-8")
+    if arguments["-M"]:
+        yield codec.encode(eval(arguments["-M"]))  # pylint: disable=eval-used
+    if arguments["-f"]:
         try:
-            with open(arguments['-f'], 'r') as f:
+            with open(arguments["-f"], "r") as f:
                 for line in f:
-                    yield line.encode(encoding='utf-8')
+                    yield line.encode(encoding="utf-8")
         except Exception:
-            logger.exception("Failed to read file '%s'", arguments['-f'])
-    if arguments['-l']:
-        import sys
+            logger.exception("Failed to read file '%s'", arguments["-f"])
+    if arguments["-l"]:
         for line in sys.stdin:
             if line:
-                yield line.encode(encoding='utf-8')
-    if arguments['-s']:
-        import sys
+                yield line.encode(encoding="utf-8")
+    if arguments["-s"]:
         message = bytearray()
         for line in sys.stdin:
-            message.extend(line.encode(encoding='utf-8'))
+            message.extend(line.encode(encoding="utf-8"))
         yield message
-    if arguments['-S']:
-        import sys
+    if arguments["-S"]:
         message = sys.stdin.read()
-        yield codecs.encode(eval(message))
+        yield codec.encode(eval(message))  # pylint: disable=eval-used
 
 
 async def do_pub(client, arguments):
     logger.info("%s Connecting to broker", client.client_id)
 
-    await client.connect(uri=arguments['--url'],
-                                cleansession=arguments['--clean-session'],
-                                cafile=arguments['--ca-file'],
-                                capath=arguments['--ca-path'],
-                                cadata=arguments['--ca-data'],
-                                extra_headers=_get_extra_headers(arguments))
+    await client.connect(
+        uri=arguments["--url"],
+        cleansession=arguments["--clean-session"],
+        cafile=arguments["--ca-file"],
+        capath=arguments["--ca-path"],
+        cadata=arguments["--ca-data"],
+        extra_headers=_get_extra_headers(arguments),
+    )
     try:
         qos = _get_qos(arguments)
-        topic = arguments['-t']
-        retain = arguments['-r']
+        topic = arguments["-t"]
+        retain = arguments["-r"]
         async with anyio.create_task_group() as tg:
             for message in _get_message(arguments):
                 logger.info("%s Publishing to '%s'", client.client_id, topic)
@@ -126,43 +126,47 @@ async def do_pub(client, arguments):
     except KeyboardInterrupt:
         logger.info("%s Disconnected from broker", client.client_id)
     except ConnectException as ce:
-        logger.fatal("connection to '%s' failed: %r", arguments['--url'], ce)
+        logger.fatal("connection to '%s' failed: %r", arguments["--url"], ce)
     finally:
         async with anyio.fail_after(2, shield=True):
             await client.disconnect()
 
 
-async def main(*args, **kwargs):
+async def main():
     arguments = docopt(__doc__, version=get_version())
-    #print(arguments)
+    # print(arguments)
     formatter = "[%(asctime)s] :: %(levelname)s - %(message)s"
 
-    if arguments['-d']:
+    if arguments["-d"]:
         level = logging.DEBUG
     else:
         level = logging.INFO
     logging.basicConfig(level=level, format=formatter)
 
     config = None
-    if arguments['-c']:
-        config = read_yaml_config(arguments['-c'])
+    if arguments["-c"]:
+        config = read_yaml_config(arguments["-c"])
     else:
-        config = read_yaml_config(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_client.yaml'))
+        config = read_yaml_config(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "default_client.yaml"
+            )
+        )
         logger.debug("Using default configuration")
 
     client_id = arguments.get("-i", None)
     if not client_id:
         client_id = _gen_client_id()
 
-    if arguments['-k']:
-        config['keep_alive'] = int(arguments['-k'])
+    if arguments["-k"]:
+        config["keep_alive"] = int(arguments["-k"])
 
-    if arguments['--will-topic'] and arguments['--will-message']:
-        config['will'] = dict()
-        config['will']['topic'] = arguments['--will-topic']
-        config['will']['message'] = arguments['--will-message'].encode('utf-8')
-        config['will']['qos'] = _get_qos(arguments)
-        config['will']['retain'] = arguments.get('--will-retain',False)
+    if arguments["--will-topic"] and arguments["--will-message"]:
+        config["will"] = dict()
+        config["will"]["topic"] = arguments["--will-topic"]
+        config["will"]["message"] = arguments["--will-message"].encode("utf-8")
+        config["will"]["qos"] = _get_qos(arguments)
+        config["will"]["retain"] = arguments.get("--will-retain", False)
 
     async with open_mqttclient(client_id=client_id, config=config) as C:
         await do_pub(C, arguments)

@@ -8,6 +8,7 @@ import ssl
 import copy
 from urllib.parse import urlparse, urlunparse
 from functools import wraps
+
 try:
     from contextlib import asynccontextmanager
 except ImportError:
@@ -15,62 +16,73 @@ except ImportError:
 from wsproto.utilities import ProtocolError
 from asyncwebsockets import create_websocket
 
-from distmqtt.utils import not_in_dict_or_none, match_topic
+from distmqtt.utils import match_topic
 from distmqtt.session import Session
 from distmqtt.errors import NoDataException
-from distmqtt.mqtt.connack import CONNECTION_ACCEPTED
+from distmqtt.mqtt.connack import CONNECTION_ACCEPTED, CLIENT_ERROR
 from distmqtt.mqtt.protocol.client_handler import ClientProtocolHandler
 from distmqtt.adapters import StreamAdapter, WebSocketsAdapter
 from distmqtt.plugins.manager import PluginManager, BaseContext
 from distmqtt.mqtt.protocol.handler import ProtocolHandlerException
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 from distmqtt import codecs
-from collections import deque
 
 
 _defaults = {
-    'keep_alive': 10,
-    'ping_delay': 1,
-    'default_qos': 0,
-    'default_retain': False,
-    'auto_reconnect': True,
-    'reconnect_max_interval': 10,
-    'reconnect_retries': 2,
-    'codec': 'noop',
+    "keep_alive": 10,
+    "ping_delay": 1,
+    "default_qos": 0,
+    "default_retain": False,
+    "auto_reconnect": True,
+    "reconnect_max_interval": 10,
+    "reconnect_retries": 2,
+    "codec": "noop",
 }
 
 _codecs = {}
-for t in dir(codecs):
-    c = getattr(codecs,t)
-    if isinstance(c,type) and issubclass(c,codecs.BaseCodec):
+for _t in dir(codecs):
+    _c = getattr(codecs, _t)
+    if isinstance(_c, type) and issubclass(_c, codecs.BaseCodec):
         try:
-            _codecs[c.name] = c
+            _codecs[_c.name] = _c
         except AttributeError:
             pass
 
 
-def get_codec(codec, fallback=None, config={}):
+def get_codec(
+    codec, fallback=None, config={}
+):  # pylint: disable=dangerous-default-value
     if codec is None:
         codec = fallback
     if codec is None:
-        codec = config['codec']
+        codec = config["codec"]
     if isinstance(codec, str):
-        codec = config.get('codec_params',{}).get('name',codec)
+        codec = config.get("codec_params", {}).get("name", codec)
         codec = _codecs[codec]
-    if isinstance(codec,type):
-        codec = codec(**config.get('codec_params',{}).get(codec.name,{}))
+    if isinstance(codec, type):
+        codec = codec(**config.get("codec_params", {}).get(codec.name, {}))
     return codec
+
 
 _handler_id = 0
 
+
 class _set(set):
-    pass
+    topic = None
+    qos = None
+
 
 class ClientException(Exception):
     pass
 
 
 class ConnectException(ClientException):
+    def __init__(self, text=None, return_code=CLIENT_ERROR):
+        if text is None:
+            text = self.__class__.__name__
+        super().__init__(text)
+        self.return_code = return_code
+
     pass
 
 
@@ -79,6 +91,7 @@ class ClientContext(BaseContext):
         ClientContext is used as the context passed to plugins interacting with the client.
         It act as an adapter to client services from plugins
     """
+
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -93,23 +106,29 @@ def mqtt_connected(func):
         :param func: coroutine to be called once connected
         :return: coroutine result
     """
+
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
         if not self._connected_state.is_set():
             base_logger.warning("Client not connected, waiting for it")
             async with anyio.create_task_group() as tg:
+
                 async def wait_no_more():
                     await self._no_more_connections.wait()
                     raise ClientException("Will not reconnect")
+
                 await tg.spawn(wait_no_more)
 
                 await self._connected_state.wait()
                 await tg.cancel_scope.cancel()
         return await func(self, *args, **kwargs)
+
     return wrapper
+
 
 @asynccontextmanager
 async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
+    # pylint: disable=dangerous-default-value
     """
         MQTT client implementation.
 
@@ -137,8 +156,8 @@ async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
         C = MQTTClient(tg, client_id, config=config, codec=codec)
         try:
             if uri is not None:
-                config['uri'] = uri
-            if 'uri' in config:
+                config["uri"] = uri
+            if "uri" in config:
                 await C.connect(**config)
             yield C
         finally:
@@ -163,7 +182,9 @@ class MQTTClient:
         this class.
     """
 
-    def __init__(self, tg: anyio.abc.TaskGroup, client_id=None, config=None, codec=None):
+    def __init__(
+        self, tg: anyio.abc.TaskGroup, client_id=None, config=None, codec=None
+    ):
         self.logger = logging.getLogger(__name__)
         self.config = copy.deepcopy(_defaults)
         if config is not None:
@@ -172,6 +193,7 @@ class MQTTClient:
             self.client_id = client_id
         else:
             from distmqtt.utils import gen_client_id
+
             self.client_id = gen_client_id()
             self.logger.debug("Using generated client ID : %s", self.client_id)
 
@@ -188,17 +210,19 @@ class MQTTClient:
 
         # Init plugins manager
         context = ClientContext(self.config)
-        self.plugins_manager = PluginManager(tg, 'distmqtt.client.plugins', context)
+        self.plugins_manager = PluginManager(tg, "distmqtt.client.plugins", context)
         self.client_task = None
 
-    async def connect(self,
-                uri=None,
-                cleansession=None,
-                cafile=None,
-                capath=None,
-                cadata=None,
-                extra_headers={},
-                **kw):
+    async def connect(
+        self,
+        uri=None,
+        cleansession=None,
+        cafile=None,
+        capath=None,
+        cadata=None,
+        extra_headers={},
+    ):
+        # pylint: disable=dangerous-default-value
         """
             Connect to a remote broker.
 
@@ -216,14 +240,14 @@ class MQTTClient:
             :raise: :class:`distmqtt.client.ConnectException` if connection fails
         """
         self.session = self._initsession(uri, cleansession, cafile, capath, cadata)
-        self.extra_headers = extra_headers;
+        self.extra_headers = extra_headers
         self.logger.debug("Connect to: %s", uri)
 
         try:
             return await self._do_connect()
         except SyntaxError as be:
             self.logger.warning("Connection failed: %r", be)
-            auto_reconnect = self.config.get('auto_reconnect', False)
+            auto_reconnect = self.config.get("auto_reconnect", False)
             if not auto_reconnect:
                 raise
             else:
@@ -239,7 +263,7 @@ class MQTTClient:
         """
 
         # do not reconnect any more
-        self.config['auto_reconnect'] = False
+        self.config["auto_reconnect"] = False
         await self.cancel_tasks()
 
         if self.session is not None and self.session.transitions.is_connected():
@@ -250,7 +274,9 @@ class MQTTClient:
             await self._handler.stop()
             self.session.transitions.disconnect()
         else:
-            self.logger.warning("Client session is not currently connected, ignoring call")
+            self.logger.warning(
+                "Client session is not currently connected, ignoring call"
+            )
 
     async def cancel_tasks(self):
         """
@@ -258,7 +284,7 @@ class MQTTClient:
         :return:
         """
         if self.client_task is not None:
-            task,self.client_task = self.client_task, None
+            task, self.client_task = self.client_task, None
             await task.cancel()
 
     async def reconnect(self, cleansession=None):
@@ -282,8 +308,8 @@ class MQTTClient:
         if cleansession:
             self.session.clean_session = cleansession
         self.logger.debug("Reconnecting with session parameters: %r", self.session)
-        reconnect_max_interval = self.config.get('reconnect_max_interval', 10)
-        reconnect_retries = self.config.get('reconnect_retries', 5)
+        reconnect_max_interval = self.config.get("reconnect_max_interval", 10)
+        reconnect_retries = self.config.get("reconnect_retries", 5)
         nb_attempt = 1
         await anyio.sleep(1)
         while True:
@@ -293,7 +319,9 @@ class MQTTClient:
             except SyntaxError as e:  # no you can't reconnect on every exception
                 self.logger.warning("Reconnection attempt failed: %r", e)
                 if reconnect_retries >= 0 and nb_attempt > reconnect_retries:
-                    self.logger.error("Maximum number of connection attempts reached. Reconnection aborted")
+                    self.logger.error(
+                        "Maximum number of connection attempts reached. Reconnection aborted"
+                    )
                     raise ConnectException("Too many connection attempts failed")
                 exp = 2 ** nb_attempt
                 delay = exp if exp < reconnect_max_interval else reconnect_max_interval
@@ -321,8 +349,10 @@ class MQTTClient:
         if self.session.transitions.is_connected():
             await self._handler.mqtt_ping()
         else:
-            self.logger.warning("MQTT PING request incompatible with current session state '%s'",
-                                self.session.transitions.state)
+            self.logger.warning(
+                "MQTT PING request incompatible with current session state '%s'",
+                self.session.transitions.state,
+            )
 
     @mqtt_connected
     async def publish(self, topic, message, qos=None, retain=None, codec=None):
@@ -347,14 +377,14 @@ class MQTTClient:
             assert qos in (QOS_0, QOS_1, QOS_2)
         else:
             try:
-                qos = self.config['topics'][topic]['qos']
+                qos = self.config["topics"][topic]["qos"]
             except KeyError:
-                qos = self.config['default_qos']
+                qos = self.config["default_qos"]
         if retain is None:
             try:
-                retain = self.config['topics'][topic]['retain']
+                retain = self.config["topics"][topic]["retain"]
             except KeyError:
-                retain = self.config['default_retain']
+                retain = self.config["default_retain"]
         return await self._handler.mqtt_publish(topic, message, qos, retain)
 
     @mqtt_connected
@@ -416,14 +446,15 @@ class MQTTClient:
         Using both methods in parallel are not supported.
 
         """
+
         class _Subscription:
-            def __init__(self,client,topic,qos, codec=None):
+            def __init__(self, client, topic, qos, codec=None):
                 self.client = client
                 self.topic = topic
                 self.qos = qos
                 if codec is None:
                     codec = client.codec
-                elif isinstance(code,str):
+                elif isinstance(codec, str):
                     codec = _codecs[codec]()
                 self.codec = codec
                 self._q = None
@@ -436,7 +467,7 @@ class MQTTClient:
                 return self._id
 
             def __eq__(self, other):
-                return self._id == getattr(other,'_id',other)
+                return self._id == getattr(other, "_id", other)
 
             async def __aenter__(self):
                 self._q = anyio.create_queue(100)
@@ -446,7 +477,7 @@ class MQTTClient:
             async def __aexit__(self, *tb):
                 self._q = None
                 try:
-                    async with anyio.move_on_after(2,shield=True):
+                    async with anyio.move_on_after(2, shield=True):
                         await self.client._unsubscribe(self)
                 except ClientException:
                     pass
@@ -460,7 +491,7 @@ class MQTTClient:
                 message = await self._q.get()
                 message.data = self.codec.decode(message.publish_packet.data)
                 return message
-            
+
             async def publish(self, topic, message, *a, **kw):
                 """
                     Publish a message.
@@ -473,31 +504,30 @@ class MQTTClient:
                 """
                 if topic is None:
                     topic = self.topic
-                if 'codec' not in kw:
-                    kw['codec'] = self.codec
+                if "codec" not in kw:
+                    kw["codec"] = self.codec
                 await self.client.publish(topic, message, *a, **kw)
 
-        return _Subscription(self,topic,qos)
+        return _Subscription(self, topic, qos, codec=codec)
 
-    async def _subscribe(self,handler):
-
+    async def _subscribe(self, handler):
         topic = handler.topic
         if self._subscriptions is None:
             self._subscriptions = dict()
             await self._tg.spawn(self._deliver_loop)
-        clients = self._subscriptions.get(topic,None)
+        clients = self._subscriptions.get(topic, None)
         if clients is None:
             self._subscriptions[topic] = clients = _set()
-            clients.__topic = tuple(topic.split("/"))
-            clients.__qos = handler.qos
-            await self.subscribe([(topic,handler.qos)])
-        elif clients.__qos < handler.qos:
-            clients.__qos = handler.qos
-            await self.subscribe([(topic,handler.qos)])
+            clients.topic = tuple(topic.split("/"))
+            clients.qos = handler.qos
+            await self.subscribe([(topic, handler.qos)])
+        elif clients.qos < handler.qos:
+            clients.qos = handler.qos
+            await self.subscribe([(topic, handler.qos)])
 
         clients.add(handler)
 
-    async def _unsubscribe(self,handler):
+    async def _unsubscribe(self, handler):
         topic = handler.topic
         clients = self._subscriptions[topic]
         clients.remove(handler)
@@ -506,9 +536,9 @@ class MQTTClient:
             await self.unsubscribe([topic])
 
     async def _dispatch(self, msg):
-        t = msg.topic.split('/')
-        for topic,clients in list(self._subscriptions.items()):
-            if not match_topic(t, clients.__topic):
+        t = msg.topic.split("/")
+        for clients in list(self._subscriptions.values()):
+            if not match_topic(t, clients.topic):
                 continue
             for c in list(clients):
                 if c._q is None:
@@ -539,7 +569,6 @@ class MQTTClient:
             finally:
                 self.client_task = None
 
-
     @mqtt_connected
     async def deliver_message(self, codec=None):
         """
@@ -553,13 +582,13 @@ class MQTTClient:
             :raises: :class:`TimeoutError` if timeout occurs before a message is delivered
 
             :param codec: Codec to decode the message with.
-            
+
             This method returns ``None`` if it is cancelled by closing the
             connection.
         """
         if codec is None:
             codec = self.codec
-        elif isinstance(code,str):
+        elif isinstance(codec, str):
             codec = _codecs[codec]()
 
         async with anyio.open_cancel_scope() as scope:
@@ -582,22 +611,32 @@ class MQTTClient:
         # Decode URI attributes
         uri_attributes = urlparse(self.session.broker_uri)
         scheme = uri_attributes.scheme
-        secure = True if scheme in ('mqtts', 'wss') else False
-        self.session.username = self.session.username if self.session.username else uri_attributes.username
-        self.session.password = self.session.password if self.session.password else uri_attributes.password
+        secure = True if scheme in ("mqtts", "wss") else False
+        self.session.username = (
+            self.session.username if self.session.username else uri_attributes.username
+        )
+        self.session.password = (
+            self.session.password if self.session.password else uri_attributes.password
+        )
         self.session.remote_address = uri_attributes.hostname
         self.session.remote_port = uri_attributes.port
-        if scheme in ('mqtt', 'mqtts') and not self.session.remote_port:
-            self.session.remote_port = 8883 if scheme == 'mqtts' else 1883
-        if scheme in ('ws', 'wss') and not self.session.remote_port:
-            self.session.remote_port = 443 if scheme == 'wss' else 80
-        if scheme in ('ws', 'wss'):
+        if scheme in ("mqtt", "mqtts") and not self.session.remote_port:
+            self.session.remote_port = 8883 if scheme == "mqtts" else 1883
+        if scheme in ("ws", "wss") and not self.session.remote_port:
+            self.session.remote_port = 443 if scheme == "wss" else 80
+        if scheme in ("ws", "wss"):
             # Rewrite URI to conform to https://tools.ietf.org/html/rfc6455#section-3
-            uri = (scheme, self.session.remote_address + ":" + str(self.session.remote_port), uri_attributes[2],
-                   uri_attributes[3], uri_attributes[4], uri_attributes[5])
+            uri = (
+                scheme,
+                self.session.remote_address + ":" + str(self.session.remote_port),
+                uri_attributes[2],
+                uri_attributes[3],
+                uri_attributes[4],
+                uri_attributes[5],
+            )
             self.session.broker_uri = urlunparse(uri)
         # Init protocol handler
-        #if not self._handler:
+        # if not self._handler:
         self._handler = ClientProtocolHandler(self.plugins_manager)
 
         if secure:
@@ -605,33 +644,37 @@ class MQTTClient:
                 ssl.Purpose.SERVER_AUTH,
                 cafile=self.session.cafile,
                 capath=self.session.capath,
-                cadata=self.session.cadata)
-            if 'certfile' in self.config and 'keyfile' in self.config:
-                sc.load_cert_chain(self.config['certfile'], self.config['keyfile'])
-            if 'check_hostname' in self.config and isinstance(self.config['check_hostname'], bool):
-                sc.check_hostname = self.config['check_hostname']
-            kwargs['ssl_context'] = sc
-            kwargs['autostart_tls'] = True
+                cadata=self.session.cadata,
+            )
+            if "certfile" in self.config and "keyfile" in self.config:
+                sc.load_cert_chain(self.config["certfile"], self.config["keyfile"])
+            if "check_hostname" in self.config and isinstance(
+                self.config["check_hostname"], bool
+            ):
+                sc.check_hostname = self.config["check_hostname"]
+            kwargs["ssl_context"] = sc
+            kwargs["autostart_tls"] = True
 
         try:
             adapter = None
             self._connected_state.clear()
             # Open connection
-            if scheme in ('mqtt', 'mqtts'):
-                conn = \
-                    await anyio.connect_tcp(
-                        self.session.remote_address,
-                        self.session.remote_port, **kwargs)
+            if scheme in ("mqtt", "mqtts"):
+                conn = await anyio.connect_tcp(
+                    self.session.remote_address, self.session.remote_port, **kwargs
+                )
                 if secure:
                     await conn.start_tls()
                 adapter = StreamAdapter(conn)
-            elif scheme in ('ws', 'wss'):
-                if kwargs.pop('autostart_tls', False):
-                    kwargs['ssl'] = kwargs.pop('ssl_context')
-                websocket = await create_websocket(self.session.broker_uri, 
-                    subprotocols=['mqtt'],
+            elif scheme in ("ws", "wss"):
+                if kwargs.pop("autostart_tls", False):
+                    kwargs["ssl"] = kwargs.pop("ssl_context")
+                websocket = await create_websocket(
+                    self.session.broker_uri,
+                    subprotocols=["mqtt"],
                     headers=self.extra_headers,
-                    **kwargs)
+                    **kwargs
+                )
                 adapter = WebSocketsAdapter(websocket)
             # Start MQTT protocol
             await self._handler.attach(self.session, adapter)
@@ -644,31 +687,35 @@ class MQTTClient:
             if return_code is not CONNECTION_ACCEPTED:
                 self.session.transitions.disconnect()
                 self.logger.warning("Connection rejected with code '%s'", return_code)
-                exc = ConnectException("Connection rejected by broker")
-                exc.return_code = return_code
+                exc = ConnectException("Connection rejected by broker", return_code)
                 raise exc
             else:
                 # Handle MQTT protocol
                 await self._handler.start()
                 self.session.transitions.connect()
                 await self._connected_state.set()
-                self.logger.debug("connected to %s:%s", self.session.remote_address, self.session.remote_port)
+                self.logger.debug(
+                    "connected to %s:%s",
+                    self.session.remote_address,
+                    self.session.remote_port,
+                )
             return return_code
         except ProtocolError as exc:
             self.logger.warning("connection failed: invalid websocket handshake")
             self.session.transitions.disconnect()
-            raise ConnectException("connection failed: invalid websocket handshake") from exc
+            raise ConnectException(
+                "connection failed: invalid websocket handshake"
+            ) from exc
         except (ProtocolHandlerException, ConnectionError, OSError) as exc:
             self.logger.warning("MQTT connection failed")
             self.session.transitions.disconnect()
             raise ConnectException from exc
 
     async def handle_connection_close(self, evt):
-
         async def cancel_tasks():
             await self._no_more_connections.set()
             if self.client_task:
-                task,self.client_task = self.client_task,None
+                task, self.client_task = self.client_task, None
                 await task.cancel()
 
         async with anyio.open_cancel_scope() as scope:
@@ -687,7 +734,7 @@ class MQTTClient:
         await self._handler.detach()
         self.session.transitions.disconnect()
 
-        if self.config.get('auto_reconnect', False):
+        if self.config.get("auto_reconnect", False):
             # Try reconnection
             self.logger.debug("Auto-reconnecting")
             try:
@@ -700,53 +747,49 @@ class MQTTClient:
             await cancel_tasks()
 
     def _initsession(
-            self,
-            uri=None,
-            cleansession=None,
-            cafile=None,
-            capath=None,
-            cadata=None) -> Session:
+        self, uri=None, cleansession=None, cafile=None, capath=None, cadata=None
+    ) -> Session:
         # Load config
-        broker_conf = self.config.get('broker', dict()).copy()
+        broker_conf = self.config.get("broker", dict()).copy()
         if uri:
-            broker_conf['uri'] = uri
+            broker_conf["uri"] = uri
         if cafile:
-            broker_conf['cafile'] = cafile
-        elif 'cafile' not in broker_conf:
-            broker_conf['cafile'] = None
+            broker_conf["cafile"] = cafile
+        elif "cafile" not in broker_conf:
+            broker_conf["cafile"] = None
         if capath:
-            broker_conf['capath'] = capath
-        elif 'capath' not in broker_conf:
-            broker_conf['capath'] = None
+            broker_conf["capath"] = capath
+        elif "capath" not in broker_conf:
+            broker_conf["capath"] = None
         if cadata:
-            broker_conf['cadata'] = cadata
-        elif 'cadata' not in broker_conf:
-            broker_conf['cadata'] = None
+            broker_conf["cadata"] = cadata
+        elif "cadata" not in broker_conf:
+            broker_conf["cadata"] = None
 
         if cleansession is not None:
-            broker_conf['cleansession'] = cleansession
+            broker_conf["cleansession"] = cleansession
 
-        for key in ['uri']:
-            if not_in_dict_or_none(broker_conf, key):
+        for key in ["uri"]:
+            if broker_conf.get(key, None) is None:
                 raise ClientException("Missing connection parameter '%s'" % key)
 
         s = Session(self.plugins_manager)
-        s.broker_uri = broker_conf['uri']
+        s.broker_uri = broker_conf["uri"]
         s.client_id = self.client_id
-        s.cafile = broker_conf['cafile']
-        s.capath = broker_conf['capath']
-        s.cadata = broker_conf['cadata']
+        s.cafile = broker_conf["cafile"]
+        s.capath = broker_conf["capath"]
+        s.cadata = broker_conf["cadata"]
         if cleansession is not None:
             s.clean_session = cleansession
         else:
-            s.clean_session = self.config.get('cleansession', True)
-        s.keep_alive = self.config['keep_alive'] - self.config['ping_delay']
-        if 'will' in self.config:
+            s.clean_session = self.config.get("cleansession", True)
+        s.keep_alive = self.config["keep_alive"] - self.config["ping_delay"]
+        if "will" in self.config:
             s.will_flag = True
-            s.will_retain = self.config['will']['retain']
-            s.will_topic = self.config['will']['topic']
-            s.will_message = self.config['will']['message']
-            s.will_qos = self.config['will']['qos']
+            s.will_retain = self.config["will"]["retain"]
+            s.will_topic = self.config["will"]["topic"]
+            s.will_message = self.config["will"]["message"]
+            s.will_qos = self.config["will"]["qos"]
         else:
             s.will_flag = False
             s.will_retain = False

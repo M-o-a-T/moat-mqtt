@@ -2,15 +2,15 @@
 #
 # See the file license.txt for copying permission.
 
-__all__ = ['BaseContext', 'PluginManager']
+__all__ = ["BaseContext", "PluginManager"]
 
 import pkg_resources
 import logging
 import anyio
 import copy
-import sys
 
 from collections import namedtuple
+
 try:
     from contextlib import asynccontextmanager
 except ImportError:
@@ -18,11 +18,12 @@ except ImportError:
 from functools import partial
 
 
-Plugin = namedtuple('Plugin', ['name', 'ep', 'object'])
+Plugin = namedtuple("Plugin", ["name", "ep", "object"])
+
 
 class BaseContext:
     def __init__(self):
-        self.config = {} # compat
+        self.config = {}  # compat
         self.logger = None
 
 
@@ -32,6 +33,7 @@ class PluginManager:
     Plugins are loaded for a given namespace (group).
     This plugin manager uses coroutines to run plugin call asynchronously in an event queue
     """
+
     def __init__(self, tg: anyio.abc.TaskGroup, namespace, context):
         self._tg = tg
 
@@ -49,7 +51,7 @@ class PluginManager:
 
     def _load_plugins(self, namespace):
         self.logger.debug("Loading plugins for namespace %s", namespace)
-        plugs = self.context.config.get('plugins', None)
+        plugs = self.context.config.get("plugins", None)
         for ep in pkg_resources.iter_entry_points(group=namespace):
             if plugs is not None and ep.name not in plugs:
                 continue
@@ -100,7 +102,9 @@ class PluginManager:
         """
         return self._plugins
 
-    async def fire_event(self, event_name, wait=False, *args, **kwargs):
+    async def fire_event(
+        self, event_name, wait=False, *args, **kwargs
+    ):  # pylint: disable=W1113
         """
         Fire an event to plugins.
         PluginManager schedule async calls for each plugin on method called "on_" + event_name
@@ -113,6 +117,7 @@ class PluginManager:
         :param wait: indicates if fire_event should wait for plugin calls completion (True), or not
         :return:
         """
+
         @asynccontextmanager
         async def _event_tg(wait):
             if wait:
@@ -135,8 +140,11 @@ class PluginManager:
                         await _schedule_coro(tg, event_method)
 
                     except TypeError:
-                        self.logger.error("Method '%s' on plugin '%s' is not a coroutine",
-                                          event_method_name, plugin.name)
+                        self.logger.error(
+                            "Method '%s' on plugin '%s' is not a coroutine",
+                            event_method_name,
+                            plugin.name,
+                        )
 
     async def map(self, coro, *args, **kwargs):
         """
@@ -149,11 +157,12 @@ class PluginManager:
         :param kwargs: arguments to pass to coro
         :return: dict containing return from coro call for each plugin
         """
+
         async def worker(plugin):
             res = await coro(plugin, *args, **kwargs)
             ret_dict[plugin] = res
 
-        p_list = kwargs.pop('filter_plugins', None)
+        p_list = kwargs.pop("filter_plugins", None)
         if p_list is None:
             p_list = [p.name for p in self.plugins]
         ret_dict = {}
@@ -163,8 +172,11 @@ class PluginManager:
                     try:
                         await tg.spawn(worker, plugin)
                     except TypeError:
-                        self.logger.error("Method '%r' on plugin '%s' is not a coroutine",
-                                          coro, plugin.name)
+                        self.logger.error(
+                            "Method '%r' on plugin '%s' is not a coroutine",
+                            coro,
+                            plugin.name,
+                        )
         return ret_dict
 
     @staticmethod

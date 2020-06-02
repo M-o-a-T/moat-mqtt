@@ -32,13 +32,12 @@ Options:
     -d                  Enable debug messages
 """
 
-import sys
 import logging
 import anyio
 import os
 import json
+import socket
 from distmqtt.client import open_mqttclient, ConnectException
-from distmqtt.errors import MQTTException
 from distmqtt.version import get_version
 from docopt import docopt
 from distmqtt.mqtt.constants import QOS_0
@@ -48,8 +47,6 @@ logger = logging.getLogger(__name__)
 
 
 def _gen_client_id():
-    import os
-    import socket
     pid = os.getpid()
     hostname = socket.gethostname()
     return "distmqtt_sub/%d-%s" % (pid, hostname)
@@ -57,13 +54,14 @@ def _gen_client_id():
 
 def _get_qos(arguments):
     try:
-        return int(arguments['--qos'])
+        return int(arguments["--qos"])
     except KeyError:
         return QOS_0
 
+
 def _get_extra_headers(arguments):
     try:
-        return json.loads(arguments['--extra-headers'])
+        return json.loads(arguments["--extra-headers"])
     except Exception:
         return {}
 
@@ -71,29 +69,31 @@ def _get_extra_headers(arguments):
 async def do_sub(client, arguments):
 
     try:
-        await client.connect(uri=arguments['--url'],
-                                  cleansession=arguments['--clean-session'],
-                                  cafile=arguments['--ca-file'],
-                                  capath=arguments['--ca-path'],
-                                  cadata=arguments['--ca-data'],
-                                  extra_headers=_get_extra_headers(arguments))
-        filters = []
+        await client.connect(
+            uri=arguments["--url"],
+            cleansession=arguments["--clean-session"],
+            cafile=arguments["--ca-file"],
+            capath=arguments["--ca-path"],
+            cadata=arguments["--ca-data"],
+            extra_headers=_get_extra_headers(arguments),
+        )
         async with anyio.create_task_group() as tg:
-            for topic in arguments['-t']:
-                await tg.spawn(run_sub,client,topic, arguments)
+            for topic in arguments["-t"]:
+                await tg.spawn(run_sub, client, topic, arguments)
 
     except KeyboardInterrupt:
         pass
     except ConnectException as ce:
-        logger.fatal("connection to '%s' failed: %r", arguments['--url'], ce)
+        logger.fatal("connection to '%s' failed: %r", arguments["--url"], ce)
     finally:
         async with anyio.fail_after(2, shield=True):
             await client.disconnect()
 
-async def run_sub(client,topic, arguments):
+
+async def run_sub(client, topic, arguments):
     qos = _get_qos(arguments)
-    if arguments['-n']:
-        max_count = int(arguments['-n'])
+    if arguments["-n"]:
+        max_count = int(arguments["-n"])
     else:
         max_count = None
     count = 0
@@ -101,45 +101,55 @@ async def run_sub(client,topic, arguments):
     async with client.subscription(topic, qos) as sub:
         async for message in sub:
             count += 1
-            print(message.topic,message.data,sep="\t")
+            print(message.topic, message.data, sep="\t")
             if max_count and count >= max_count:
                 break
 
 
-async def main(*args, **kwargs):
+async def main():
     arguments = docopt(__doc__, version=get_version())
-    #print(arguments)
+    # print(arguments)
     formatter = "[%(asctime)s] :: %(levelname)s - %(message)s"
 
-    if arguments['-d']:
+    if arguments["-d"]:
         level = logging.DEBUG
     else:
         level = logging.INFO
     logging.basicConfig(level=level, format=formatter)
 
     config = None
-    if arguments['-c']:
-        config = read_yaml_config(arguments['-c'])
+    if arguments["-c"]:
+        config = read_yaml_config(arguments["-c"])
     else:
-        config = read_yaml_config(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_client.yaml'))
-        logger.debug(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_client.yaml'))
+        config = read_yaml_config(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "default_client.yaml"
+            )
+        )
+        logger.debug(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "default_client.yaml"
+            )
+        )
         logger.debug("Using default configuration")
 
     client_id = arguments.get("-i", None)
     if not client_id:
         client_id = _gen_client_id()
 
-    if arguments['-k']:
-        config['keep_alive'] = int(arguments['-k'])
+    if arguments["-k"]:
+        config["keep_alive"] = int(arguments["-k"])
 
-    if arguments['--will-topic'] and arguments['--will-message']:
-        config['will'] = dict()
-        config['will']['topic'] = arguments['--will-topic']
-        config['will']['message'] = arguments['--will-message'].encode('utf-8')
-        config['will']['qos'] = _get_qos(arguments)
-        config['will']['retain'] = arguments['--will-retain']
+    if arguments["--will-topic"] and arguments["--will-message"]:
+        config["will"] = dict()
+        config["will"]["topic"] = arguments["--will-topic"]
+        config["will"]["message"] = arguments["--will-message"].encode("utf-8")
+        config["will"]["qos"] = _get_qos(arguments)
+        config["will"]["retain"] = arguments["--will-retain"]
 
-    async with open_mqttclient(client_id=client_id, config=config, codec=arguments['-C']) as C:
+    async with open_mqttclient(
+        client_id=client_id, config=config, codec=arguments["-C"]
+    ) as C:
         await do_sub(C, arguments)
 
 

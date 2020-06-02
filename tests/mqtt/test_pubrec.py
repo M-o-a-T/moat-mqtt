@@ -10,7 +10,7 @@ from distmqtt.adapters import BufferAdapter
 
 class PubrecPacketTest(unittest.TestCase):
     def test_from_stream(self):
-        data = b'\x50\x02\x00\x0a'
+        data = b"\x50\x02\x00\x0a"
         stream = BufferAdapter(data)
         message = anyio.run(PubrecPacket.from_stream, stream)
         self.assertEqual(message.variable_header.packet_id, 10)
@@ -19,4 +19,4 @@ class PubrecPacketTest(unittest.TestCase):
         variable_header = PacketIdVariableHeader(10)
         publish = PubrecPacket(variable_header=variable_header)
         out = publish.to_bytes()
-        self.assertEqual(out, b'\x50\x02\x00\x0a')
+        self.assertEqual(out, b"\x50\x02\x00\x0a")

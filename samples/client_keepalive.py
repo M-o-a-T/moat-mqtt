@@ -12,19 +12,16 @@ from distmqtt.client import open_mqttclient
 
 logger = logging.getLogger(__name__)
 
-config = {
-    'keep_alive': 5,
-    'ping_delay': 1,
-}
+config = {"keep_alive": 5, "ping_delay": 1}
 
 
 async def test_coro():
     async with open_mqttclient() as C:
-        await C.connect('mqtt://test.mosquitto.org:1883/')
+        await C.connect("mqtt://test.mosquitto.org:1883/")
         await anyio.sleep(18)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     formatter = "[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
     logging.basicConfig(level=logging.DEBUG, format=formatter)
     anyio.run(test_coro)

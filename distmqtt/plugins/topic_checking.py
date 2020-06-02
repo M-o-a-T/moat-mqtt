@@ -1,15 +1,15 @@
-
-
 class BaseTopicPlugin:
     def __init__(self, context):
         self.context = context
         try:
-            self.topic_config = self.context.config['topic-check']
+            self.topic_config = self.context.config["topic-check"]
         except KeyError:
-            self.context.logger.warning("'topic-check' section not found in context configuration")
+            self.context.logger.warning(
+                "'topic-check' section not found in context configuration"
+            )
             self.topic_config = None
 
-    def topic_filtering(self, *args, **kwargs):
+    def topic_filtering(self, *args, **kwargs):  # pylint: disable=unused-argument
         if not self.topic_config:
             # auth config section not found
             return None
@@ -19,14 +19,14 @@ class BaseTopicPlugin:
 class TopicTabooPlugin(BaseTopicPlugin):
     def __init__(self, context):
         super().__init__(context)
-        self._taboo = ['prohibited', 'top-secret', 'data/classified']
+        self._taboo = ["prohibited", "top-secret", "data/classified"]
 
     async def topic_filtering(self, *args, **kwargs):
         filter_result = super().topic_filtering(*args, **kwargs)
         if filter_result:
-            session = kwargs.get('session', None)
-            topic = kwargs.get('topic', None)
-            if session.username and session.username == 'admin':
+            session = kwargs.get("session", None)
+            topic = kwargs.get("topic", None)
+            if session.username and session.username == "admin":
                 return True
             if topic and topic in self._taboo:
                 return False
@@ -35,13 +35,10 @@ class TopicTabooPlugin(BaseTopicPlugin):
 
 
 class TopicAccessControlListPlugin(BaseTopicPlugin):
-    def __init__(self, context):
-        super().__init__(context)
-
     @staticmethod
     def topic_ac(topic_requested, topic_allowed):
-        req_split = topic_requested.split('/')
-        allowed_split = topic_allowed.split('/')
+        req_split = topic_requested.split("/")
+        allowed_split = topic_allowed.split("/")
         ret = True
         for i in range(max(len(req_split), len(allowed_split))):
             try:
@@ -50,9 +47,9 @@ class TopicAccessControlListPlugin(BaseTopicPlugin):
             except IndexError:
                 ret = False
                 break
-            if b_aux == '#':
+            if b_aux == "#":
                 break
-            elif (b_aux == '+') or (b_aux == a_aux):
+            elif (b_aux == "+") or (b_aux == a_aux):
                 continue
             else:
                 ret = False
@@ -65,14 +62,14 @@ class TopicAccessControlListPlugin(BaseTopicPlugin):
             return None
         filter_result = super().topic_filtering(*args, **kwargs)
         if filter_result:
-            session = kwargs.get('session', None)
-            req_topic = kwargs.get('topic', None)
+            session = kwargs.get("session", None)
+            req_topic = kwargs.get("topic", None)
             if req_topic:
                 username = session.username
                 if username is None:
-                    username = 'anonymous'
+                    username = "anonymous"
                 try:
-                    allowed_topics = self.topic_config['acl'].get(username, [])
+                    allowed_topics = self.topic_config["acl"].get(username, [])
                 except KeyError:
                     return True
                 else:

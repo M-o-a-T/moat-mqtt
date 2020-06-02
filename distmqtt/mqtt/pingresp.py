@@ -9,12 +9,15 @@ class PingRespPacket(MQTTPacket):
     VARIABLE_HEADER = None
     PAYLOAD = None
 
-    def __init__(self, fixed: MQTTFixedHeader=None):
+    def __init__(self, fixed: MQTTFixedHeader = None):
         if fixed is None:
             header = MQTTFixedHeader(PINGRESP, 0x00)
         else:
             if fixed.packet_type is not PINGRESP:
-                raise DistMQTTException("Invalid fixed packet type %s for PingRespPacket init" % fixed.packet_type)
+                raise DistMQTTException(
+                    "Invalid fixed packet type %s for PingRespPacket init"
+                    % fixed.packet_type
+                )
             header = fixed
         super().__init__(header)
         self.variable_header = None

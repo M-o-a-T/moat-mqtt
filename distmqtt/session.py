@@ -14,9 +14,10 @@ from distmqtt.mqtt.constants import QOS_0
 OUTGOING = 0
 INCOMING = 1
 
-EVENT_BROKER_MESSAGE_RECEIVED = 'broker_message_received'
+EVENT_BROKER_MESSAGE_RECEIVED = "broker_message_received"
 
 logger = logging.getLogger(__name__)
+
 
 class ApplicationMessage:
 
@@ -25,12 +26,20 @@ class ApplicationMessage:
     """
 
     __slots__ = (
-        'packet_id', 'topic', 'qos', 'data', 'retain', 'publish_packet',
-        'puback_packet', 'pubrec_packet', 'pubrel_packet', 'pubcomp_packet',
+        "packet_id",
+        "topic",
+        "qos",
+        "data",
+        "retain",
+        "publish_packet",
+        "puback_packet",
+        "pubrec_packet",
+        "pubrel_packet",
+        "pubcomp_packet",
     )
 
     def __init__(self, packet_id, topic, qos, data, retain):
-        if not isinstance(data,(bytes,bytearray)):
+        if not isinstance(data, (bytes, bytearray)):
             raise RuntimeError("Non-bytes data for %s: %r" % (topic, data))
 
         self.packet_id = packet_id
@@ -70,29 +79,31 @@ class ApplicationMessage:
         :param dup: force dup flag
         :return: :class:`distmqtt.mqtt.publish.PublishPacket` built from ApplicationMessage instance attributes
         """
-        return PublishPacket.build(self.topic, self.data, self.packet_id, dup, self.qos, self.retain)
+        return PublishPacket.build(
+            self.topic, self.data, self.packet_id, dup, self.qos, self.retain
+        )
 
     def __eq__(self, other):
         return self.packet_id == other.packet_id
 
     def __getstate__(self):
-        res = dict((k,getattr(self,k)) for k in ('topic','qos','data','retain'))
-        res['id'] = self.packet_id
+        res = dict((k, getattr(self, k)) for k in ("topic", "qos", "data", "retain"))
+        res["id"] = self.packet_id
         return res
 
     def __setstate__(self, state):
-        self.packet_id = res['id']
-        for k in ('topic','qos','data','retain'):
+        self.packet_id = state["id"]
+        for k in ("topic", "qos", "data", "retain"):
             setattr(self, k, state[k])
 
-    
+
 class IncomingApplicationMessage(ApplicationMessage):
 
     """
         Incoming :class:`~distmqtt.session.ApplicationMessage`.
     """
 
-    __slots__ = ('direction',)
+    __slots__ = ("direction",)
 
     def __init__(self, packet_id, topic, qos, data, retain):
         super().__init__(packet_id, topic, qos, data, retain)
@@ -105,7 +116,7 @@ class OutgoingApplicationMessage(ApplicationMessage):
         Outgoing :class:`~distmqtt.session.ApplicationMessage`.
     """
 
-    __slots__ = ('direction',)
+    __slots__ = ("direction",)
 
     def __init__(self, packet_id, topic, qos, data, retain):
         super().__init__(packet_id, topic, qos, data, retain)
@@ -113,7 +124,7 @@ class OutgoingApplicationMessage(ApplicationMessage):
 
 
 class Session:
-    states = ['new', 'connected', 'disconnected']
+    states = ["new", "connected", "disconnected"]
 
     def __init__(self, plugins_manager):
         self._init_states()
@@ -160,18 +171,28 @@ class Session:
         self._broker = None
 
     def _init_states(self):
-        self.transitions = Machine(states=Session.states, initial='new')
-        self.transitions.add_transition(trigger='connect', source='new', dest='connected')
-        self.transitions.add_transition(trigger='connect', source='disconnected', dest='connected')
-        self.transitions.add_transition(trigger='disconnect', source='connected', dest='disconnected')
-        self.transitions.add_transition(trigger='disconnect', source='new', dest='disconnected')
-        self.transitions.add_transition(trigger='disconnect', source='disconnected', dest='disconnected')
+        self.transitions = Machine(states=Session.states, initial="new")
+        self.transitions.add_transition(
+            trigger="connect", source="new", dest="connected"
+        )
+        self.transitions.add_transition(
+            trigger="connect", source="disconnected", dest="connected"
+        )
+        self.transitions.add_transition(
+            trigger="disconnect", source="connected", dest="disconnected"
+        )
+        self.transitions.add_transition(
+            trigger="disconnect", source="new", dest="disconnected"
+        )
+        self.transitions.add_transition(
+            trigger="disconnect", source="disconnected", dest="disconnected"
+        )
 
     def __hash__(self):
         return hash(self.client_id)
 
     def __eq__(self, other):
-        other = getattr(other,'client_id', other)
+        other = getattr(other, "client_id", other)
         return self.client_id == other
 
     async def start(self, broker=None):
@@ -188,16 +209,36 @@ class Session:
         self._broker = None  # break ref loop
 
     async def put_message(self, app_message):
-        if app_message.retain and self._broker is not None and not self._broker._do_retain:
-            raise RuntimeError("The broker doesn't do retains",repr(app_message.__getstate__()))
+        if (
+            app_message.retain
+            and self._broker is not None
+            and not self._broker._do_retain
+        ):
+            raise RuntimeError(
+                "The broker doesn't do retains", repr(app_message.__getstate__())
+            )
         if not app_message.topic:
-            self.logger.warning("[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection", self.client_id)
-            raise MQTTException("[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection" % self.client_id)
+            self.logger.warning(
+                "[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection",
+                self.client_id,
+            )
+            raise MQTTException(
+                "[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection"
+                % self.client_id
+            )
         if "#" in app_message.topic or "+" in app_message.topic:
-            self.logger.warning("[MQTT-3.3.2-2] - %s invalid TOPIC sent in PUBLISH message, closing connection", self.client_id)
-            raise MQTTException("[MQTT-3.3.2-2] - %s invalid TOPIC sent in PUBLISH message, closing connection" % self.client_id)
+            self.logger.warning(
+                "[MQTT-3.3.2-2] - %s invalid TOPIC sent in PUBLISH message, closing connection",
+                self.client_id,
+            )
+            raise MQTTException(
+                "[MQTT-3.3.2-2] - %s invalid TOPIC sent in PUBLISH message, closing connection"
+                % self.client_id
+            )
         if app_message.qos == QOS_0 and self._delivered_message_queue.qsize() >= 9999:
-            self.logger.warning("delivered messages queue full. QOS_0 message discarded")
+            self.logger.warning(
+                "delivered messages queue full. QOS_0 message discarded"
+            )
         else:
             await self._delivered_message_queue.put(app_message)
 
@@ -216,11 +257,19 @@ class Session:
                 broker.logger.debug("%s handling message delivery", self.client_id)
                 while True:
                     app_message = await self.get_next_message()
-                    await self._plugins_manager.fire_event(EVENT_BROKER_MESSAGE_RECEIVED,
-                                                client_id=self.client_id,      
-                                                message=app_message)
+                    await self._plugins_manager.fire_event(
+                        EVENT_BROKER_MESSAGE_RECEIVED,
+                        client_id=self.client_id,
+                        message=app_message,
+                    )
 
-                    await broker.broadcast_message(self, app_message.topic, app_message.data, qos=app_message.qos, retain=app_message.publish_packet.retain_flag)
+                    await broker.broadcast_message(
+                        self,
+                        app_message.topic,
+                        app_message.data,
+                        qos=app_message.qos,
+                        retain=app_message.publish_packet.retain_flag,
+                    )
         finally:
             async with anyio.fail_after(2, shield=True):
                 broker.logger.debug("%s finished message delivery", self.client_id)
@@ -233,12 +282,16 @@ class Session:
         if self._packet_id > 65535:
             self._packet_id = 1
         limit = self._packet_id
-        while self._packet_id in self.inflight_in or self._packet_id in self.inflight_out:
+        while (
+            self._packet_id in self.inflight_in or self._packet_id in self.inflight_out
+        ):
             self._packet_id += 1
             if self._packet_id > 65535:
                 self._packet_id = 1
             if self._packet_id == limit:
-                raise DistMQTTException("More than 65535 messages pending. No free packet ID")
+                raise DistMQTTException(
+                    "More than 65535 messages pending. No free packet ID"
+                )
 
         return self._packet_id
 
@@ -255,23 +308,22 @@ class Session:
         return self.retained_messages.qsize()
 
     def __repr__(self):
-        return type(self).__name__ + '(clientId={0}, state={1})'.format(self.client_id, self.transitions.state)
+        return type(self).__name__ + "(clientId={0}, state={1})".format(
+            self.client_id, self.transitions.state
+        )
 
     def __getstate__(self):
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
         # del state['transitions']
-        del state['retained_messages']
-        del state['_delivered_message_queue']
-        del state['_delivery_task']
-        del state['_delivery_stopped']
-        del state['_broker']
+        del state["retained_messages"]
+        del state["_delivered_message_queue"]
+        del state["_delivery_task"]
+        del state["_delivery_stopped"]
+        del state["_broker"]
         return state
 
     def __setstate(self, state):
         self.__dict__.update(state)
         self.retained_messages = anyio.create_queue(9999)
         self._delivered_message_queue = anyio.create_queue(9999)
-
-    def __eq__(self, other):
-        return self.client_id == other.client_id

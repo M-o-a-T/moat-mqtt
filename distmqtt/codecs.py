@@ -10,13 +10,14 @@ from distmqtt.errors import NoDataException
 import msgpack
 import simplejson as json
 
+
 def bytes_to_hex_str(data):
     """
     converts a sequence of bytes into its displayable hex representation, ie: 0x??????
     :param data: byte sequence
     :return: Hexadecimal displayable representation
     """
-    return '0x' + ''.join(format(b, '02x') for b in data)
+    return "0x" + "".join(format(b, "02x") for b in data)
 
 
 def bytes_to_int(data):
@@ -25,7 +26,7 @@ def bytes_to_int(data):
     :param data: byte sequence
     :return: integer value
     """
-    return int.from_bytes(data, byteorder='big')
+    return int.from_bytes(data, byteorder="big")
 
 
 def int_to_bytes(int_value: int, length: int) -> bytes:
@@ -106,11 +107,12 @@ def int_to_bytes_str(value: int) -> bytes:
     :param value: int value to convert
     :return: bytes array
     """
-    return str(value).encode('utf-8')
+    return str(value).encode("utf-8")
 
 
 class BaseCodec:
-    # name = None
+    name = None
+
     def __init__(self, name=None):
         if name is not None and name != self.name:
             raise RuntimeError("Codec name mismatch")
@@ -127,11 +129,12 @@ class NoopCodec(BaseCodec):
 
     Your payload needs to consist of bytes.
     """
+
     name = "noop"
 
     @staticmethod
     def encode(data):
-        assert isinstance(data, (bytearray,bytes))
+        assert isinstance(data, (bytearray, bytes))
         return data
 
     @staticmethod
@@ -146,6 +149,7 @@ class UTF8Codec:
 
     This codec will *not* stringify other data types for you.
     """
+
     name = "utf8"
 
     @staticmethod
@@ -174,6 +178,7 @@ class MsgPackCodec:
                     (i.e. modifyable). Defaults to ``False``, which uses
                     immutable tuples (this is faster).
     """
+
     name = "msgpack"
 
     use_bin_type = True
@@ -201,6 +206,7 @@ class JSONCodec:
 
     Your payload must consist of whatever simplejson accepts.
     """
+
     name = "json"
 
     @staticmethod
@@ -221,6 +227,7 @@ class MsgPackJSONCodec:
     This codec is useful for legacy code which wants messages as JSON strings
     when the rest of your world talks msgpack.
     """
+
     name = "msgpack+json"
 
     use_bin_type = True
@@ -234,21 +241,27 @@ class MsgPackJSONCodec:
             self.use_list = use_list
 
     def encode(self, data):
-        return msgpack.packb(json.loads(data), use_bin_type=self.use_bin_type, use_list=self.use_list)
+        return msgpack.packb(
+            json.loads(data), use_bin_type=self.use_bin_type, use_list=self.use_list
+        )
 
     def decode(self, data):
-        return json.dumps(msgpack.unpackb(data, raw=not self.use_bin_type, use_list=self.use_list))
+        return json.dumps(
+            msgpack.unpackb(data, raw=not self.use_bin_type, use_list=self.use_list)
+        )
+
 
 class BoolCodec:
     """A codec that recognizes two strings ("on" and "off") and bool-ifies them.
 
     Or maybe three ("null") but you need to tell it to do that.
     """
+
     name = "bool"
 
-    on="on"
-    off="off"
-    null=None
+    on = "on"
+    off = "off"
+    null = None
 
     def __init__(self, on=None, off=None, null=None, **kw):
         super().__init__(**kw)
@@ -259,7 +272,7 @@ class BoolCodec:
         if null is not None:
             self.null = null.encode("utf-8")
 
-    def encode(self,data):
+    def encode(self, data):
         if data is None and self.null is not None:
             return self.null
         if data == 0:
@@ -276,4 +289,3 @@ class BoolCodec:
         if self.null is not None and data == self.null:
             return None
         raise ValueError(data)
-
