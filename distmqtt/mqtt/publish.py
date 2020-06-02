@@ -3,26 +3,36 @@
 # See the file license.txt for copying permission.
 import anyio
 
-from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PUBLISH, MQTTVariableHeader, MQTTPayload
+from distmqtt.mqtt.packet import (
+    MQTTPacket,
+    MQTTFixedHeader,
+    PUBLISH,
+    MQTTVariableHeader,
+    MQTTPayload,
+)
 from distmqtt.errors import DistMQTTException, MQTTException
 from distmqtt.codecs import decode_packet_id, decode_string, encode_string, int_to_bytes
 
 
 class PublishVariableHeader(MQTTVariableHeader):
 
-    __slots__ = ('topic_name', 'packet_id')
+    __slots__ = ("topic_name", "packet_id")
 
-    def __init__(self, topic_name: str, packet_id: int=None):
+    def __init__(self, topic_name: str, packet_id: int = None):
         super().__init__()
-        if '*' in topic_name:
-            raise MQTTException("[MQTT-3.3.2-2] Topic name in the PUBLISH Packet MUST NOT contain wildcard characters.")
-        if not isinstance(topic_name,str):
-            topic_name = '/'.join(topic_name)
+        if "*" in topic_name:
+            raise MQTTException(
+                "[MQTT-3.3.2-2] Topic name in the PUBLISH Packet MUST NOT contain wildcard characters."
+            )
+        if not isinstance(topic_name, str):
+            topic_name = "/".join(topic_name)
         self.topic_name = topic_name
         self.packet_id = packet_id
 
     def __repr__(self):
-        return type(self).__name__ + '(topic={0}, packet_id={1})'.format(self.topic_name, self.packet_id)
+        return type(self).__name__ + "(topic={0}, packet_id={1})".format(
+            self.topic_name, self.packet_id
+        )
 
     def to_bytes(self):
         out = bytearray()
@@ -44,18 +54,24 @@ class PublishVariableHeader(MQTTVariableHeader):
 
 class PublishPayload(MQTTPayload):
 
-    __slots__ = ('data',)
+    __slots__ = ("data",)
 
-    def __init__(self, data: bytes=None):
+    def __init__(self, data: bytes = None):
         super().__init__()
         self.data = data
 
-    def to_bytes(self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader):
+    def to_bytes(
+        self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader
+    ):
         return self.data
 
     @classmethod
-    async def from_stream(cls, reader: anyio.abc.Stream, fixed_header: MQTTFixedHeader,
-                    variable_header: MQTTVariableHeader):
+    async def from_stream(
+        cls,
+        reader: anyio.abc.Stream,
+        fixed_header: MQTTFixedHeader,
+        variable_header: MQTTVariableHeader,
+    ):
         data = bytearray()
         data_length = fixed_header.remaining_length - variable_header.bytes_length
         length_read = 0
@@ -66,7 +82,7 @@ class PublishPayload(MQTTPayload):
         return cls(data)
 
     def __repr__(self):
-        return type(self).__name__ + '(data={0!r})'.format(repr(self.data))
+        return type(self).__name__ + "(data={0!r})".format(repr(self.data))
 
 
 class PublishPacket(MQTTPacket):
@@ -77,12 +93,20 @@ class PublishPacket(MQTTPacket):
     RETAIN_FLAG = 0x01
     QOS_FLAG = 0x06
 
-    def __init__(self, fixed: MQTTFixedHeader=None, variable_header: PublishVariableHeader=None, payload=None):
+    def __init__(
+        self,
+        fixed: MQTTFixedHeader = None,
+        variable_header: PublishVariableHeader = None,
+        payload=None,
+    ):
         if fixed is None:
             header = MQTTFixedHeader(PUBLISH, 0x00)
         else:
             if fixed.packet_type is not PUBLISH:
-                raise DistMQTTException("Invalid fixed packet type %s for PublishPacket init" % fixed.packet_type)
+                raise DistMQTTException(
+                    "Invalid fixed packet type %s for PublishPacket init"
+                    % fixed.packet_type
+                )
             header = fixed
 
         super().__init__(header)
@@ -128,8 +152,8 @@ class PublishPacket(MQTTPacket):
 
     @qos.setter
     def qos(self, val: int):
-        self.fixed_header.flags &= 0xf9
-        self.fixed_header.flags |= (val << 1)
+        self.fixed_header.flags &= 0xF9
+        self.fixed_header.flags |= val << 1
 
     @property
     def packet_id(self):
@@ -156,7 +180,9 @@ class PublishPacket(MQTTPacket):
         self.variable_header.topic_name = name
 
     @classmethod
-    def build(cls, topic_name: str, message: bytes, packet_id: int, dup_flag, qos, retain):
+    def build(
+        cls, topic_name: str, message: bytes, packet_id: int, dup_flag, qos, retain
+    ):
         v_header = PublishVariableHeader(topic_name, packet_id)
         payload = PublishPayload(message)
         packet = PublishPacket(variable_header=v_header, payload=payload)

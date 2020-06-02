@@ -8,7 +8,6 @@ Usage:
     distmqtt --help
 """
 
-import sys
 import logging
 import anyio
 import os
@@ -18,23 +17,16 @@ from distmqtt.utils import read_yaml_config
 
 
 default_config = {
-    'listeners': {
-        'default': {
-            'type': 'tcp',
-            'bind': '0.0.0.0:1883',
-        },
+    "listeners": {"default": {"type": "tcp", "bind": "0.0.0.0:1883"}},
+    "sys_interval": 10,
+    "auth": {
+        "allow-anonymous": True,
+        "password-file": os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "passwd"
+        ),
+        "plugins": ["auth_file", "auth_anonymous"],
     },
-    'sys_interval': 10,
-    'auth': {
-        'allow-anonymous': True,
-        'password-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd"),
-        'plugins': [
-            'auth_file', 'auth_anonymous'
-        ]
-    },
-    'topic-check': {
-        'enabled': False
-    }
+    "topic-check": {"enabled": False},
 }
 
 logger = logging.getLogger(__name__)
@@ -42,8 +34,8 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.version_option()
-@click.option("-c","--config", help="Name of config file (YAML)")
-@click.option("-d","--debug", is_flag=True, help="Debug?")
+@click.option("-c", "--config", help="Name of config file (YAML)")
+@click.option("-d", "--debug", is_flag=True, help="Debug?")
 async def main(config, debug):
     formatter = "[%(asctime)s] :: %(levelname)s - %(message)s"
 
@@ -51,17 +43,20 @@ async def main(config, debug):
     logging.basicConfig(level=level, format=formatter)
 
     if not config:
-        config = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_broker.yaml')
+        config = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "default_broker.yaml"
+        )
         logger.debug("Using default configuration")
     config = read_yaml_config(config)
 
     from distkv.util import as_service
 
     async with as_service() as evt:
-        async with create_broker(config) as broker:
+        async with create_broker(config):
             await evt.set()
             while True:
                 await anyio.sleep(99999)
 
+
 if __name__ == "__main__":
-    main()
+    main()  # pylint: disable=no-value-for-parameter

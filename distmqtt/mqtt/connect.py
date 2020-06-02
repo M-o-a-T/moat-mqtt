@@ -2,8 +2,22 @@
 #
 # See the file license.txt for copying permission.
 
-from distmqtt.codecs import bytes_to_int, decode_data_with_length, decode_string, encode_data_with_length, encode_string, int_to_bytes, read_or_raise
-from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, CONNECT, MQTTVariableHeader, MQTTPayload
+from distmqtt.codecs import (
+    bytes_to_int,
+    decode_data_with_length,
+    decode_string,
+    encode_data_with_length,
+    encode_string,
+    int_to_bytes,
+    read_or_raise,
+)
+from distmqtt.mqtt.packet import (
+    MQTTPacket,
+    MQTTFixedHeader,
+    CONNECT,
+    MQTTVariableHeader,
+    MQTTPayload,
+)
 from distmqtt.errors import DistMQTTException, NoDataException
 from distmqtt.adapters import StreamAdapter
 from distmqtt.utils import gen_client_id
@@ -11,7 +25,7 @@ from distmqtt.utils import gen_client_id
 
 class ConnectVariableHeader(MQTTVariableHeader):
 
-    __slots__ = ('proto_name', 'proto_level', 'flags', 'keep_alive')
+    __slots__ = ("proto_name", "proto_level", "flags", "keep_alive")
 
     USERNAME_FLAG = 0x80
     PASSWORD_FLAG = 0x40
@@ -21,7 +35,9 @@ class ConnectVariableHeader(MQTTVariableHeader):
     CLEAN_SESSION_FLAG = 0x02
     RESERVED_FLAG = 0x01
 
-    def __init__(self, connect_flags=0x00, keep_alive=0, proto_name='MQTT', proto_level=0x04):
+    def __init__(
+        self, connect_flags=0x00, keep_alive=0, proto_name="MQTT", proto_level=0x04
+    ):
         super().__init__()
         self.proto_name = proto_name
         self.proto_level = proto_level
@@ -30,7 +46,8 @@ class ConnectVariableHeader(MQTTVariableHeader):
 
     def __repr__(self):
         return "ConnectVariableHeader(proto_name={0}, proto_level={1}, flags={2}, keepalive={3})".format(
-            self.proto_name, self.proto_level, hex(self.flags), self.keep_alive)
+            self.proto_name, self.proto_level, hex(self.flags), self.keep_alive
+        )
 
     def _set_flag(self, val, mask):
         if val:
@@ -94,8 +111,8 @@ class ConnectVariableHeader(MQTTVariableHeader):
 
     @will_qos.setter
     def will_qos(self, val: int):
-        self.flags &= 0xe7  # Reset QOS flags
-        self.flags |= (val << 3)
+        self.flags &= 0xE7  # Reset QOS flags
+        self.flags |= val << 3
 
     @classmethod
     async def from_stream(cls, reader: StreamAdapter, fixed_header: MQTTFixedHeader):
@@ -134,15 +151,22 @@ class ConnectVariableHeader(MQTTVariableHeader):
 class ConnectPayload(MQTTPayload):
 
     __slots__ = (
-        'client_id',
-        'will_topic',
-        'will_message',
-        'username',
-        'password',
-        'client_id_is_random',
+        "client_id",
+        "will_topic",
+        "will_message",
+        "username",
+        "password",
+        "client_id_is_random",
     )
 
-    def __init__(self, client_id=None, will_topic=None, will_message=None, username=None, password=None):
+    def __init__(
+        self,
+        client_id=None,
+        will_topic=None,
+        will_message=None,
+        username=None,
+        password=None,
+    ):
         super().__init__()
         self.client_id_is_random = False
         self.client_id = client_id
@@ -152,12 +176,21 @@ class ConnectPayload(MQTTPayload):
         self.password = password
 
     def __repr__(self):
-        return "ConnectVariableHeader(client_id={0}, will_topic={1}, will_message={2}, username={3}, password={4})".\
-            format(self.client_id, self.will_topic, self.will_message, self.username, self.password)
+        return "ConnectVariableHeader(client_id={0}, will_topic={1}, will_message={2}, username={3}, password={4})".format(
+            self.client_id,
+            self.will_topic,
+            self.will_message,
+            self.username,
+            self.password,
+        )
 
     @classmethod
-    async def from_stream(cls, reader: StreamAdapter, fixed_header: MQTTFixedHeader,
-                    variable_header: ConnectVariableHeader):
+    async def from_stream(
+        cls,
+        reader: StreamAdapter,
+        fixed_header: MQTTFixedHeader,
+        variable_header: ConnectVariableHeader,
+    ):
         payload = cls()
         #  Client identifier
         try:
@@ -165,7 +198,7 @@ class ConnectPayload(MQTTPayload):
         except NoDataException:
             payload.client_id = None
 
-        if (payload.client_id is None or payload.client_id == ""):
+        if payload.client_id is None or payload.client_id == "":
             # A Server MAY allow a Client to supply a ClientId that has a length of zero bytes
             # [MQTT-3.1.3-6]
             payload.client_id = gen_client_id()
@@ -195,7 +228,9 @@ class ConnectPayload(MQTTPayload):
 
         return payload
 
-    def to_bytes(self, fixed_header: MQTTFixedHeader, variable_header: ConnectVariableHeader):
+    def to_bytes(
+        self, fixed_header: MQTTFixedHeader, variable_header: ConnectVariableHeader
+    ):
         out = bytearray()
         # Client identifier
         out.extend(encode_string(self.client_id))
@@ -345,12 +380,20 @@ class ConnectPacket(MQTTPacket):
     def keep_alive(self, keep_alive):
         self.variable_header.keep_alive = keep_alive
 
-    def __init__(self, fixed: MQTTFixedHeader=None, vh: ConnectVariableHeader=None, payload: ConnectPayload=None):
+    def __init__(
+        self,
+        fixed: MQTTFixedHeader = None,
+        vh: ConnectVariableHeader = None,
+        payload: ConnectPayload = None,
+    ):
         if fixed is None:
             header = MQTTFixedHeader(CONNECT, 0x00)
         else:
             if fixed.packet_type is not CONNECT:
-                raise DistMQTTException("Invalid fixed packet type %s for ConnectPacket init" % fixed.packet_type)
+                raise DistMQTTException(
+                    "Invalid fixed packet type %s for ConnectPacket init"
+                    % fixed.packet_type
+                )
             header = fixed
         super().__init__(header)
         self.variable_header = vh

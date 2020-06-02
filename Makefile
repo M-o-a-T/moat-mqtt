@@ -3,8 +3,8 @@
 .PHONY: doc test update all tag pypi upload
 
 all:
-		@echo "Please use 'python setup.py'."
-		@exit 1
+	@echo "Please use 'python setup.py'."
+	@exit 1
 
 # need to use python3 sphinx-build
 PATH := /usr/share/sphinx/scripts/python3:${PATH}
@@ -32,6 +32,10 @@ SPHINXBUILDDIR ?= $(BUILD_DIR)/sphinx/html
 ALLSPHINXOPTS ?= -d $(BUILD_DIR)/sphinx/doctrees $(SPHINXOPTS) docs
 
 test:
+	flake8 distmqtt samples/ tests/ setup.py
+	black distmqtt samples/ tests/ setup.py
+	pylint distmqtt samples/ tests/ setup.py
+	:
 	-rm -rf obj
 	mkdir obj
 	env PYTHONPATH=obj python3 setup.py develop -d obj

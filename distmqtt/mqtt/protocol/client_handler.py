@@ -2,7 +2,6 @@
 #
 # See the file license.txt for copying permission.
 import anyio
-import sys
 from distmqtt.mqtt.protocol.handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
 from distmqtt.mqtt.disconnect import DisconnectPacket
 from distmqtt.mqtt.pingreq import PingReqPacket
@@ -19,7 +18,7 @@ from distmqtt.utils import Future
 
 
 class ClientProtocolHandler(ProtocolHandler):
-    def __init__(self, plugins_manager: PluginManager, session: Session=None):
+    def __init__(self, plugins_manager: PluginManager, session: Session = None):
         super().__init__(plugins_manager, session)
         self._ping_task = None
         self._pingresp_queue = anyio.create_queue(9999)
@@ -73,7 +72,9 @@ class ClientProtocolHandler(ProtocolHandler):
         await self._send_packet(connect_packet)
         connack = await ConnackPacket.from_stream(self.stream)
         self.logger.debug("< C %r", connack)
-        await self.plugins_manager.fire_event(EVENT_MQTT_PACKET_RECEIVED, packet=connack, session=self.session)
+        await self.plugins_manager.fire_event(
+            EVENT_MQTT_PACKET_RECEIVED, packet=connack, session=self.session
+        )
         return connack.return_code
 
     async def handle_write_timeout(self):
@@ -115,8 +116,11 @@ class ClientProtocolHandler(ProtocolHandler):
         try:
             waiter = self._subscriptions_waiter.get(packet_id)
             await waiter.set(suback.payload.return_codes)
-        except KeyError as ke:
-            self.logger.warning("Received SUBACK for unknown pending subscription with Id: %s", packet_id)
+        except KeyError:
+            self.logger.warning(
+                "Received SUBACK for unknown pending subscription with Id: %s",
+                packet_id,
+            )
 
     async def mqtt_unsubscribe(self, topics, packet_id):
         """
@@ -140,8 +144,11 @@ class ClientProtocolHandler(ProtocolHandler):
             waiter = self._unsubscriptions_waiter.get(packet_id)
             if waiter is not None:
                 await waiter.set(None)
-        except KeyError as ke:
-            self.logger.warning("Received UNSUBACK for unknown pending subscription with Id: %s", packet_id)
+        except KeyError:
+            self.logger.warning(
+                "Received UNSUBACK for unknown pending subscription with Id: %s",
+                packet_id,
+            )
 
     async def mqtt_disconnect(self):
         disconnect_packet = DisconnectPacket()

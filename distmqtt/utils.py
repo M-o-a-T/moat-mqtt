@@ -2,20 +2,23 @@
 #
 # See the file license.txt for copying permission.
 import logging
-
+import attr
+import anyio
 import yaml
+
+from .errors import InvalidStateError
 
 logger = logging.getLogger(__name__)
 
 
-def not_in_dict_or_none(dict, key):
+def not_in_dict_or_none(d, key):
     """
     Check if a key exists in a map and if it's not None
     :param dict: map to look for key
     :param key: key to find
     :return: true if key is in dict and not None
     """
-    if key not in dict or dict[key] is None:
+    if key not in d or d[key] is None:
         return True
     else:
         return False
@@ -36,9 +39,10 @@ def gen_client_id():
     :return:
     """
     import random
-    gen_id = 'distmqtt-'
 
-    for i in range(16):
+    gen_id = "distmqtt-"
+
+    for _ in range(16):
         gen_id += chr(random.randint(0, 26) + 97)
     return gen_id
 
@@ -46,7 +50,7 @@ def gen_client_id():
 def read_yaml_config(config_file):
     config = None
     try:
-        with open(config_file, 'r') as stream:
+        with open(config_file, "r") as stream:
             config = yaml.safe_load(stream)
     except yaml.YAMLError as exc:
         logger.error("Invalid config_file %s: %r", config_file, exc)
@@ -55,13 +59,10 @@ def read_yaml_config(config_file):
 
 # utility code
 
-import attr
-import anyio
-from .errors import InvalidStateError
 
 class CancelledError(RuntimeError):
-    ## This intentionally does not descend from any toolkit's cancellation exception
-    ## (much less from all of them)
+    # This intentionally does not descend from any toolkit's cancellation exception
+    # (much less from all of them)
     pass
 
 
@@ -127,17 +128,15 @@ def match_topic(topic, subscription):
     """
     Match @topic to @subscription. Both must be lists/tuples.
     """
-    if isinstance(topic,str) or isinstance(subscription,str):
+    if isinstance(topic, str) or isinstance(subscription, str):
         raise RuntimeError("Subscriptions need to be pre-split")
-    if topic[0].startswith('$') != subscription[0].startswith('$'):
+    if topic[0].startswith("$") != subscription[0].startswith("$"):
         return False
     if len(topic) < len(subscription):
         return False
-    if len(topic) > len(subscription) and subscription[-1] != '#':
+    if len(topic) > len(subscription) and subscription[-1] != "#":
         return False
-    for a,b in zip(topic,subscription):
-        if a != b and b not in ('+','#'):
+    for a, b in zip(topic, subscription):
+        if a != b and b not in ("+", "#"):
             return False
     return True
-
-
