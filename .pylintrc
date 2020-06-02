@@ -1,0 +1,4 @@
+[MESSAGES CONTROL]
+disable=bad-continuation,invalid-name,unnecessary-pass,protected-access,fixme,broad-except,no-absolute-import,global-statement,unused-import,C,R
+# unused_import is found by flake8
+
