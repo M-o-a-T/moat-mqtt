@@ -8,3 +8,10 @@ __pycache__
 /dist/
 /tests/plugins/test.db
 /obj
+<<<<<<< master
+||||||| deb
+/.pybuild/
+=======
+/.pybuild/
+/.eggs/
+>>>>>>> local
