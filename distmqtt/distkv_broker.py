@@ -45,7 +45,7 @@ class DistKVbroker(Broker):
 
     async def __read_encap(
         self, client, cfg: dict, evt: Optional[anyio.abc.Event] = None
-        ):  # pylint: disable=unused-argument
+    ):  # pylint: disable=unused-argument
         """
         Read encapsulated messages from the real server and forward them
         """
@@ -64,7 +64,7 @@ class DistKVbroker(Broker):
 
     async def __read_topic(
         self, topic, client, cfg: dict, evt: Optional[anyio.abc.Event] = None
-        ):  # pylint: disable=unused-argument
+    ):  # pylint: disable=unused-argument
         """
         Read topical messages from the real server and forward them
         """
@@ -102,7 +102,9 @@ class DistKVbroker(Broker):
         finally:
             self.__client = None
 
-    async def __retain_reader(self, cfg: dict, evt: Optional[anyio.abc.Event] = None):  # pylint: disable=unused-argument
+    async def __retain_reader(
+        self, cfg: dict, evt: Optional[anyio.abc.Event] = None
+    ):  # pylint: disable=unused-argument
         """
         Read changes from DistKV and broadcast them
         """

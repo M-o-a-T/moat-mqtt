@@ -44,10 +44,10 @@ class ProtocolHandlerTest(unittest.TestCase):
             self.listen_ctx = sc
             while True:
                 sock = await server.accept()
-                if not hasattr(sock,"read"):
-                    setattr(sock,"read",sock.receive_some)
-                if not hasattr(sock,"write"):
-                    setattr(sock,"write",sock.send_all)
+                if not hasattr(sock, "read"):
+                    setattr(sock, "read", sock.receive_some)
+                if not hasattr(sock, "write"):
+                    setattr(sock, "write", sock.send_all)
                 await server_mock(sock)
 
     def run_(self, server_mock, test_coro):
@@ -66,6 +66,7 @@ class ProtocolHandlerTest(unittest.TestCase):
                         sr = adapt(conn)
                         await test_coro(sr)
                         await self.listen_ctx.cancel()
+
         anyio.run(runner)
 
     def test_start_stop(self):

@@ -49,7 +49,9 @@ for _t in dir(codecs):
             pass
 
 
-def get_codec(codec, fallback=None, config={}):  # pylint: disable=dangerous-default-value
+def get_codec(
+    codec, fallback=None, config={}
+):  # pylint: disable=dangerous-default-value
     if codec is None:
         codec = fallback
     if codec is None:
@@ -80,6 +82,7 @@ class ConnectException(ClientException):
             text = self.__class__.__name__
         super().__init__(text)
         self.return_code = return_code
+
     pass
 
 
@@ -679,7 +682,7 @@ class MQTTClient:
                 return_code = await self._handler.mqtt_connect()
             except NoDataException:
                 self.logger.warning("Connection broken by broker")
-                exc = ConnectException("Connection broken by broker",)
+                exc = ConnectException("Connection broken by broker")
                 raise exc
             if return_code is not CONNECTION_ACCEPTED:
                 self.session.transitions.disconnect()
@@ -701,7 +704,7 @@ class MQTTClient:
             self.logger.warning("connection failed: invalid websocket handshake")
             self.session.transitions.disconnect()
             raise ConnectException(
-                "connection failed: invalid websocket handshake",
+                "connection failed: invalid websocket handshake"
             ) from exc
         except (ProtocolHandlerException, ConnectionError, OSError) as exc:
             self.logger.warning("MQTT connection failed")

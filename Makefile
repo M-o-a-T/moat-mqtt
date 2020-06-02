@@ -32,8 +32,8 @@ SPHINXBUILDDIR ?= $(BUILD_DIR)/sphinx/html
 ALLSPHINXOPTS ?= -d $(BUILD_DIR)/sphinx/doctrees $(SPHINXOPTS) docs
 
 test:
-	flake8 distmqtt samples/ tests/ setup.py
 	black distmqtt samples/ tests/ setup.py
+	flake8 distmqtt samples/ tests/ setup.py
 	pylint distmqtt samples/ tests/ setup.py
 	:
 	-rm -rf obj

@@ -120,7 +120,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_connect_will_flag(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_connect_will_flag(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -155,7 +157,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_connect_clean_session_false(self, MockPluginManager): # pylint: disable=unused-argument
+    def test_client_connect_clean_session_false(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -367,7 +371,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_publish_invalid_topic(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_publish_invalid_topic(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -416,7 +422,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_publish_retain(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_publish_retain(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -440,7 +448,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_publish_retain_delete(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_publish_retain_delete(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -459,7 +469,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_subscribe_publish(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_subscribe_publish(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -487,7 +499,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_subscribe_invalid(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_subscribe_invalid(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -511,7 +525,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_subscribe_publish_dollar_topic_1(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_subscribe_publish_dollar_topic_1(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -538,7 +554,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_subscribe_publish_dollar_topic_2(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_subscribe_publish_dollar_topic_2(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -565,7 +583,9 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_publish_retain_subscribe(self, MockPluginManager):  # pylint: disable=unused-argument
+    def test_client_publish_retain_subscribe(
+        self, MockPluginManager
+    ):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"

@@ -59,7 +59,9 @@ async def test_server(mqtt_port: int = None, distkv_port: int = None):
         await broker._tg.spawn(partial(server.serve, ready_evt=evt))
         await evt.wait()
 
-        server.distkv_port = distkv_port  # pylint: disable=attribute-defined-outside-init
+        server.distkv_port = (
+            distkv_port
+        )  # pylint: disable=attribute-defined-outside-init
         yield server
 
 

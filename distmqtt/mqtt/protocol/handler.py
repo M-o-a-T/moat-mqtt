@@ -576,31 +576,49 @@ class ProtocolHandler:
     async def handle_read_timeout(self):
         self.logger.debug("%s read timeout unhandled", self.session.client_id)
 
-    async def handle_connack(self, connack: ConnackPacket):  # pylint: disable=unused-argument
+    async def handle_connack(
+        self, connack: ConnackPacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s CONNACK unhandled", self.session.client_id)
 
-    async def handle_connect(self, connect: ConnectPacket):  # pylint: disable=unused-argument
+    async def handle_connect(
+        self, connect: ConnectPacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s CONNECT unhandled", self.session.client_id)
 
-    async def handle_subscribe(self, subscribe: SubscribePacket):  # pylint: disable=unused-argument
+    async def handle_subscribe(
+        self, subscribe: SubscribePacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s SUBSCRIBE unhandled", self.session.client_id)
 
-    async def handle_unsubscribe(self, subscribe: UnsubscribePacket):  # pylint: disable=unused-argument
+    async def handle_unsubscribe(
+        self, subscribe: UnsubscribePacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s UNSUBSCRIBE unhandled", self.session.client_id)
 
-    async def handle_suback(self, suback: SubackPacket):  # pylint: disable=unused-argument
+    async def handle_suback(
+        self, suback: SubackPacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s SUBACK unhandled", self.session.client_id)
 
-    async def handle_unsuback(self, unsuback: UnsubackPacket):  # pylint: disable=unused-argument
+    async def handle_unsuback(
+        self, unsuback: UnsubackPacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s UNSUBACK unhandled", self.session.client_id)
 
-    async def handle_pingresp(self, pingresp: PingRespPacket):  # pylint: disable=unused-argument
+    async def handle_pingresp(
+        self, pingresp: PingRespPacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s PINGRESP unhandled", self.session.client_id)
 
-    async def handle_pingreq(self, pingreq: PingReqPacket):  # pylint: disable=unused-argument
+    async def handle_pingreq(
+        self, pingreq: PingReqPacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s PINGREQ unhandled", self.session.client_id)
 
-    async def _handle_disconnect(self, disconnect: DisconnectPacket):  # pylint: disable=unused-argument
+    async def _handle_disconnect(
+        self, disconnect: DisconnectPacket
+    ):  # pylint: disable=unused-argument
         self.logger.debug("%s DISCONNECT unhandled", self.session.client_id)
 
     async def handle_disconnect(self, disconnect: DisconnectPacket):

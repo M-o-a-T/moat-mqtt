@@ -44,7 +44,9 @@ class BrokerProtocolHandler(ProtocolHandler):
     async def handle_read_timeout(self):
         await self.stop()
 
-    async def _handle_disconnect(self, disconnect, wait=True):  # pylint: disable=arguments-differ
+    async def _handle_disconnect(
+        self, disconnect, wait=True
+    ):  # pylint: disable=arguments-differ
         self.logger.debug("Client disconnecting")
         self.clean_disconnect = False  # depending on 'disconnect' (if set)
         async with anyio.fail_after(2, shield=True):
@@ -63,7 +65,8 @@ class BrokerProtocolHandler(ProtocolHandler):
         # as CONNECT messages are managed by the broker on client connection
         self.logger.error(
             "%s [MQTT-3.1.0-2] %s : CONNECT message received during messages handling",
-            self.session.client_id, format_client_message(self.session)
+            self.session.client_id,
+            format_client_message(self.session),
         )
         await self.stop()
 
@@ -77,7 +80,9 @@ class BrokerProtocolHandler(ProtocolHandler):
         }
         await self._pending_subscriptions.put(subscription)
 
-    async def handle_unsubscribe(self, unsubscribe: UnsubscribePacket):  # pylint: disable=arguments-differ
+    async def handle_unsubscribe(
+        self, unsubscribe: UnsubscribePacket
+    ):  # pylint: disable=arguments-differ
         unsubscription = {
             "packet_id": unsubscribe.variable_header.packet_id,
             "topics": unsubscribe.payload.topics,

@@ -100,7 +100,7 @@ def _get_message(arguments):
         yield message
     if arguments["-S"]:
         message = sys.stdin.read()
-        yield codec.encode(eval(message)) # pylint: disable=eval-used
+        yield codec.encode(eval(message))  # pylint: disable=eval-used
 
 
 async def do_pub(client, arguments):

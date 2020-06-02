@@ -31,7 +31,9 @@ config = {
 
 
 async def test_coro():
-    async with create_broker(config=config) as broker:  # noqa: F841, pylint: disable=W0612
+    async with create_broker(
+        config=config
+    ) as broker:  # noqa: F841, pylint: disable=W0612
         while True:
             await anyio.sleep(99999)
 

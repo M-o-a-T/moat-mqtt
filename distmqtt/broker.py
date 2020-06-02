@@ -14,7 +14,9 @@ except ImportError:
 
 from functools import partial
 from transitions import Machine, MachineError
-from distmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED
+from distmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED  # noqa: F401
+
+# EVENT_BROKER_MESSAGE_RECEIVED is re-exported
 from distmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
 from distmqtt.errors import DistMQTTException, MQTTException
 from distmqtt.utils import format_client_message, gen_client_id, Future, match_topic
@@ -820,7 +822,9 @@ class Broker:
             a_filter = tuple(a_filter.split("/"))
         try:
             subscriptions = self._subscriptions[a_filter]
-            for index, (sub_session, qos) in enumerate(subscriptions):  # pylint: disable=unused-variable
+            for index, (sub_session, qos) in enumerate(
+                subscriptions
+            ):  # pylint: disable=unused-variable
                 if sub_session.client_id == session.client_id:
                     if self.logger.isEnabledFor(logging.DEBUG):
                         self.logger.debug(
