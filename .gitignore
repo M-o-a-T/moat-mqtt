@@ -9,3 +9,4 @@ __pycache__
 /tests/plugins/test.db
 /obj
 /.pybuild/
+/.eggs/
