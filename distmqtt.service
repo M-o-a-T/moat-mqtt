@@ -18,3 +18,6 @@ Group=distkv
 TimeoutSec=30
 WatchdogSec=10
 
+Restart=always
+RestartSec=5
+
