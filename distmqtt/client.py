@@ -437,12 +437,12 @@ class MQTTClient:
 
             Usage::
 
-                async with client.subscription("/foo/bar") as sub:
+                async with client.subscription("foo/bar/#") as sub:
                     async for msg in sub:
                         await process(msg)
 
         You can use either multiple calls to `subscription`, or manage
-        message dispatching your self with `subscribe` and `deliver_message`.
+        message dispatching yourself with `subscribe` and `deliver_message`.
         Using both methods in parallel are not supported.
 
         """
