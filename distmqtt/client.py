@@ -492,6 +492,10 @@ class MQTTClient:
                 message.data = self.codec.decode(message.publish_packet.data)
                 return message
 
+            async def __len__(self):
+                """Queue length"""
+                return self._q.qsize()
+
             async def publish(self, topic, message, *a, **kw):
                 """
                     Publish a message.
