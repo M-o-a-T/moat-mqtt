@@ -24,9 +24,9 @@ setup(
         "passlib",
         "docopt",
         "pyyaml",
-        "anyio",
-        "attrs",
-        "distkv >= 0.20",
+        "anyio >= 1.3",
+        "attrs >= 19",
+        "distkv >= 0.30.5",
         "simplejson",
     ],
     classifiers=[
