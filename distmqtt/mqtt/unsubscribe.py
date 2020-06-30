@@ -23,9 +23,7 @@ class UnubscribePayload(MQTTPayload):
         super().__init__()
         self.topics = topics
 
-    def to_bytes(
-        self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader
-    ):
+    def to_bytes(self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader):
         out = b""
         for topic in self.topics:
             out += encode_string(topic)
@@ -66,8 +64,7 @@ class UnsubscribePacket(MQTTPacket):
         else:
             if fixed.packet_type is not UNSUBSCRIBE:
                 raise DistMQTTException(
-                    "Invalid fixed packet type %s for UnsubscribePacket init"
-                    % fixed.packet_type
+                    "Invalid fixed packet type %s for UnsubscribePacket init" % fixed.packet_type
                 )
             header = fixed
 

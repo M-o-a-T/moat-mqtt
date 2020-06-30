@@ -23,17 +23,14 @@ class PubrecPacket(MQTTPacket):
         self.variable_header.packet_id = val
 
     def __init__(
-        self,
-        fixed: MQTTFixedHeader = None,
-        variable_header: PacketIdVariableHeader = None,
+        self, fixed: MQTTFixedHeader = None, variable_header: PacketIdVariableHeader = None,
     ):
         if fixed is None:
             header = MQTTFixedHeader(PUBREC, 0x00)
         else:
             if fixed.packet_type is not PUBREC:
                 raise DistMQTTException(
-                    "Invalid fixed packet type %s for PubrecPacket init"
-                    % fixed.packet_type
+                    "Invalid fixed packet type %s for PubrecPacket init" % fixed.packet_type
                 )
             header = fixed
         super().__init__(header)

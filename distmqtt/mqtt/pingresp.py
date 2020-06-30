@@ -15,8 +15,7 @@ class PingRespPacket(MQTTPacket):
         else:
             if fixed.packet_type is not PINGRESP:
                 raise DistMQTTException(
-                    "Invalid fixed packet type %s for PingRespPacket init"
-                    % fixed.packet_type
+                    "Invalid fixed packet type %s for PingRespPacket init" % fixed.packet_type
                 )
             header = fixed
         super().__init__(header)

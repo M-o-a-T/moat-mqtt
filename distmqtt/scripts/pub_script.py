@@ -148,9 +148,7 @@ async def main():
         config = read_yaml_config(arguments["-c"])
     else:
         config = read_yaml_config(
-            os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "default_client.yaml"
-            )
+            os.path.join(os.path.dirname(os.path.realpath(__file__)), "default_client.yaml")
         )
         logger.debug("Using default configuration")
 

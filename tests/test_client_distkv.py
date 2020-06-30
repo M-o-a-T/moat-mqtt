@@ -26,9 +26,7 @@ except ImportError:
 
 from functools import partial
 
-formatter = (
-    "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
-)
+formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)
 log = logging.getLogger(__name__)
 
@@ -58,11 +56,7 @@ broker_config = {
         },
     },
     "listeners": {
-        "default": {
-            "type": "tcp",
-            "bind": "127.0.0.1:%d" % (PORT),
-            "max_connections": 10,
-        }
+        "default": {"type": "tcp", "bind": "127.0.0.1:%d" % (PORT), "max_connections": 10}
     },
     "sys_interval": 0,
     "auth": {"allow-anonymous": True},
@@ -71,11 +65,7 @@ broker_config = {
 
 test_config = {
     "listeners": {
-        "default": {
-            "type": "tcp",
-            "bind": "127.0.0.1:%d" % PORT_B,
-            "max_connections": 10,
-        }
+        "default": {"type": "tcp", "bind": "127.0.0.1:%d" % PORT_B, "max_connections": 10}
     },
     "sys_interval": 0,
     "retain": False,
@@ -120,21 +110,13 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(1):
-                async with create_broker(
-                    broker_config, plugin_namespace="distmqtt.test.plugins"
-                ):
-                    async with open_mqttclient(
-                        config=broker_config["broker"]
-                    ) as client:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
+                    async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([("test_topic", QOS_0)])
                         self.assertEqual(ret[0], QOS_0)
-                        async with open_mqttclient(
-                            config=broker_config["broker"]
-                        ) as client_pub:
-                            await client_pub.publish(
-                                "test_topic", data, QOS_0, retain=False
-                            )
+                        async with open_mqttclient(config=broker_config["broker"]) as client_pub:
+                            await client_pub.publish("test_topic", data, QOS_0, retain=False)
                         async with anyio.fail_after(0.5):
                             message = await client.deliver_message()
                         self.assertIsNotNone(message)
@@ -152,21 +134,13 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(1):
-                async with create_broker(
-                    broker_config, plugin_namespace="distmqtt.test.plugins"
-                ):
-                    async with open_mqttclient(
-                        config=broker_config["broker"]
-                    ) as client:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
+                    async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([("test/vis/foo", QOS_0)])
                         self.assertEqual(ret[0], QOS_0)
-                        async with open_mqttclient(
-                            config=broker_config["broker"]
-                        ) as client_pub:
-                            await client_pub.publish(
-                                "test/vis/foo", data, QOS_0, retain=False
-                            )
+                        async with open_mqttclient(config=broker_config["broker"]) as client_pub:
+                            await client_pub.publish("test/vis/foo", data, QOS_0, retain=False)
                         async with anyio.fail_after(0.5):
                             message = await client.deliver_message()
                         self.assertIsNotNone(message)
@@ -184,21 +158,13 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(0):
-                async with create_broker(
-                    broker_config, plugin_namespace="distmqtt.test.plugins"
-                ):
-                    async with open_mqttclient(
-                        config=broker_config["broker"]
-                    ) as client:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
+                    async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([("test_topic", QOS_0)])
                         self.assertEqual(ret[0], QOS_0)
-                        async with open_mqttclient(
-                            config=broker_config["broker"]
-                        ) as client_pub:
-                            await client_pub.publish(
-                                "test_topic", data, QOS_0, retain=False
-                            )
+                        async with open_mqttclient(config=broker_config["broker"]) as client_pub:
+                            await client_pub.publish("test_topic", data, QOS_0, retain=False)
                         async with anyio.fail_after(0.5):
                             message = await client.deliver_message()
                         self.assertIsNotNone(message)
@@ -210,12 +176,8 @@ class MQTTClientTest(unittest.TestCase):
     def test_deliver_timeout(self):
         async def test_coro():
             async with distkv_server(0):
-                async with create_broker(
-                    broker_config, plugin_namespace="distmqtt.test.plugins"
-                ):
-                    async with open_mqttclient(
-                        config=broker_config["broker"]
-                    ) as client:
+                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
+                    async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([("test_topic", QOS_0)])
                         self.assertEqual(ret[0], QOS_0)

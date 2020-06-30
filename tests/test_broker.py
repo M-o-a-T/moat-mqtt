@@ -106,12 +106,10 @@ class BrokerTest(unittest.TestCase):
             MockPluginManager.assert_has_calls(
                 [
                     call().fire_event(
-                        EVENT_BROKER_CLIENT_CONNECTED,
-                        client_id=client.session.client_id,
+                        EVENT_BROKER_CLIENT_CONNECTED, client_id=client.session.client_id,
                     ),
                     call().fire_event(
-                        EVENT_BROKER_CLIENT_DISCONNECTED,
-                        client_id=client.session.client_id,
+                        EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client.session.client_id,
                     ),
                 ],
                 any_order=True,
@@ -120,9 +118,7 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_connect_will_flag(
-        self, MockPluginManager
-    ):  # pylint: disable=unused-argument
+    def test_client_connect_will_flag(self, MockPluginManager):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -350,15 +346,11 @@ class BrokerTest(unittest.TestCase):
                     await connect.to_stream(stream)
                     await ConnackPacket.from_stream(stream)
 
-                    publish_1 = PublishPacket.build(
-                        "/test", b"data", 1, False, QOS_2, False
-                    )
+                    publish_1 = PublishPacket.build("/test", b"data", 1, False, QOS_2, False)
                     await publish_1.to_stream(stream)
                     await PubrecPacket.from_stream(stream)
 
-                    publish_dup = PublishPacket.build(
-                        "/test", b"data", 1, True, QOS_2, False
-                    )
+                    publish_dup = PublishPacket.build("/test", b"data", 1, True, QOS_2, False)
                     await publish_dup.to_stream(stream)
                     await PubrecPacket.from_stream(stream)
                     pubrel = PubrelPacket.build(1)
@@ -422,9 +414,7 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_publish_retain(
-        self, MockPluginManager
-    ):  # pylint: disable=unused-argument
+    def test_client_publish_retain(self, MockPluginManager):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -469,9 +459,7 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_subscribe_publish(
-        self, MockPluginManager
-    ):  # pylint: disable=unused-argument
+    def test_client_subscribe_publish(self, MockPluginManager):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"
@@ -499,9 +487,7 @@ class BrokerTest(unittest.TestCase):
         anyio.run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_subscribe_invalid(
-        self, MockPluginManager
-    ):  # pylint: disable=unused-argument
+    def test_client_subscribe_invalid(self, MockPluginManager):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="distmqtt.test.plugins"

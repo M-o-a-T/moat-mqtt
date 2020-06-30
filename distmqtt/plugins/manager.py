@@ -102,9 +102,7 @@ class PluginManager:
         """
         return self._plugins
 
-    async def fire_event(
-        self, event_name, wait=False, *args, **kwargs
-    ):  # pylint: disable=W1113
+    async def fire_event(self, event_name, wait=False, *args, **kwargs):  # pylint: disable=W1113
         """
         Fire an event to plugins.
         PluginManager schedule async calls for each plugin on method called "on_" + event_name
@@ -173,9 +171,7 @@ class PluginManager:
                         await tg.spawn(worker, plugin)
                     except TypeError:
                         self.logger.error(
-                            "Method '%r' on plugin '%s' is not a coroutine",
-                            coro,
-                            plugin.name,
+                            "Method '%r' on plugin '%s' is not a coroutine", coro, plugin.name,
                         )
         return ret_dict
 

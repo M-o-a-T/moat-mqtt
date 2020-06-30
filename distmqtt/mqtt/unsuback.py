@@ -25,8 +25,7 @@ class UnsubackPacket(MQTTPacket):
         else:
             if fixed.packet_type is not UNSUBACK:
                 raise DistMQTTException(
-                    "Invalid fixed packet type %s for UnsubackPacket init"
-                    % fixed.packet_type
+                    "Invalid fixed packet type %s for UnsubackPacket init" % fixed.packet_type
                 )
             header = fixed
 

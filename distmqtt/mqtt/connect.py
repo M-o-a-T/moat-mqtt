@@ -35,9 +35,7 @@ class ConnectVariableHeader(MQTTVariableHeader):
     CLEAN_SESSION_FLAG = 0x02
     RESERVED_FLAG = 0x01
 
-    def __init__(
-        self, connect_flags=0x00, keep_alive=0, proto_name="MQTT", proto_level=0x04
-    ):
+    def __init__(self, connect_flags=0x00, keep_alive=0, proto_name="MQTT", proto_level=0x04):
         super().__init__()
         self.proto_name = proto_name
         self.proto_level = proto_level
@@ -160,12 +158,7 @@ class ConnectPayload(MQTTPayload):
     )
 
     def __init__(
-        self,
-        client_id=None,
-        will_topic=None,
-        will_message=None,
-        username=None,
-        password=None,
+        self, client_id=None, will_topic=None, will_message=None, username=None, password=None,
     ):
         super().__init__()
         self.client_id_is_random = False
@@ -177,11 +170,7 @@ class ConnectPayload(MQTTPayload):
 
     def __repr__(self):
         return "ConnectVariableHeader(client_id={0}, will_topic={1}, will_message={2}, username={3}, password={4})".format(
-            self.client_id,
-            self.will_topic,
-            self.will_message,
-            self.username,
-            self.password,
+            self.client_id, self.will_topic, self.will_message, self.username, self.password,
         )
 
     @classmethod
@@ -228,9 +217,7 @@ class ConnectPayload(MQTTPayload):
 
         return payload
 
-    def to_bytes(
-        self, fixed_header: MQTTFixedHeader, variable_header: ConnectVariableHeader
-    ):
+    def to_bytes(self, fixed_header: MQTTFixedHeader, variable_header: ConnectVariableHeader):
         out = bytearray()
         # Client identifier
         out.extend(encode_string(self.client_id))
@@ -391,8 +378,7 @@ class ConnectPacket(MQTTPacket):
         else:
             if fixed.packet_type is not CONNECT:
                 raise DistMQTTException(
-                    "Invalid fixed packet type %s for ConnectPacket init"
-                    % fixed.packet_type
+                    "Invalid fixed packet type %s for ConnectPacket init" % fixed.packet_type
                 )
             header = fixed
         super().__init__(header)

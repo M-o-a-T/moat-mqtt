@@ -240,8 +240,7 @@ class ProtocolHandler:
             packet_id = self.session.next_packet_id
             if packet_id in self.session.inflight_out:
                 raise DistMQTTException(
-                    "A message with the same packet ID '%d' is already in flight"
-                    % packet_id
+                    "A message with the same packet ID '%d' is already in flight" % packet_id
                 )
         else:
             packet_id = None
@@ -266,9 +265,7 @@ class ProtocolHandler:
             elif app_message.qos == QOS_2:
                 await self._handle_qos2_message_flow(app_message)
             else:
-                raise DistMQTTException(
-                    "Unexcepted QOS value '%d" % str(app_message.qos)
-                )
+                raise DistMQTTException("Unexcepted QOS value '%d" % str(app_message.qos))
         except CancelledError:
             pass
 
@@ -361,8 +358,7 @@ class ProtocolHandler:
                     # This is a retry flow, no need to store just check the message exists in session
                     if app_message.packet_id not in self.session.inflight_out:
                         raise DistMQTTException(
-                            "Unknown inflight message '%d' in session"
-                            % app_message.packet_id
+                            "Unknown inflight message '%d' in session" % app_message.packet_id
                         )
                     publish_packet = app_message.build_publish_packet(dup=True)
                 else:
@@ -394,9 +390,7 @@ class ProtocolHandler:
                 self._pubcomp_waiters[app_message.packet_id] = waiter
                 # Send pubrel
                 try:
-                    app_message.pubrel_packet = PubrelPacket.build(
-                        app_message.packet_id
-                    )
+                    app_message.pubrel_packet = PubrelPacket.build(app_message.packet_id)
                     await self._send_packet(app_message.pubrel_packet)
                     app_message.pubcomp_packet = await waiter.get()
                 finally:
@@ -448,9 +442,7 @@ class ProtocolHandler:
                 while True:
                     try:
                         async with anyio.fail_after(keepalive_timeout):
-                            fixed_header = await MQTTFixedHeader.from_stream(
-                                self.stream
-                            )
+                            fixed_header = await MQTTFixedHeader.from_stream(self.stream)
                         if fixed_header is None:
                             self.logger.debug(
                                 "%s No more data (EOF received), stopping reader coro",
@@ -469,14 +461,10 @@ class ProtocolHandler:
                             await self.handle_connection_closed()
                             break
                         cls = packet_class(fixed_header)
-                        packet = await cls.from_stream(
-                            self.stream, fixed_header=fixed_header
-                        )
+                        packet = await cls.from_stream(self.stream, fixed_header=fixed_header)
                         # self.logger.debug("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
                         await self.plugins_manager.fire_event(
-                            EVENT_MQTT_PACKET_RECEIVED,
-                            packet=packet,
-                            session=self.session,
+                            EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session,
                         )
                         try:
                             pt, direct = PACKET_TYPES[packet.fixed_header.packet_type]
@@ -505,9 +493,7 @@ class ProtocolHandler:
                         )
                         await self.handle_read_timeout()
                     except NoDataException:
-                        self.logger.debug(
-                            "%s No data available", self.session.client_id
-                        )
+                        self.logger.debug("%s No data available", self.session.client_id)
                         break  # XXX
                     except anyio.get_cancelled_exc_class():
                         self.logger.warning("%s CANCEL", type(self).__name__)
@@ -576,14 +562,10 @@ class ProtocolHandler:
     async def handle_read_timeout(self):
         self.logger.debug("%s read timeout unhandled", self.session.client_id)
 
-    async def handle_connack(
-        self, connack: ConnackPacket
-    ):  # pylint: disable=unused-argument
+    async def handle_connack(self, connack: ConnackPacket):  # pylint: disable=unused-argument
         self.logger.debug("%s CONNACK unhandled", self.session.client_id)
 
-    async def handle_connect(
-        self, connect: ConnectPacket
-    ):  # pylint: disable=unused-argument
+    async def handle_connect(self, connect: ConnectPacket):  # pylint: disable=unused-argument
         self.logger.debug("%s CONNECT unhandled", self.session.client_id)
 
     async def handle_subscribe(
@@ -596,24 +578,16 @@ class ProtocolHandler:
     ):  # pylint: disable=unused-argument
         self.logger.debug("%s UNSUBSCRIBE unhandled", self.session.client_id)
 
-    async def handle_suback(
-        self, suback: SubackPacket
-    ):  # pylint: disable=unused-argument
+    async def handle_suback(self, suback: SubackPacket):  # pylint: disable=unused-argument
         self.logger.debug("%s SUBACK unhandled", self.session.client_id)
 
-    async def handle_unsuback(
-        self, unsuback: UnsubackPacket
-    ):  # pylint: disable=unused-argument
+    async def handle_unsuback(self, unsuback: UnsubackPacket):  # pylint: disable=unused-argument
         self.logger.debug("%s UNSUBACK unhandled", self.session.client_id)
 
-    async def handle_pingresp(
-        self, pingresp: PingRespPacket
-    ):  # pylint: disable=unused-argument
+    async def handle_pingresp(self, pingresp: PingRespPacket):  # pylint: disable=unused-argument
         self.logger.debug("%s PINGRESP unhandled", self.session.client_id)
 
-    async def handle_pingreq(
-        self, pingreq: PingReqPacket
-    ):  # pylint: disable=unused-argument
+    async def handle_pingreq(self, pingreq: PingReqPacket):  # pylint: disable=unused-argument
         self.logger.debug("%s PINGREQ unhandled", self.session.client_id)
 
     async def _handle_disconnect(
@@ -638,9 +612,7 @@ class ProtocolHandler:
             waiter = self._puback_waiters[packet_id]
             await waiter.set(puback)
         except KeyError:
-            self.logger.warning(
-                "Received PUBACK for unknown pending message Id: '%d'", packet_id
-            )
+            self.logger.warning("Received PUBACK for unknown pending message Id: '%d'", packet_id)
         except InvalidStateError:
             self.logger.warning("PUBACK waiter with Id '%d' already done", packet_id)
 
@@ -696,9 +668,7 @@ class ProtocolHandler:
             if incoming_message.qos == QOS_0:
                 await self._handle_message_flow(incoming_message)
             else:
-                await self._reader_task.spawn(
-                    self._handle_message_flow, incoming_message
-                )
+                await self._reader_task.spawn(self._handle_message_flow, incoming_message)
 
         #           if self.session is not None:
         #               self.logger.debug("Message queue size: %d", self.session._delivered_message_queue.qsize())

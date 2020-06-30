@@ -21,9 +21,7 @@ default_config = {
     "sys_interval": 10,
     "auth": {
         "allow-anonymous": True,
-        "password-file": os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "passwd"
-        ),
+        "password-file": os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd"),
         "plugins": ["auth_file", "auth_anonymous"],
     },
     "topic-check": {"enabled": False},
@@ -43,9 +41,7 @@ async def main(config, debug):
     logging.basicConfig(level=level, format=formatter)
 
     if not config:
-        config = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "default_broker.yaml"
-        )
+        config = os.path.join(os.path.dirname(os.path.realpath(__file__)), "default_broker.yaml")
         logger.debug("Using default configuration")
     config = read_yaml_config(config)
 

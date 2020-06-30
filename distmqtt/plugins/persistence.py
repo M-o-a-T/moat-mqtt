@@ -15,9 +15,7 @@ class SQLitePlugin:
             self.persistence_config = self.context.config["persistence"]
             self.init_db()
         except KeyError:
-            self.context.logger.warning(
-                "'persistence' section not found in context configuration"
-            )
+            self.context.logger.warning("'persistence' section not found in context configuration")
 
     def init_db(self):
         self.db_file = self.persistence_config.get("file", None)
