@@ -20,9 +20,7 @@ from distmqtt.mqtt.pubrec import PubrecPacket
 from distmqtt.mqtt.pubrel import PubrelPacket
 from distmqtt.mqtt.pubcomp import PubcompPacket
 
-formatter = (
-    "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
-)
+formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)
 log = logging.getLogger(__name__)
 
@@ -53,16 +51,12 @@ class ProtocolHandlerTest(unittest.TestCase):
     def run_(self, server_mock, test_coro):
         async def runner():
             async with anyio.create_task_group() as tg:
-                self.plugin_manager = PluginManager(
-                    tg, "distmqtt.test.plugins", context=None
-                )
+                self.plugin_manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 async with await anyio.create_tcp_server(
                     port=8888, interface="127.0.0.1"
                 ) as server:
                     await tg.spawn(self.listen_, server_mock, server)
-                    async with await anyio.connect_tcp(
-                        "127.0.0.1", server.port
-                    ) as conn:
+                    async with await anyio.connect_tcp("127.0.0.1", server.port) as conn:
                         sr = adapt(conn)
                         await test_coro(sr)
                         await self.listen_ctx.cancel()
@@ -121,9 +115,7 @@ class ProtocolHandlerTest(unittest.TestCase):
             self.handler = ProtocolHandler(self.plugin_manager)
             await self.handler.attach(self.session, stream_adapted)
             await self.start_handler(self.handler, self.session)
-            message = await self.handler.mqtt_publish(
-                "/topic", b"test_data", QOS_1, False
-            )
+            message = await self.handler.mqtt_publish("/topic", b"test_data", QOS_1, False)
             self.assertIsInstance(message, OutgoingApplicationMessage)
             self.assertIsNotNone(message.publish_packet)
             self.assertIsNotNone(message.puback_packet)
@@ -156,9 +148,7 @@ class ProtocolHandlerTest(unittest.TestCase):
             self.handler = ProtocolHandler(self.plugin_manager)
             await self.handler.attach(self.session, stream_adapted)
             await self.start_handler(self.handler, self.session)
-            message = await self.handler.mqtt_publish(
-                "/topic", b"test_data", QOS_2, False
-            )
+            message = await self.handler.mqtt_publish("/topic", b"test_data", QOS_2, False)
             self.assertIsInstance(message, OutgoingApplicationMessage)
             self.assertIsNotNone(message.publish_packet)
             self.assertIsNone(message.puback_packet)
@@ -289,9 +279,7 @@ class ProtocolHandlerTest(unittest.TestCase):
 
         async def test_coro(stream_adapted):
             self.session = Session(None)
-            message = OutgoingApplicationMessage(
-                1, "/topic", QOS_1, b"test_data", False
-            )
+            message = OutgoingApplicationMessage(1, "/topic", QOS_1, b"test_data", False)
             message.publish_packet = PublishPacket.build(
                 "/topic", b"test_data", rand_packet_id(), False, QOS_1, False
             )
@@ -323,9 +311,7 @@ class ProtocolHandlerTest(unittest.TestCase):
 
         async def test_coro(stream_adapted):
             self.session = Session(None)
-            message = OutgoingApplicationMessage(
-                1, "/topic", QOS_2, b"test_data", False
-            )
+            message = OutgoingApplicationMessage(1, "/topic", QOS_2, b"test_data", False)
             message.publish_packet = PublishPacket.build(
                 "/topic", b"test_data", rand_packet_id(), False, QOS_2, False
             )

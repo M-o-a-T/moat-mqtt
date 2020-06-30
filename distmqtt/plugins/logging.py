@@ -23,9 +23,7 @@ class PacketLoggerPlugin:
     def __init__(self, context):
         self.context = context
 
-    async def on_mqtt_packet_received(
-        self, *args, **kwargs
-    ):  # pylint: disable=unused-argument
+    async def on_mqtt_packet_received(self, *args, **kwargs):  # pylint: disable=unused-argument
         packet = kwargs.get("packet")
         session = kwargs.get("session", None)
         if session:
@@ -33,9 +31,7 @@ class PacketLoggerPlugin:
         else:
             self.context.logger.debug("<-in-- %r", packet)
 
-    async def on_mqtt_packet_sent(
-        self, *args, **kwargs
-    ):  # pylint: disable=unused-argument
+    async def on_mqtt_packet_sent(self, *args, **kwargs):  # pylint: disable=unused-argument
         packet = kwargs.get("packet")
         session = kwargs.get("session", None)
         if session:

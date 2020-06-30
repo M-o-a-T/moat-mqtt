@@ -9,9 +9,7 @@ from distmqtt.client import open_mqttclient, ConnectException
 from distmqtt.broker import create_broker
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
-formatter = (
-    "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
-)
+formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.ERROR, format=formatter)
 log = logging.getLogger(__name__)
 
@@ -20,11 +18,7 @@ URI = "mqtt://127.0.0.1:%d/" % PORT
 
 broker_config = {
     "listeners": {
-        "default": {
-            "type": "tcp",
-            "bind": "127.0.0.1:%d" % PORT,
-            "max_connections": 10,
-        },
+        "default": {"type": "tcp", "bind": "127.0.0.1:%d" % PORT, "max_connections": 10},
         "ws": {"type": "ws", "bind": "127.0.0.1:8080", "max_connections": 10},
         "wss": {"type": "ws", "bind": "127.0.0.1:8081", "max_connections": 10},
     },
@@ -48,9 +42,7 @@ class MQTTClientTest(unittest.TestCase):
     def test_connect_tcp_secure(self):
         async def test_coro():
             async with open_mqttclient(config={"check_hostname": False}) as client:
-                ca = os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)), "mosquitto.org.crt"
-                )
+                ca = os.path.join(os.path.dirname(os.path.realpath(__file__)), "mosquitto.org.crt")
                 await client.connect("mqtts://test.mosquitto.org/", cafile=ca)
                 self.assertIsNotNone(client.session)
 
@@ -74,9 +66,7 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_connect_ws(self):
         async def test_coro():
-            async with create_broker(
-                broker_config, plugin_namespace="distmqtt.test.plugins"
-            ):
+            async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
                 async with open_mqttclient() as client:
                     await client.connect("ws://127.0.0.1:8080/")
                     self.assertIsNotNone(client.session)
@@ -85,9 +75,7 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_reconnect_ws_retain_username_password(self):
         async def test_coro():
-            async with create_broker(
-                broker_config, plugin_namespace="distmqtt.test.plugins"
-            ):
+            async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
                 async with open_mqttclient() as client:
                     await client.connect("ws://fred:password@127.0.0.1:8080/")
                     self.assertIsNotNone(client.session)
@@ -100,9 +88,7 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_connect_ws_secure(self):
         async def test_coro():
-            async with create_broker(
-                broker_config, plugin_namespace="distmqtt.test.plugins"
-            ):
+            async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
                 async with open_mqttclient() as client:
                     ca = os.path.join(
                         os.path.dirname(os.path.realpath(__file__)), "mosquitto.org.crt"
@@ -114,9 +100,7 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_ping(self):
         async def test_coro():
-            async with create_broker(
-                broker_config, plugin_namespace="distmqtt.test.plugins"
-            ):
+            async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
                 async with open_mqttclient() as client:
                     await client.connect(URI)
                     self.assertIsNotNone(client.session)
@@ -126,9 +110,7 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_subscribe(self):
         async def test_coro():
-            async with create_broker(
-                broker_config, plugin_namespace="distmqtt.test.plugins"
-            ):
+            async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
                 async with open_mqttclient() as client:
                     await client.connect(URI)
                     self.assertIsNotNone(client.session)
@@ -147,9 +129,7 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_unsubscribe(self):
         async def test_coro():
-            async with create_broker(
-                broker_config, plugin_namespace="distmqtt.test.plugins"
-            ):
+            async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
                 async with open_mqttclient() as client:
                     await client.connect(URI)
                     self.assertIsNotNone(client.session)
@@ -163,9 +143,7 @@ class MQTTClientTest(unittest.TestCase):
         data = b"data"
 
         async def test_coro():
-            async with create_broker(
-                broker_config, plugin_namespace="distmqtt.test.plugins"
-            ):
+            async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
                 async with open_mqttclient() as client:
                     await client.connect(URI)
                     self.assertIsNotNone(client.session)
@@ -184,9 +162,7 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_deliver_timeout(self):
         async def test_coro():
-            async with create_broker(
-                broker_config, plugin_namespace="distmqtt.test.plugins"
-            ):
+            async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
                 async with open_mqttclient() as client:
                     await client.connect(URI)
                     self.assertIsNotNone(client.session)

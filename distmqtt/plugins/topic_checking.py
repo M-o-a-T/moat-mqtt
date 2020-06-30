@@ -4,9 +4,7 @@ class BaseTopicPlugin:
         try:
             self.topic_config = self.context.config["topic-check"]
         except KeyError:
-            self.context.logger.warning(
-                "'topic-check' section not found in context configuration"
-            )
+            self.context.logger.warning("'topic-check' section not found in context configuration")
             self.topic_config = None
 
     def topic_filtering(self, *args, **kwargs):  # pylint: disable=unused-argument

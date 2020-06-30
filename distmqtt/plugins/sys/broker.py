@@ -47,14 +47,10 @@ class BrokerSysPlugin:
     async def _broadcast_sys_topic(self, topic_basename, data):
         return await self.context.broadcast_message(topic_basename, data)
 
-    async def on_broker_pre_start(
-        self, *args, **kwargs
-    ):  # pylint: disable=unused-argument
+    async def on_broker_pre_start(self, *args, **kwargs):  # pylint: disable=unused-argument
         self._clear_stats()
 
-    async def on_broker_post_start(
-        self, *args, **kwargs
-    ):  # pylint: disable=unused-argument
+    async def on_broker_post_start(self, *args, **kwargs):  # pylint: disable=unused-argument
         self._stats[STAT_START_TIME] = datetime.now()
         from distmqtt.version import get_version
 
@@ -81,9 +77,7 @@ class BrokerSysPlugin:
             pass
             # 'sys_internal' config parameter not found
 
-    async def on_broker_pre_stop(
-        self, *args, **kwargs
-    ):  # pylint: disable=unused-argument
+    async def on_broker_pre_stop(self, *args, **kwargs):  # pylint: disable=unused-argument
         # Stop $SYS topics broadcasting
         if self.sys_handle:
             await self.sys_handle.cancel()
@@ -132,13 +126,9 @@ class BrokerSysPlugin:
             "messages/sent", int_to_bytes_str(self._stats[STAT_MSG_SENT])
         )
         await self._broadcast_sys_topic("time", str(datetime.now()).encode("utf-8"))
-        await self._broadcast_sys_topic(
-            "uptime", int_to_bytes_str(int(uptime.total_seconds()))
-        )
+        await self._broadcast_sys_topic("uptime", int_to_bytes_str(int(uptime.total_seconds())))
         await self._broadcast_sys_topic("uptime/formated", str(uptime).encode("utf-8"))
-        await self._broadcast_sys_topic(
-            "clients/connected", int_to_bytes_str(client_connected)
-        )
+        await self._broadcast_sys_topic("clients/connected", int_to_bytes_str(client_connected))
         await self._broadcast_sys_topic(
             "clients/disconnected", int_to_bytes_str(client_disconnected)
         )
@@ -151,33 +141,25 @@ class BrokerSysPlugin:
         await self._broadcast_sys_topic(
             "messages/inflight", int_to_bytes_str(inflight_in + inflight_out)
         )
-        await self._broadcast_sys_topic(
-            "messages/inflight/in", int_to_bytes_str(inflight_in)
-        )
-        await self._broadcast_sys_topic(
-            "messages/inflight/out", int_to_bytes_str(inflight_out)
-        )
+        await self._broadcast_sys_topic("messages/inflight/in", int_to_bytes_str(inflight_in))
+        await self._broadcast_sys_topic("messages/inflight/out", int_to_bytes_str(inflight_out))
         await self._broadcast_sys_topic(
             "messages/inflight/stored", int_to_bytes_str(messages_stored)
         )
         await self._broadcast_sys_topic(
-            "messages/publish/received",
-            int_to_bytes_str(self._stats[STAT_PUBLISH_RECEIVED]),
+            "messages/publish/received", int_to_bytes_str(self._stats[STAT_PUBLISH_RECEIVED]),
         )
         await self._broadcast_sys_topic(
             "messages/publish/sent", int_to_bytes_str(self._stats[STAT_PUBLISH_SENT])
         )
         await self._broadcast_sys_topic(
-            "messages/retained/count",
-            int_to_bytes_str(len(self.context.retained_messages)),
+            "messages/retained/count", int_to_bytes_str(len(self.context.retained_messages)),
         )
         await self._broadcast_sys_topic(
             "messages/subscriptions/count", int_to_bytes_str(subscriptions_count)
         )
 
-    async def on_mqtt_packet_received(
-        self, *args, **kwargs
-    ):  # pylint: disable=unused-argument
+    async def on_mqtt_packet_received(self, *args, **kwargs):  # pylint: disable=unused-argument
         packet = kwargs.get("packet")
         if packet:
             packet_size = packet.bytes_length
@@ -186,9 +168,7 @@ class BrokerSysPlugin:
             if packet.fixed_header.packet_type == PUBLISH:
                 self._stats[STAT_PUBLISH_RECEIVED] += 1
 
-    async def on_mqtt_packet_sent(
-        self, *args, **kwargs
-    ):  # pylint: disable=unused-argument
+    async def on_mqtt_packet_sent(self, *args, **kwargs):  # pylint: disable=unused-argument
         packet = kwargs.get("packet")
         if packet:
             packet_size = packet.bytes_length
@@ -197,9 +177,7 @@ class BrokerSysPlugin:
             if packet.fixed_header.packet_type == PUBLISH:
                 self._stats[STAT_PUBLISH_SENT] += 1
 
-    async def on_broker_client_connected(
-        self, *args, **kwargs
-    ):  # pylint: disable=unused-argument
+    async def on_broker_client_connected(self, *args, **kwargs):  # pylint: disable=unused-argument
         self._stats[STAT_CLIENTS_CONNECTED] += 1
         self._stats[STAT_CLIENTS_MAXIMUM] = max(
             self._stats[STAT_CLIENTS_MAXIMUM], self._stats[STAT_CLIENTS_CONNECTED]

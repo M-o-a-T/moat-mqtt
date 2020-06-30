@@ -57,6 +57,4 @@ def packet_class(fixed_header: MQTTFixedHeader):
         cls = packet_dict[fixed_header.packet_type]
         return cls
     except KeyError:
-        raise DistMQTTException(
-            "Unexpected packet Type '%s'" % fixed_header.packet_type
-        )
+        raise DistMQTTException("Unexpected packet Type '%s'" % fixed_header.packet_type)

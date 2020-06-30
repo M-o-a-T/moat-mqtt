@@ -9,9 +9,7 @@ import sqlite3
 from distmqtt.plugins.manager import BaseContext
 from distmqtt.plugins.persistence import SQLitePlugin
 
-formatter = (
-    "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
-)
+formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)
 
 

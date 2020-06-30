@@ -173,9 +173,7 @@ class MQTTPayload:
     def __init__(self):
         pass
 
-    def to_bytes(
-        self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader
-    ):
+    def to_bytes(self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader):
         raise NotImplementedError()
 
     @classmethod
@@ -217,36 +215,26 @@ class MQTTPacket:
         else:
             variable_header_bytes = b""
         if self.payload:
-            payload_bytes = self.payload.to_bytes(
-                self.fixed_header, self.variable_header
-            )
+            payload_bytes = self.payload.to_bytes(self.fixed_header, self.variable_header)
         else:
             payload_bytes = b""
 
-        self.fixed_header.remaining_length = len(variable_header_bytes) + len(
-            payload_bytes
-        )
+        self.fixed_header.remaining_length = len(variable_header_bytes) + len(payload_bytes)
         fixed_header_bytes = self.fixed_header.to_bytes()
 
         return fixed_header_bytes + variable_header_bytes + payload_bytes
 
     @classmethod
-    async def from_stream(
-        cls, reader: StreamAdapter, fixed_header=None, variable_header=None
-    ):
+    async def from_stream(cls, reader: StreamAdapter, fixed_header=None, variable_header=None):
         if fixed_header is None:
             fixed_header = await cls.FIXED_HEADER.from_stream(reader)
         if cls.VARIABLE_HEADER:
             if variable_header is None:
-                variable_header = await cls.VARIABLE_HEADER.from_stream(
-                    reader, fixed_header
-                )
+                variable_header = await cls.VARIABLE_HEADER.from_stream(reader, fixed_header)
         else:
             variable_header = None
         if cls.PAYLOAD:
-            payload = await cls.PAYLOAD.from_stream(
-                reader, fixed_header, variable_header
-            )
+            payload = await cls.PAYLOAD.from_stream(reader, fixed_header, variable_header)
         else:
             payload = None
 

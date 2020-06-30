@@ -246,9 +246,7 @@ class MsgPackJSONCodec:
         )
 
     def decode(self, data):
-        return json.dumps(
-            msgpack.unpackb(data, raw=not self.use_bin_type, use_list=self.use_list)
-        )
+        return json.dumps(msgpack.unpackb(data, raw=not self.use_bin_type, use_list=self.use_list))
 
 
 class BoolCodec:

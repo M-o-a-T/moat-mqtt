@@ -172,18 +172,12 @@ class Session:
 
     def _init_states(self):
         self.transitions = Machine(states=Session.states, initial="new")
-        self.transitions.add_transition(
-            trigger="connect", source="new", dest="connected"
-        )
-        self.transitions.add_transition(
-            trigger="connect", source="disconnected", dest="connected"
-        )
+        self.transitions.add_transition(trigger="connect", source="new", dest="connected")
+        self.transitions.add_transition(trigger="connect", source="disconnected", dest="connected")
         self.transitions.add_transition(
             trigger="disconnect", source="connected", dest="disconnected"
         )
-        self.transitions.add_transition(
-            trigger="disconnect", source="new", dest="disconnected"
-        )
+        self.transitions.add_transition(trigger="disconnect", source="new", dest="disconnected")
         self.transitions.add_transition(
             trigger="disconnect", source="disconnected", dest="disconnected"
         )
@@ -209,14 +203,8 @@ class Session:
         self._broker = None  # break ref loop
 
     async def put_message(self, app_message):
-        if (
-            app_message.retain
-            and self._broker is not None
-            and not self._broker._do_retain
-        ):
-            raise RuntimeError(
-                "The broker doesn't do retains", repr(app_message.__getstate__())
-            )
+        if app_message.retain and self._broker is not None and not self._broker._do_retain:
+            raise RuntimeError("The broker doesn't do retains", repr(app_message.__getstate__()))
         if not app_message.topic:
             self.logger.warning(
                 "[MQTT-4.7.3-1] - %s invalid TOPIC sent in PUBLISH message,closing connection",
@@ -236,9 +224,7 @@ class Session:
                 % self.client_id
             )
         if app_message.qos == QOS_0 and self._delivered_message_queue.qsize() >= 9999:
-            self.logger.warning(
-                "delivered messages queue full. QOS_0 message discarded"
-            )
+            self.logger.warning("delivered messages queue full. QOS_0 message discarded")
         else:
             await self._delivered_message_queue.put(app_message)
 
@@ -282,16 +268,12 @@ class Session:
         if self._packet_id > 65535:
             self._packet_id = 1
         limit = self._packet_id
-        while (
-            self._packet_id in self.inflight_in or self._packet_id in self.inflight_out
-        ):
+        while self._packet_id in self.inflight_in or self._packet_id in self.inflight_out:
             self._packet_id += 1
             if self._packet_id > 65535:
                 self._packet_id = 1
             if self._packet_id == limit:
-                raise DistMQTTException(
-                    "More than 65535 messages pending. No free packet ID"
-                )
+                raise DistMQTTException("More than 65535 messages pending. No free packet ID")
 
         return self._packet_id
 

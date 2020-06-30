@@ -39,7 +39,7 @@ _defaults = {
     "codec": "noop",
 }
 
-QSIZE=100
+QSIZE = 100
 
 _codecs = {}
 for _t in dir(codecs):
@@ -51,9 +51,7 @@ for _t in dir(codecs):
             pass
 
 
-def get_codec(
-    codec, fallback=None, config={}
-):  # pylint: disable=dangerous-default-value
+def get_codec(codec, fallback=None, config={}):  # pylint: disable=dangerous-default-value
     if codec is None:
         codec = fallback
     if codec is None:
@@ -184,9 +182,7 @@ class MQTTClient:
         this class.
     """
 
-    def __init__(
-        self, tg: anyio.abc.TaskGroup, client_id=None, config=None, codec=None
-    ):
+    def __init__(self, tg: anyio.abc.TaskGroup, client_id=None, config=None, codec=None):
         self.logger = logging.getLogger(__name__)
         self.config = copy.deepcopy(_defaults)
         if config is not None:
@@ -216,13 +212,7 @@ class MQTTClient:
         self.client_task = None
 
     async def connect(
-        self,
-        uri=None,
-        cleansession=None,
-        cafile=None,
-        capath=None,
-        cadata=None,
-        extra_headers={},
+        self, uri=None, cleansession=None, cafile=None, capath=None, cadata=None, extra_headers={},
     ):
         # pylint: disable=dangerous-default-value
         """
@@ -276,9 +266,7 @@ class MQTTClient:
             await self._handler.stop()
             self.session.transitions.disconnect()
         else:
-            self.logger.warning(
-                "Client session is not currently connected, ignoring call"
-            )
+            self.logger.warning("Client session is not currently connected, ignoring call")
 
     async def cancel_tasks(self):
         """
@@ -549,7 +537,7 @@ class MQTTClient:
             for c in list(clients):
                 if c._q is None:
                     continue
-                if c._q.qsize() < QSIZE-1:
+                if c._q.qsize() < QSIZE - 1:
                     await c._q.put(msg)
                 else:
                     await c._q.put(None)
@@ -654,9 +642,7 @@ class MQTTClient:
             )
             if "certfile" in self.config and "keyfile" in self.config:
                 sc.load_cert_chain(self.config["certfile"], self.config["keyfile"])
-            if "check_hostname" in self.config and isinstance(
-                self.config["check_hostname"], bool
-            ):
+            if "check_hostname" in self.config and isinstance(self.config["check_hostname"], bool):
                 sc.check_hostname = self.config["check_hostname"]
             kwargs["ssl_context"] = sc
             kwargs["autostart_tls"] = True
@@ -701,17 +687,13 @@ class MQTTClient:
                 self.session.transitions.connect()
                 await self._connected_state.set()
                 self.logger.debug(
-                    "connected to %s:%s",
-                    self.session.remote_address,
-                    self.session.remote_port,
+                    "connected to %s:%s", self.session.remote_address, self.session.remote_port,
                 )
             return return_code
         except ProtocolError as exc:
             self.logger.warning("connection failed: invalid websocket handshake")
             self.session.transitions.disconnect()
-            raise ConnectException(
-                "connection failed: invalid websocket handshake"
-            ) from exc
+            raise ConnectException("connection failed: invalid websocket handshake") from exc
         except (ProtocolHandlerException, ConnectionError, OSError) as exc:
             self.logger.warning("MQTT connection failed")
             self.session.transitions.disconnect()

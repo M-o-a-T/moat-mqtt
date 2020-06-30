@@ -92,9 +92,7 @@ class Server:
                 )
             else:
                 self.logger.info(
-                    "Listener '%s': %d connections acquired",
-                    self.listener_name,
-                    self.conn_count,
+                    "Listener '%s': %d connections acquired", self.listener_name, self.conn_count,
                 )
             yield self
 
@@ -108,9 +106,7 @@ class Server:
                 )
             else:
                 self.logger.info(
-                    "Listener '%s': %d connections acquired",
-                    self.listener_name,
-                    self.conn_count,
+                    "Listener '%s': %d connections acquired", self.listener_name, self.conn_count,
                 )
 
     async def close_instance(self):
@@ -129,9 +125,7 @@ class BrokerContext(BaseContext):
         self.config = config
 
     async def broadcast_message(self, topic, data, qos=None, retain=False):
-        await self._broker_instance.internal_message_broadcast(
-            topic, data, qos, retain=retain
-        )
+        await self._broker_instance.internal_message_broadcast(topic, data, qos, retain=retain)
 
     @property
     def sessions(self):
@@ -259,15 +253,9 @@ class Broker:
         self.transitions.add_transition(
             trigger="starting_success", source="starting", dest="started"
         )
-        self.transitions.add_transition(
-            trigger="shutdown", source="starting", dest="not_started"
-        )
-        self.transitions.add_transition(
-            trigger="shutdown", source="started", dest="stopping"
-        )
-        self.transitions.add_transition(
-            trigger="shutdown", source="not_started", dest="stopping"
-        )
+        self.transitions.add_transition(trigger="shutdown", source="starting", dest="not_started")
+        self.transitions.add_transition(trigger="shutdown", source="started", dest="stopping")
+        self.transitions.add_transition(trigger="shutdown", source="not_started", dest="stopping")
         self.transitions.add_transition(
             trigger="stopping_success", source="stopped", dest="stopped"
         )
@@ -277,12 +265,8 @@ class Broker:
         self.transitions.add_transition(
             trigger="stopping_failure", source="stopping", dest="not_stopped"
         )
-        self.transitions.add_transition(
-            trigger="start", source="stopped", dest="starting"
-        )
-        self.transitions.add_transition(
-            trigger="shutdown", source="new", dest="stopped"
-        )
+        self.transitions.add_transition(trigger="start", source="stopped", dest="starting")
+        self.transitions.add_transition(trigger="shutdown", source="new", dest="stopped")
         self.transitions.add_transition(
             trigger="stopping_success", source="stopping", dest="stopped"
         )
@@ -304,9 +288,7 @@ class Broker:
             self.logger.debug("Broker starting")
         except (MachineError, ValueError) as exc:
             # Backwards compat: MachineError is raised by transitions < 0.5.0.
-            self.logger.warning(
-                "[WARN-0001] Invalid method call at this moment: %r", exc
-            )
+            self.logger.warning("[WARN-0001] Invalid method call at this moment: %r", exc)
             raise BrokerException("Broker instance can't be started: %s" % exc)
 
         await self.plugins_manager.fire_event(EVENT_BROKER_PRE_START)
@@ -316,9 +298,7 @@ class Broker:
                 listener = self.listeners_config[listener_name]
 
                 if "bind" not in listener:
-                    self.logger.debug(
-                        "Listener configuration '%s' is not bound", listener_name
-                    )
+                    self.logger.debug("Listener configuration '%s' is not bound", listener_name)
                 else:
                     # Max connections
                     try:
@@ -342,14 +322,11 @@ class Broker:
                                 capath=listener.get("capath"),
                                 cadata=listener.get("cadata"),
                             )
-                            sc.load_cert_chain(
-                                listener["certfile"], listener["keyfile"]
-                            )
+                            sc.load_cert_chain(listener["certfile"], listener["keyfile"])
                             sc.verify_mode = ssl.CERT_OPTIONAL
                         except KeyError as ke:
                             raise BrokerException(
-                                "'certfile' or 'keyfile' configuration parameter missing: %s"
-                                % ke
+                                "'certfile' or 'keyfile' configuration parameter missing: %s" % ke
                             )
                         except FileNotFoundError as fnfe:
                             raise BrokerException(
@@ -376,34 +353,20 @@ class Broker:
                                     await self._tg.spawn(cb, conn)
 
                     if listener["type"] == "tcp":
-                        cb_partial = partial(
-                            self.stream_connected, listener_name=listener_name
-                        )
+                        cb_partial = partial(self.stream_connected, listener_name=listener_name)
                     elif listener["type"] == "ws":
-                        cb_partial = partial(
-                            self.ws_connected, listener_name=listener_name
-                        )
+                        cb_partial = partial(self.ws_connected, listener_name=listener_name)
                     else:
                         self.logger.error(
-                            "Listener '%s': unknown type '%s'",
-                            listener_name,
-                            listener["type"],
+                            "Listener '%s': unknown type '%s'", listener_name, listener["type"],
                         )
                         continue
                     fut = Future()
                     await self._tg.spawn(
-                        server_task,
-                        fut,
-                        cb_partial,
-                        address,
-                        port,
-                        sc,
-                        name=listener_name,
+                        server_task, fut, cb_partial, address, port, sc, name=listener_name,
                     )
                     instance = await fut.get()
-                    self._servers[listener_name] = Server(
-                        listener_name, instance, max_connections
-                    )
+                    self._servers[listener_name] = Server(listener_name, instance, max_connections)
 
                     self.logger.info(
                         "Listener '%s' bind to %s (max_connections=%d)",
@@ -450,9 +413,7 @@ class Broker:
 
         # Stop broadcast loop
         if self._broadcast_queue.qsize() > 0:
-            self.logger.warning(
-                "%d messages not broadcasted", self._broadcast_queue.qsize()
-            )
+            self.logger.warning("%d messages not broadcasted", self._broadcast_queue.qsize())
 
         for listener_name in self._servers:
             server = self._servers[listener_name]
@@ -490,10 +451,7 @@ class Broker:
 
         remote_address, remote_port = adapter.get_peer_info()
         self.logger.info(
-            "Connection from %s:%d on listener '%s'",
-            remote_address,
-            remote_port,
-            listener_name,
+            "Connection from %s:%d on listener '%s'", remote_address, remote_port, listener_name,
         )
 
         # Wait for first packet and expect a CONNECT
@@ -530,9 +488,7 @@ class Broker:
         else:
             # Get session from cache
             if client_session.client_id in self._sessions:
-                self.logger.debug(
-                    "Found old session %r", self._sessions[client_session.client_id]
-                )
+                self.logger.debug("Found old session %r", self._sessions[client_session.client_id])
                 client_session = self._sessions[client_session.client_id][0]
                 client_session.parent = 1
             else:
@@ -577,8 +533,7 @@ class Broker:
         await handler.start()
         if self._do_retain:
             self.logger.debug(
-                "Retained messages queue size: %d",
-                client_session.retained_messages.qsize(),
+                "Retained messages queue size: %d", client_session.retained_messages.qsize(),
             )
             await self.publish_session_retained_messages(client_session)
 
@@ -588,9 +543,7 @@ class Broker:
             async def handle_unsubscribe():
                 while True:
                     unsubscription = await handler.get_next_pending_unsubscription()
-                    self.logger.debug(
-                        "%s handling unsubscription", client_session.client_id
-                    )
+                    self.logger.debug("%s handling unsubscription", client_session.client_id)
                     for topic in unsubscription["topics"]:
                         self._del_subscription(topic, client_session)
                         await self.plugins_manager.fire_event(
@@ -598,21 +551,15 @@ class Broker:
                             client_id=client_session.client_id,
                             topic=topic,
                         )
-                    await handler.mqtt_acknowledge_unsubscription(
-                        unsubscription["packet_id"]
-                    )
+                    await handler.mqtt_acknowledge_unsubscription(unsubscription["packet_id"])
 
             async def handle_subscribe():
                 while True:
                     subscriptions = await handler.get_next_pending_subscription()
-                    self.logger.debug(
-                        "%s handling subscription", client_session.client_id
-                    )
+                    self.logger.debug("%s handling subscription", client_session.client_id)
                     return_codes = []
                     for subscription in subscriptions["topics"]:
-                        result = await self.add_subscription(
-                            subscription, client_session
-                        )
+                        result = await self.add_subscription(subscription, client_session)
                         return_codes.append(result)
                     await handler.mqtt_acknowledge_subscription(
                         subscriptions["packet_id"], return_codes
@@ -706,9 +653,7 @@ class Broker:
                 if res is False:
                     auth_result = False
                     self.logger.debug(
-                        "Authentication failed due to '%s' plugin result: %s",
-                        plugin.name,
-                        res,
+                        "Authentication failed due to '%s' plugin result: %s", plugin.name, res,
                     )
                 else:
                     self.logger.debug("'%s' plugin result: %s", plugin.name, res)
@@ -733,10 +678,7 @@ class Broker:
         if topic_config and topic_config.get("enabled", False):
             topic_plugins = topic_config.get("plugins", None)
         returns = await self.plugins_manager.map_plugin_coro(
-            "topic_filtering",
-            session=session,
-            topic=topic,
-            filter_plugins=topic_plugins,
+            "topic_filtering", session=session, topic=topic, filter_plugins=topic_plugins,
         )
 
         topic_result = True
@@ -746,9 +688,7 @@ class Broker:
                 if res is False:
                     topic_result = False
                     self.logger.debug(
-                        "Topic filtering failed due to '%s' plugin result: %s",
-                        plugin.name,
-                        res,
+                        "Topic filtering failed due to '%s' plugin result: %s", plugin.name, res,
                     )
         # If all plugins returned True, authentication is success
         return topic_result
@@ -759,9 +699,7 @@ class Broker:
         if data is not None and data != b"":
             # If retained flag set, store the message for further subscriptions
             self.logger.debug("Retaining %s: %r", topic_name, data)
-            retained_message = RetainedApplicationMessage(
-                source_session, topic_name, data, qos
-            )
+            retained_message = RetainedApplicationMessage(source_session, topic_name, data, qos)
             self._retained_messages[topic_name] = retained_message
         else:
             # [MQTT-3.3.1-10]
@@ -792,11 +730,7 @@ class Broker:
         if a_filter not in self._subscriptions:
             self._subscriptions[a_filter] = []
         already_subscribed = next(
-            (
-                s
-                for (s, qos) in self._subscriptions[a_filter]
-                if s.client_id == session.client_id
-            ),
+            (s for (s, qos) in self._subscriptions[a_filter] if s.client_id == session.client_id),
             None,
         )
         if not already_subscribed:
@@ -822,7 +756,7 @@ class Broker:
             a_filter = tuple(a_filter.split("/"))
         try:
             subscriptions = self._subscriptions[a_filter]
-            for index, (sub_session, qos) in enumerate(
+            for index, (sub_session, _) in enumerate(
                 subscriptions
             ):  # pylint: disable=unused-variable
                 if sub_session.client_id == session.client_id:
@@ -902,10 +836,7 @@ class Broker:
                                 format_client_message(session=target_session),
                             )
                         retained_message = RetainedApplicationMessage(
-                            broadcast["session"],
-                            broadcast["topic"],
-                            broadcast["data"],
-                            qos,
+                            broadcast["session"], broadcast["topic"], broadcast["data"], qos,
                         )
                         await target_session.retained_messages.put(retained_message)
 
@@ -936,11 +867,7 @@ class Broker:
             while not session.retained_messages.empty():
                 retained = await session.retained_messages.get()
                 await tg.spawn(
-                    handler.mqtt_publish,
-                    retained.topic,
-                    retained.data,
-                    retained.qos,
-                    True,
+                    handler.mqtt_publish, retained.topic, retained.data, retained.qos, True,
                 )
 
     async def publish_retained_messages_for_subscription(self, subscription, session):
@@ -957,11 +884,7 @@ class Broker:
                     self.logger.debug("%s and %s match", d_topic, subscription[0])
                     retained = self._retained_messages[d_topic]
                     await tg.spawn(
-                        handler.mqtt_publish,
-                        retained.topic,
-                        retained.data,
-                        subscription[1],
-                        True,
+                        handler.mqtt_publish, retained.topic, retained.data, subscription[1], True,
                     )
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(

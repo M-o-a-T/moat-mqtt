@@ -11,16 +11,12 @@ class BaseAuthPlugin:
         try:
             self.auth_config = self.context.config["auth"]
         except KeyError:
-            self.context.logger.warning(
-                "'auth' section not found in context configuration"
-            )
+            self.context.logger.warning("'auth' section not found in context configuration")
 
     def authenticate(self, *args, **kwargs):  # pylint: disable=unused-argument
         if not self.auth_config:
             # auth config section not found
-            self.context.logger.warning(
-                "'auth' section not found in context configuration"
-            )
+            self.context.logger.warning("'auth' section not found in context configuration")
             return False
         return True
 
@@ -34,9 +30,7 @@ class AnonymousAuthPlugin(BaseAuthPlugin):
             )  # allow anonymous by default
             if allow_anonymous:
                 authenticated = True
-                self.context.logger.debug(
-                    "Authentication success: config allows anonymous"
-                )
+                self.context.logger.debug("Authentication success: config allows anonymous")
             else:
                 try:
                     session = kwargs["session"]
@@ -66,8 +60,8 @@ class FileAuthPlugin(BaseAuthPlugin):
         password_file = self.auth_config.get("password-file", None)
         if password_file:
             with open(password_file) as f:
-                for l in f:
-                    line = l.strip()
+                for line in f:
+                    line = line.strip()
                     if not line.startswith("#"):  # Allow comments in files
                         username, pwd_hash = line.split(sep=":", maxsplit=1)
                         if username:
@@ -76,9 +70,7 @@ class FileAuthPlugin(BaseAuthPlugin):
                 "%d user(s) read from file '%s'", len(self._users), password_file
             )
         else:
-            self.context.logger.warning(
-                "Configuration parameter 'password_file' not found"
-            )
+            self.context.logger.warning("Configuration parameter 'password_file' not found")
 
     async def authenticate(self, *args, **kwargs):
         authenticated = super().authenticate(*args, **kwargs)
@@ -88,9 +80,7 @@ class FileAuthPlugin(BaseAuthPlugin):
                 name = self._users.get(session.username, None)
                 if not name:
                     authenticated = False
-                    self.context.logger.debug(
-                        "No hash found for user '%s'", session.username
-                    )
+                    self.context.logger.debug("No hash found for user '%s'", session.username)
                 else:
                     authenticated = pwd_context.verify(session.password, name)
             else:

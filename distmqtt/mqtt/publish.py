@@ -60,9 +60,7 @@ class PublishPayload(MQTTPayload):
         super().__init__()
         self.data = data
 
-    def to_bytes(
-        self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader
-    ):
+    def to_bytes(self, fixed_header: MQTTFixedHeader, variable_header: MQTTVariableHeader):
         return self.data
 
     @classmethod
@@ -104,8 +102,7 @@ class PublishPacket(MQTTPacket):
         else:
             if fixed.packet_type is not PUBLISH:
                 raise DistMQTTException(
-                    "Invalid fixed packet type %s for PublishPacket init"
-                    % fixed.packet_type
+                    "Invalid fixed packet type %s for PublishPacket init" % fixed.packet_type
                 )
             header = fixed
 
@@ -180,9 +177,7 @@ class PublishPacket(MQTTPacket):
         self.variable_header.topic_name = name
 
     @classmethod
-    def build(
-        cls, topic_name: str, message: bytes, packet_id: int, dup_flag, qos, retain
-    ):
+    def build(cls, topic_name: str, message: bytes, packet_id: int, dup_flag, qos, retain):
         v_header = PublishVariableHeader(topic_name, packet_id)
         payload = PublishPayload(message)
         packet = PublishPacket(variable_header=v_header, payload=payload)
