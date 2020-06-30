@@ -39,6 +39,8 @@ _defaults = {
     "codec": "noop",
 }
 
+QSIZE=100
+
 _codecs = {}
 for _t in dir(codecs):
     _c = getattr(codecs, _t)
@@ -470,7 +472,7 @@ class MQTTClient:
                 return self._id == getattr(other, "_id", other)
 
             async def __aenter__(self):
-                self._q = anyio.create_queue(100)
+                self._q = anyio.create_queue(QSIZE)
                 await self.client._subscribe(self)
                 return self
 
@@ -547,10 +549,10 @@ class MQTTClient:
             for c in list(clients):
                 if c._q is None:
                     continue
-                try:
-                    async with anyio.fail_after(0.01):
-                        await c._q.put(msg)
-                except TimeoutError:
+                if c._q.qsize() < QSIZE-1:
+                    await c._q.put(msg)
+                else:
+                    await c._q.put(None)
                     c._q = None
 
     async def _deliver_loop(self):

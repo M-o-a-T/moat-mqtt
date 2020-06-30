@@ -5,7 +5,7 @@ Priority: optional
 Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9),
   python3-setuptools-scm,
   python3-anyio,
-  distkv (>= 0.19),
+  distkv (>= 0.30),
   python3-pytest-trio,
   python3-trio (>= 0.15),
 Standards-Version: 3.9.6
@@ -16,7 +16,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends},
   python3-anyio,
 Recommends:
-  distkv (>= 0.19),
+  distkv (>= 0.30),
   python3-trio (>= 0.15),
 Replaces: python3-distmqtt, distmqtt, distkw-mqtt
 Provides: python3-distmqtt, distmqtt, distkw-mqtt
