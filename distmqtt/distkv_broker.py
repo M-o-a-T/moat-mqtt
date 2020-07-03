@@ -111,7 +111,7 @@ class DistKVbroker(Broker):
 
         pl = PathLongener(self.__base)
         err = await ErrorRoot.as_handler(self.__client)
-        async with self.__client.watch(*self.__base, fetch=True, long_path=False) as w:
+        async with self.__client.watch(self.__base, fetch=True, long_path=False) as w:
             await evt.set()
             async for msg in w:
                 if "path" not in msg:
@@ -164,7 +164,7 @@ class DistKVbroker(Broker):
 
         if ts[: len(self.__base)] == self.__base:
             # All messages on "base" get stored in DistKV, retained or not.
-            await self.__client.set(*ts, value=data)
+            await self.__client.set(ts, value=data)
             return
 
         for t in self.__transparent:
