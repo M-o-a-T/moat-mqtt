@@ -28,7 +28,7 @@ class PubcompPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(PUBCOMP, 0x00)
         else:
-            if fixed.packet_type is not PUBCOMP:
+            if fixed.packet_type != PUBCOMP:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for PubcompPacket init" % fixed.packet_type
                 )

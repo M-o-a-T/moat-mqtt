@@ -13,7 +13,7 @@ class PingReqPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(PINGREQ, 0x00)
         else:
-            if fixed.packet_type is not PINGREQ:
+            if fixed.packet_type != PINGREQ:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for PingReqPacket init" % fixed.packet_type
                 )

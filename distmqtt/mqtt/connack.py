@@ -83,7 +83,7 @@ class ConnackPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(CONNACK, 0x00)
         else:
-            if fixed.packet_type is not CONNACK:
+            if fixed.packet_type != CONNACK:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for ConnackPacket init" % fixed.packet_type
                 )

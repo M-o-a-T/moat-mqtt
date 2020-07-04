@@ -28,7 +28,7 @@ class PubackPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(PUBACK, 0x00)
         else:
-            if fixed.packet_type is not PUBACK:
+            if fixed.packet_type != PUBACK:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for PubackPacket init" % fixed.packet_type
                 )

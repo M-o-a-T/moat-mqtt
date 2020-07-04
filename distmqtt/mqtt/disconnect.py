@@ -13,7 +13,7 @@ class DisconnectPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(DISCONNECT, 0x00)
         else:
-            if fixed.packet_type is not DISCONNECT:
+            if fixed.packet_type != DISCONNECT:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for DisconnectPacket init" % fixed.packet_type
                 )

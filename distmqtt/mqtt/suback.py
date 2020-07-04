@@ -69,7 +69,7 @@ class SubackPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(SUBACK, 0x00)
         else:
-            if fixed.packet_type is not SUBACK:
+            if fixed.packet_type != SUBACK:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for SubackPacket init" % fixed.packet_type
                 )

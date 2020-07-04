@@ -676,7 +676,7 @@ class MQTTClient:
                 self.logger.warning("Connection broken by broker")
                 exc = ConnectException("Connection broken by broker")
                 raise exc
-            if return_code is not CONNECTION_ACCEPTED:
+            if return_code != CONNECTION_ACCEPTED:
                 self.session.transitions.disconnect()
                 self.logger.warning("Connection rejected with code '%s'", return_code)
                 exc = ConnectException("Connection rejected by broker", return_code)

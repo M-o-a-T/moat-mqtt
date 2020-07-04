@@ -62,7 +62,7 @@ class UnsubscribePacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(UNSUBSCRIBE, 0x02)  # [MQTT-3.10.1-1]
         else:
-            if fixed.packet_type is not UNSUBSCRIBE:
+            if fixed.packet_type != UNSUBSCRIBE:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for UnsubscribePacket init" % fixed.packet_type
                 )

@@ -28,7 +28,7 @@ class PubrelPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(PUBREL, 0x02)  # [MQTT-3.6.1-1]
         else:
-            if fixed.packet_type is not PUBREL:
+            if fixed.packet_type != PUBREL:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for PubrelPacket init" % fixed.packet_type
                 )
