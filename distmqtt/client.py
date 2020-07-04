@@ -683,6 +683,12 @@ class MQTTClient:
             await self._handler.start()
             self.session.transitions.connect()
             await self._connected_state.set()
+            topics = []
+            if self._subscriptions is not None:
+                for s in self._subscriptions.values():
+                    topics.append((s.topic, s.qos))
+                if topics:
+                    await self.subscribe(topics)
             self.logger.debug(
                 "connected to %s:%s", self.session.remote_address, self.session.remote_port,
             )
