@@ -74,7 +74,7 @@ class SubscribePacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(SUBSCRIBE, 0x02)  # [MQTT-3.8.1-1]
         else:
-            if fixed.packet_type is not SUBSCRIBE:
+            if fixed.packet_type != SUBSCRIBE:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for SubscribePacket init" % fixed.packet_type
                 )

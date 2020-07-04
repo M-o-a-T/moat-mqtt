@@ -674,21 +674,24 @@ class MQTTClient:
                 return_code = await self._handler.mqtt_connect()
             except NoDataException:
                 self.logger.warning("Connection broken by broker")
-                exc = ConnectException("Connection broken by broker")
-                raise exc
-            if return_code is not CONNECTION_ACCEPTED:
+                raise ConnectException("Connection broken by broker")
+            if return_code != CONNECTION_ACCEPTED:
                 self.session.transitions.disconnect()
                 self.logger.warning("Connection rejected with code '%s'", return_code)
-                exc = ConnectException("Connection rejected by broker", return_code)
-                raise exc
-            else:
-                # Handle MQTT protocol
-                await self._handler.start()
-                self.session.transitions.connect()
-                await self._connected_state.set()
-                self.logger.debug(
-                    "connected to %s:%s", self.session.remote_address, self.session.remote_port,
-                )
+                raise ConnectException("Connection rejected by broker", return_code)
+            # Handle MQTT protocol
+            await self._handler.start()
+            self.session.transitions.connect()
+            await self._connected_state.set()
+            topics = []
+            if self._subscriptions is not None:
+                for s in self._subscriptions.values():
+                    topics.append((s.topic, s.qos))
+                if topics:
+                    await self.subscribe(topics)
+            self.logger.debug(
+                "connected to %s:%s", self.session.remote_address, self.session.remote_port,
+            )
             return return_code
         except ProtocolError as exc:
             self.logger.warning("connection failed: invalid websocket handshake")

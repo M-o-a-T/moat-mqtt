@@ -100,7 +100,7 @@ class PublishPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(PUBLISH, 0x00)
         else:
-            if fixed.packet_type is not PUBLISH:
+            if fixed.packet_type != PUBLISH:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for PublishPacket init" % fixed.packet_type
                 )

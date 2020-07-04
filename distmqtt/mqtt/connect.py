@@ -376,7 +376,7 @@ class ConnectPacket(MQTTPacket):
         if fixed is None:
             header = MQTTFixedHeader(CONNECT, 0x00)
         else:
-            if fixed.packet_type is not CONNECT:
+            if fixed.packet_type != CONNECT:
                 raise DistMQTTException(
                     "Invalid fixed packet type %s for ConnectPacket init" % fixed.packet_type
                 )
