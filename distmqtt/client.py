@@ -686,7 +686,7 @@ class MQTTClient:
             topics = []
             if self._subscriptions is not None:
                 for s in self._subscriptions.values():
-                    topics.append((s.topic, s.qos))
+                    topics.append(("/".join(s.topic), s.qos))
                 if topics:
                     await self.subscribe(topics)
             self.logger.debug(
