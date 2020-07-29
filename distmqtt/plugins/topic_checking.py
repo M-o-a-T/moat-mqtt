@@ -7,7 +7,7 @@ class BaseTopicPlugin:
             self.context.logger.warning("'topic-check' section not found in context configuration")
             self.topic_config = None
 
-    def topic_filtering(self, *args, **kwargs):  # pylint: disable=unused-argument
+    async def topic_filtering(self, *args, **kwargs):  # pylint: disable=unused-argument
         if not self.topic_config:
             # auth config section not found
             return None
@@ -20,7 +20,7 @@ class TopicTabooPlugin(BaseTopicPlugin):
         self._taboo = ["prohibited", "top-secret", "data/classified"]
 
     async def topic_filtering(self, *args, **kwargs):
-        filter_result = super().topic_filtering(*args, **kwargs)
+        filter_result = await super().topic_filtering(*args, **kwargs)
         if filter_result:
             session = kwargs.get("session", None)
             topic = kwargs.get("topic", None)
@@ -58,7 +58,7 @@ class TopicAccessControlListPlugin(BaseTopicPlugin):
         if not self.topic_config:
             # auth config section not found
             return None
-        filter_result = super().topic_filtering(*args, **kwargs)
+        filter_result = await super().topic_filtering(*args, **kwargs)
         if filter_result:
             session = kwargs.get("session", None)
             req_topic = kwargs.get("topic", None)

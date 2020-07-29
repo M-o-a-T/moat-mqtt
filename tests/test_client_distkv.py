@@ -95,9 +95,9 @@ async def distkv_server(n):
                             log.info("Monitor Msg %r", m.data)
                             msgs.append(m.data)
 
-                await cl.tg.spawn(msglog)
+                await cl.scope.spawn(msglog)
                 yield s
-                await cl.tg.cancel_scope.cancel()
+                await cl.scope.cancel()
             await tg.cancel_scope.cancel()
     if len(msgs) != n:
         log.error("MsgCount %d %d", len(msgs), n)

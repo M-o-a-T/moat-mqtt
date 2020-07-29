@@ -14,6 +14,7 @@ import os
 import asyncclick as click
 from distmqtt.broker import create_broker
 from distmqtt.utils import read_yaml_config
+from asyncscope import main_scope
 
 
 default_config = {
@@ -47,11 +48,10 @@ async def main(config, debug):
 
     from distkv.util import as_service
 
-    async with as_service() as evt:
-        async with create_broker(config):
-            await evt.set()
-            while True:
-                await anyio.sleep(99999)
+    async with main_scope(), as_service() as evt, create_broker(config):
+        await evt.set()
+        while True:
+            await anyio.sleep(99999)
 
 
 if __name__ == "__main__":

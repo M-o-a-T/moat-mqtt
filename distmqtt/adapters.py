@@ -27,7 +27,7 @@ class BaseAdapter:
         Acknowleddge EOF
         """
 
-    def write(self, data):
+    async def write(self, data):
         """
         write some data to the protocol layer
         """

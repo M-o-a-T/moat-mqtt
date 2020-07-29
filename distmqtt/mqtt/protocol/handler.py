@@ -192,7 +192,10 @@ class ProtocolHandler:
             self._pubrec_waiters.values(),
             self._pubrel_waiters.values(),
         ):
-            await waiter.cancel()
+            try:
+                await waiter.cancel()
+            except InvalidStateError:
+                pass
 
     async def _retry_deliveries(self):
         """
