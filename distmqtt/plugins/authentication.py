@@ -13,7 +13,7 @@ class BaseAuthPlugin:
         except KeyError:
             self.context.logger.warning("'auth' section not found in context configuration")
 
-    def authenticate(self, *args, **kwargs):  # pylint: disable=unused-argument
+    async def authenticate(self, *args, **kwargs):  # pylint: disable=unused-argument
         if not self.auth_config:
             # auth config section not found
             self.context.logger.warning("'auth' section not found in context configuration")
@@ -23,7 +23,7 @@ class BaseAuthPlugin:
 
 class AnonymousAuthPlugin(BaseAuthPlugin):
     async def authenticate(self, *args, **kwargs):
-        authenticated = super().authenticate(*args, **kwargs)
+        authenticated = await super().authenticate(*args, **kwargs)
         if authenticated:
             allow_anonymous = self.auth_config.get(
                 "allow-anonymous", True
@@ -73,7 +73,7 @@ class FileAuthPlugin(BaseAuthPlugin):
             self.context.logger.warning("Configuration parameter 'password_file' not found")
 
     async def authenticate(self, *args, **kwargs):
-        authenticated = super().authenticate(*args, **kwargs)
+        authenticated = await super().authenticate(*args, **kwargs)
         if authenticated:
             session = kwargs.get("session", None)
             if session and session.username:
