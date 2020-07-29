@@ -7,7 +7,7 @@ from typing import Optional
 
 from distmqtt.broker import Broker
 
-from distkv.client import open_client as open_distkv_client
+from distkv.client import client_scope as distkv_client_scope
 from distkv.util import PathLongener, NotGiven
 from distkv.errors import ErrorRoot
 
@@ -81,23 +81,22 @@ class DistKVbroker(Broker):
         Connect to the real server, read messages, forward them
         """
         try:
-            async with open_distkv_client(connect=cfg["connect"]) as client:
-                self.__client = client
-                async with anyio.create_task_group() as tg:
+            self.__client = client = await distkv_client_scope(connect=cfg["connect"])
+            async with anyio.create_task_group() as tg:
 
-                    async def start(p, *a):
-                        evt = anyio.create_event()
-                        await tg.spawn(p, *a, client, cfg, evt)
-                        await evt.wait()
+                async def start(p, *a):
+                    evt = anyio.create_event()
+                    await tg.spawn(p, *a, client, cfg, evt)
+                    await evt.wait()
 
-                    if self.__topic:
-                        await start(self.__read_encap)
-                    for t in self.__transparent:
-                        await start(self.__read_topic, t)
-                        await start(self.__read_topic, t + ("#",))
+                if self.__topic:
+                    await start(self.__read_encap)
+                for t in self.__transparent:
+                    await start(self.__read_topic, t)
+                    await start(self.__read_topic, t + ("#",))
 
-                    if evt is not None:
-                        await evt.set()
+                if evt is not None:
+                    await evt.set()
                 # The taskgroup waits for it all to finish, i.e. indefinitely
         finally:
             self.__client = None
