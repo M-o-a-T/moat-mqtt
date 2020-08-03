@@ -11,6 +11,7 @@ Usage:
 import logging
 import anyio
 import os
+from contextlib import AsyncExitStack
 import asyncclick as click
 from distmqtt.broker import create_broker
 from distmqtt.utils import read_yaml_config
@@ -46,10 +47,21 @@ async def main(config, debug):
         logger.debug("Using default configuration")
     config = read_yaml_config(config)
 
-    from distkv.util import as_service
+    try:
+        from distkv.util import as_service
+    except ImportError:
+        as_service = None
 
-    async with main_scope(), as_service() as evt, create_broker(config):
-        await evt.set()
+    async with AsyncExitStack() as stack:
+        await stack.enter_async_context(main_scope())
+        await stack.enter_async_context(create_broker(config))
+        try:
+            from distkv.util import as_service
+        except ImportError:
+            pass
+        else:
+            evt = await stack.enter_async_context(as_service())
+            await evt.set()
         while True:
             await anyio.sleep(99999)
 

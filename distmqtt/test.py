@@ -7,20 +7,25 @@ import anyio
 from contextlib import asynccontextmanager
 from functools import partial
 
-from distkv.server import Server as _Server
-from distkv.client import open_client
 from distmqtt.broker import create_broker
 
+try:
+    from distkv.server import Server as _Server
+    from distkv.client import open_client
+except ImportError:
+    _Server = None
 
-class Server(_Server):
-    @asynccontextmanager
-    async def test_client(self):
-        """
-        An async context manager that returns a client that's connected to
-        this server.
-        """
-        async with open_client(connect=dict(host="127.0.0.1", port=self.distkv_port)) as client:
-            yield client
+if _Server:
+
+    class Server(_Server):
+        @asynccontextmanager
+        async def test_client(self):
+            """
+            An async context manager that returns a client that's connected to
+            this server.
+            """
+            async with open_client(connect=dict(host="127.0.0.1", port=self.distkv_port)) as client:
+                yield client
 
 
 @asynccontextmanager

@@ -7,9 +7,12 @@ from typing import Optional
 
 from distmqtt.broker import Broker
 
-from distkv.client import client_scope as distkv_client_scope
-from distkv.util import PathLongener, NotGiven
-from distkv.errors import ErrorRoot
+try:
+    from distkv.client import client_scope as distkv_client_scope
+    from distkv.util import PathLongener, NotGiven
+    from distkv.errors import ErrorRoot
+except ImportError:
+    pass
 
 
 class DistKVbroker(Broker):
