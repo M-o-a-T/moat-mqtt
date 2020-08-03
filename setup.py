@@ -26,9 +26,12 @@ setup(
         "pyyaml",
         "anyio >= 1.3",
         "attrs >= 19",
-        "distkv >= 0.30.5",
         "simplejson",
+        "msgpack",
     ],
+    extras_require={
+        "distkv": ["distkv >= 0.30.5"],
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
