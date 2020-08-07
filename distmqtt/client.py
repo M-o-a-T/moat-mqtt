@@ -655,8 +655,6 @@ class MQTTClient:
                 conn = await anyio.connect_tcp(
                     self.session.remote_address, self.session.remote_port, **kwargs
                 )
-                if secure:
-                    await conn.start_tls()
                 adapter = StreamAdapter(conn)
             elif scheme in ("ws", "wss"):
                 if kwargs.pop("autostart_tls", False):
