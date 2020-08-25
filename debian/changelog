@@ -1,3 +1,9 @@
+distmqtt (0.30.8-3) unstable; urgency=medium
+
+  * duh
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Tue, 25 Aug 2020 08:08:57 +0200
+
 distmqtt (0.30.8-2) unstable; urgency=medium
 
   * Doesn't work with anyio 2
