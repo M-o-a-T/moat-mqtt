@@ -4,20 +4,19 @@ Section: python
 Priority: optional
 Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9),
   python3-setuptools-scm,
-  python3-anyio (>= 1.4), python3-anyio (<< 2~~),
-  distkv (>= 0.30),
-  python3-pytest-trio,
-  python3-trio (>= 0.15),
+  python3-anyio (>= 2.0),
+  distkv (>= 0.32),
+  python3-trio (>= 0.17),
 Standards-Version: 3.9.6
 Homepage: https://github.com/smurfix/distmqtt
 
 Package: distmqtt
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends},
-  python3-anyio,
+  python3-anyio (>= 2.0),
 Recommends:
-  distkv (>= 0.30),
-  python3-trio (>= 0.15),
+  distkv (>= 0.32),
+  python3-trio (>= 0.17),
 Replaces: python3-distmqtt, distmqtt, distkw-mqtt
 Provides: python3-distmqtt, distmqtt, distkw-mqtt
 Conflicts: python3-distmqtt, distmqtt, distkw-mqtt
