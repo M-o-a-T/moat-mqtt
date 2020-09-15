@@ -2,9 +2,11 @@
 #
 # See the file license.txt for copying permission.
 import unittest
+import os
 import anyio
 import logging
 import random
+from functools import partial
 from distmqtt.plugins.manager import PluginManager
 from distmqtt.session import (
     Session,
@@ -32,36 +34,34 @@ def rand_packet_id():
 def adapt(conn):
     return StreamAdapter(conn)
 
+PORT = 40000 + (os.getpid() + 8) % 10000
 
 class ProtocolHandlerTest(unittest.TestCase):
     handler = session = plugin_manager = None  # appease pylint
     listen_ctx = None
 
-    async def listen_(self, server_mock, server):
-        async with anyio.open_cancel_scope() as sc:
-            self.listen_ctx = sc
-            while True:
-                sock = await server.accept()
-                if not hasattr(sock, "read"):
-                    setattr(sock, "read", sock.receive_some)
-                if not hasattr(sock, "write"):
-                    setattr(sock, "write", sock.send_all)
-                await server_mock(sock)
+    async def listener_(self, server_mock, server, sock):
+        if not hasattr(sock, "read"):
+            setattr(sock, "read", sock.receive)
+        if not hasattr(sock, "write"):
+            setattr(sock, "write", sock.send)
+        await server_mock(sock)
 
     def run_(self, server_mock, test_coro):
         async def runner():
             async with anyio.create_task_group() as tg:
                 self.plugin_manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
-                async with await anyio.create_tcp_server(
-                    port=8888, interface="127.0.0.1"
-                ) as server:
-                    await tg.spawn(self.listen_, server_mock, server)
-                    async with await anyio.connect_tcp("127.0.0.1", server.port) as conn:
+                server = await anyio.create_tcp_listener(local_port=PORT, local_host="127.0.0.1")
+                try:
+                    await tg.spawn(server.serve,partial(self.listener_,server_mock, server))
+                    async with await anyio.connect_tcp("127.0.0.1", PORT) as conn:
                         sr = adapt(conn)
                         await test_coro(sr)
-                        await self.listen_ctx.cancel()
+                        await tg.cancel_scope.cancel()
+                finally:
+                    await server.aclose()
 
-        anyio.run(runner)
+        anyio_run(runner)
 
     def test_start_stop(self):
         async def server_mock(stream):  # pylint: disable=unused-argument
@@ -200,6 +200,7 @@ class ProtocolHandlerTest(unittest.TestCase):
             self.handler = ProtocolHandler(self.plugin_manager)
             await self.handler.attach(self.session, stream_adapted)
             await self.start_handler(self.handler, self.session)
+            await anyio.sleep(0.1)  # as below
             message = await self.session.get_next_message()
             self.assertIsInstance(message, IncomingApplicationMessage)
             self.assertIsNotNone(message.publish_packet)
@@ -233,13 +234,14 @@ class ProtocolHandlerTest(unittest.TestCase):
             self.handler = ProtocolHandler(self.plugin_manager)
             await self.handler.attach(self.session, stream_adapted)
             await self.start_handler(self.handler, self.session)
+            await anyio.sleep(0.1)  # the pubcomp packet is built *after* queueing
             message = await self.session.get_next_message()
             self.assertIsInstance(message, IncomingApplicationMessage)
             self.assertIsNotNone(message.publish_packet)
             self.assertIsNone(message.puback_packet)
             self.assertIsNotNone(message.pubrec_packet)
             self.assertIsNotNone(message.pubrel_packet)
-            self.assertIsNotNone(message.pubcomp_packet)
+            self.assertIsNotNone(message.pubcomp_packet)  # might fail w/o the sleep
             await self.stop_handler(self.handler, self.session)
 
         self.handler = None

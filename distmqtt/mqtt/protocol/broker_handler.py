@@ -18,7 +18,7 @@ from distmqtt.mqtt.subscribe import SubscribePacket
 from distmqtt.mqtt.suback import SubackPacket
 from distmqtt.mqtt.unsubscribe import UnsubscribePacket
 from distmqtt.mqtt.unsuback import UnsubackPacket
-from distmqtt.utils import format_client_message
+from distmqtt.utils import format_client_message, create_queue
 from distmqtt.session import Session
 from distmqtt.plugins.manager import PluginManager
 from distmqtt.adapters import StreamAdapter
@@ -35,8 +35,8 @@ class BrokerProtocolHandler(ProtocolHandler):
 
     def __init__(self, plugins_manager: PluginManager, session: Session = None):
         super().__init__(plugins_manager, session)
-        self._pending_subscriptions = anyio.create_queue(9999)
-        self._pending_unsubscriptions = anyio.create_queue(9999)
+        self._pending_subscriptions = create_queue(9999)
+        self._pending_unsubscriptions = create_queue(9999)
 
     async def handle_write_timeout(self):
         pass

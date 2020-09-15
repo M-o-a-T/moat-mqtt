@@ -42,7 +42,7 @@ class PublishVariableHeader(MQTTVariableHeader):
         return out
 
     @classmethod
-    async def from_stream(cls, reader: anyio.abc.Stream, fixed_header: MQTTFixedHeader):
+    async def from_stream(cls, reader: anyio.abc.ByteStream, fixed_header: MQTTFixedHeader):
         topic_name = await decode_string(reader)
         has_qos = (fixed_header.flags >> 1) & 0x03
         if has_qos:
@@ -66,7 +66,7 @@ class PublishPayload(MQTTPayload):
     @classmethod
     async def from_stream(
         cls,
-        reader: anyio.abc.Stream,
+        reader: anyio.abc.ByteStream,
         fixed_header: MQTTFixedHeader,
         variable_header: MQTTVariableHeader,
     ):

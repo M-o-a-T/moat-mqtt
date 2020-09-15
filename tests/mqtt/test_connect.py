@@ -13,7 +13,7 @@ class ConnectPacketTest(unittest.TestCase):
     def test_decode_ok(self):
         data = b"\x10\x3e\x00\x04MQTT\x04\xce\x00\x00\x00\x0a0123456789\x00\x09WillTopic\x00\x0bWillMessage\x00\x04user\x00\x08password"
         stream = BufferAdapter(data)
-        message = anyio.run(ConnectPacket.from_stream, stream)
+        message = anyio_run(ConnectPacket.from_stream, stream)
         self.assertEqual(message.variable_header.proto_name, "MQTT")
         self.assertEqual(message.variable_header.proto_level, 4)
         self.assertTrue(message.variable_header.username_flag)
@@ -34,7 +34,7 @@ class ConnectPacketTest(unittest.TestCase):
             b"\x10\x26\x00\x04MQTT\x04\xca\x00\x00\x00\x0a0123456789\x00\x04user\x00\x08password"
         )
         stream = BufferAdapter(data)
-        message = anyio.run(ConnectPacket.from_stream, stream)
+        message = anyio_run(ConnectPacket.from_stream, stream)
         self.assertEqual(message.variable_header.proto_name, "MQTT")
         self.assertEqual(message.variable_header.proto_level, 4)
         self.assertTrue(message.variable_header.username_flag)
@@ -53,31 +53,31 @@ class ConnectPacketTest(unittest.TestCase):
     def test_decode_fail_reserved_flag(self):
         data = b"\x10\x3e\x00\x04MQTT\x04\xcf\x00\x00\x00\x0a0123456789\x00\x09WillTopic\x00\x0bWillMessage\x00\x04user\x00\x08password"
         stream = BufferAdapter(data)
-        message = anyio.run(ConnectPacket.from_stream, stream)
+        message = anyio_run(ConnectPacket.from_stream, stream)
         self.assertTrue(message.variable_header.reserved_flag)
 
     def test_decode_fail_miss_clientId(self):
         data = b"\x10\x0a\x00\x04MQTT\x04\xce\x00\x00"
         stream = BufferAdapter(data)
-        message = anyio.run(ConnectPacket.from_stream, stream)
+        message = anyio_run(ConnectPacket.from_stream, stream)
         self.assertIsNot(message.payload.client_id, None)
 
     def test_decode_fail_miss_willtopic(self):
         data = b"\x10\x16\x00\x04MQTT\x04\xce\x00\x00\x00\x0a0123456789"
         stream = BufferAdapter(data)
-        message = anyio.run(ConnectPacket.from_stream, stream)
+        message = anyio_run(ConnectPacket.from_stream, stream)
         self.assertIs(message.payload.will_topic, None)
 
     def test_decode_fail_miss_username(self):
         data = b"\x10\x2e\x00\x04MQTT\x04\xce\x00\x00\x00\x0a0123456789\x00\x09WillTopic\x00\x0bWillMessage"
         stream = BufferAdapter(data)
-        message = anyio.run(ConnectPacket.from_stream, stream)
+        message = anyio_run(ConnectPacket.from_stream, stream)
         self.assertIs(message.payload.username, None)
 
     def test_decode_fail_miss_password(self):
         data = b"\x10\x34\x00\x04MQTT\x04\xce\x00\x00\x00\x0a0123456789\x00\x09WillTopic\x00\x0bWillMessage\x00\x04user"
         stream = BufferAdapter(data)
-        message = anyio.run(ConnectPacket.from_stream, stream)
+        message = anyio_run(ConnectPacket.from_stream, stream)
         self.assertIs(message.payload.password, None)
 
     def test_encode(self):
@@ -94,7 +94,7 @@ class ConnectPacketTest(unittest.TestCase):
     def test_getattr_ok(self):
         data = b"\x10\x3e\x00\x04MQTT\x04\xce\x00\x00\x00\x0a0123456789\x00\x09WillTopic\x00\x0bWillMessage\x00\x04user\x00\x08password"
         stream = BufferAdapter(data)
-        message = anyio.run(ConnectPacket.from_stream, stream)
+        message = anyio_run(ConnectPacket.from_stream, stream)
         self.assertEqual(message.variable_header.proto_name, "MQTT")
         self.assertEqual(message.proto_name, "MQTT")
         self.assertEqual(message.variable_header.proto_level, 4)

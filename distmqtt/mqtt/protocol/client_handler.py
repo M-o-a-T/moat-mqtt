@@ -14,14 +14,14 @@ from distmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload, Connect
 from distmqtt.mqtt.connack import ConnackPacket
 from distmqtt.session import Session
 from distmqtt.plugins.manager import PluginManager
-from distmqtt.utils import Future
+from distmqtt.utils import Future, create_queue
 
 
 class ClientProtocolHandler(ProtocolHandler):
     def __init__(self, plugins_manager: PluginManager, session: Session = None):
         super().__init__(plugins_manager, session)
         self._ping_task = None
-        self._pingresp_queue = anyio.create_queue(9999)
+        self._pingresp_queue = create_queue(9999)
         self._subscriptions_waiter = dict()
         self._unsubscriptions_waiter = dict()
         self._disconnect_waiter = None

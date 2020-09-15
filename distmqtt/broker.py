@@ -218,7 +218,7 @@ class Broker:
         self._sessions = dict()
         self._subscriptions = dict()
 
-        self._broadcast_queue = anyio.create_queue(100)
+        self._broadcast_queue_s,self._broadcast_queue_r = anyio.create_memory_object_stream(100)
         self._tg = tg
         self._do_retain = self.config.get("retain", True)
         if self._do_retain:
@@ -345,12 +345,23 @@ class Broker:
 
                     async def server_task(evt, cb, address, port, ssl_context):
                         async with anyio.open_cancel_scope() as scope:
-                            await evt.set(scope)
-                            async with await anyio.create_tcp_server(
-                                port, interface=address, ssl_context=ssl_context
-                            ) as server:
-                                async for conn in server.accept_connections():
-                                    await self._tg.spawn(cb, conn)
+                            try:
+                                sock = await anyio.create_tcp_listener(local_port=port, local_host=address)
+                                await evt.set(scope)
+                                async def _maybe_wrap(conn):
+                                    if ssl_context:
+                                        try:
+                                            conn = await anyio.streams.tls.TLSStream.wrap(conn, ssl_context=ssl_context, server_side=True)
+                                        except Exception:
+                                            self.logger.error(
+                                                "Listener '%s': unknown type '%s'", listener_name, listener["type"],
+                                            )
+
+                                            return
+                                    await cb(conn)
+                                await sock.serve(_maybe_wrap)
+                            finally:
+                                await sock.aclose()
 
                     if listener["type"] == "tcp":
                         cb_partial = partial(self.stream_connected, listener_name=listener_name)
@@ -412,8 +423,13 @@ class Broker:
         await self.plugins_manager.fire_event(EVENT_BROKER_PRE_SHUTDOWN)
 
         # Stop broadcast loop
-        if self._broadcast_queue.qsize() > 0:
-            self.logger.warning("%d messages not broadcasted", self._broadcast_queue.qsize())
+        try:
+            buflen = len(self._broadcast_queue_s._state.buffer)
+            if buflen > 0:
+                self.logger.warning("%d messages not broadcast", buflen)
+        except AttributeError:
+            # using an internal object is a no-no
+            pass
 
         for listener_name in self._servers:
             server = self._servers[listener_name]
@@ -791,7 +807,7 @@ class Broker:
     async def _broadcast_loop(self):
         async with anyio.create_task_group() as tg:
             while True:
-                broadcast = await self._broadcast_queue.get()
+                broadcast = await self._broadcast_queue_r.receive()
                 # self.logger.debug("broadcasting %r", broadcast)
                 topic = broadcast["topic"]
                 if isinstance(topic, str):
@@ -851,7 +867,7 @@ class Broker:
         broadcast = {"session": session, "topic": topic, "data": data}
         if force_qos:
             broadcast["qos"] = force_qos
-        await self._broadcast_queue.put(broadcast)
+        await self._broadcast_queue_s.send(broadcast)
         if retain:
             self.retain_message(session, topic, data, force_qos or qos)
 

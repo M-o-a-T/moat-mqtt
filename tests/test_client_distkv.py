@@ -127,7 +127,7 @@ class MQTTClientTest(unittest.TestCase):
                 pass  # exit server
             pass  # exit test
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     def test_deliver_transparent(self):
         data = b"data 123 t"
@@ -151,7 +151,7 @@ class MQTTClientTest(unittest.TestCase):
                 pass  # exit server
             pass  # exit test
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     def test_deliver_direct(self):
         data = b"data 123 b"
@@ -171,7 +171,7 @@ class MQTTClientTest(unittest.TestCase):
                         self.assertIsNotNone(message.publish_packet)
                         self.assertEqual(message.data, data)
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     def test_deliver_timeout(self):
         async def test_coro():
@@ -185,4 +185,4 @@ class MQTTClientTest(unittest.TestCase):
                             async with anyio.fail_after(2):
                                 await client.deliver_message()
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")

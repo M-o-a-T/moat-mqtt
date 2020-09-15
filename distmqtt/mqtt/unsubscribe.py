@@ -32,7 +32,7 @@ class UnubscribePayload(MQTTPayload):
     @classmethod
     async def from_stream(
         cls,
-        reader: anyio.abc.Stream,
+        reader: anyio.abc.ByteStream,
         fixed_header: MQTTFixedHeader,
         variable_header: MQTTVariableHeader,
     ):

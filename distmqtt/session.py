@@ -11,6 +11,8 @@ from distmqtt.mqtt.publish import PublishPacket
 from distmqtt.errors import DistMQTTException, MQTTException
 from distmqtt.mqtt.constants import QOS_0
 
+from .utils import create_queue
+
 OUTGOING = 0
 INCOMING = 1
 
@@ -158,10 +160,10 @@ class Session:
         self.inflight_in = OrderedDict()
 
         # Stores messages retained for this session
-        self.retained_messages = anyio.create_queue(9999)
+        self.retained_messages = create_queue(9999)
 
         # Stores PUBLISH messages ID received in order and ready for application process
-        self._delivered_message_queue = anyio.create_queue(9999)
+        self._delivered_message_queue = create_queue(9999)
 
         # The actual delivery process
         self._delivery_task = None
@@ -307,5 +309,5 @@ class Session:
 
     def __setstate(self, state):
         self.__dict__.update(state)
-        self.retained_messages = anyio.create_queue(9999)
-        self._delivered_message_queue = anyio.create_queue(9999)
+        self.retained_messages = create_queue(9999)
+        self._delivered_message_queue = create_queue(9999)

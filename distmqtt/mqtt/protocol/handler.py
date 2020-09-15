@@ -54,8 +54,12 @@ from distmqtt.errors import (
     NoDataException,
     InvalidStateError,
 )
-from distmqtt.utils import Future, CancelledError
+from distmqtt.utils import Future, CancelledError, create_queue
 
+try:
+    ClosedResourceError = anyio.exceptions.ClosedResourceError
+except AttributeError:
+    ClosedResourceError = anyio.ClosedResourceError
 
 EVENT_MQTT_PACKET_SENT = "mqtt_packet_sent"
 EVENT_MQTT_PACKET_RECEIVED = "mqtt_packet_received"
@@ -100,7 +104,7 @@ class ProtocolHandler:
         self._sender_task = None
         self._reader_stopped = anyio.create_event()
         self._sender_stopped = anyio.create_event()
-        self._send_q = anyio.create_queue(10)
+        self._send_q = create_queue(10)
 
         self._puback_waiters = dict()
         self._pubrec_waiters = dict()
@@ -543,7 +547,10 @@ class ProtocolHandler:
                         await self.handle_write_timeout()
                         continue
                     # self.logger.debug("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
-                    await packet.to_stream(self.stream)
+                    try:
+                        await packet.to_stream(self.stream)
+                    except ClosedResourceError:
+                        return
                     await self.plugins_manager.fire_event(
                         EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session
                     )

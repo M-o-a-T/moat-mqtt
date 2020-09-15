@@ -85,7 +85,7 @@ class BrokerTest(unittest.TestCase):
             )
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_connect(self, MockPluginManager):
@@ -115,7 +115,7 @@ class BrokerTest(unittest.TestCase):
                 any_order=True,
             )
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_connect_will_flag(self, MockPluginManager):  # pylint: disable=unused-argument
@@ -150,7 +150,7 @@ class BrokerTest(unittest.TestCase):
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_connect_clean_session_false(
@@ -173,7 +173,7 @@ class BrokerTest(unittest.TestCase):
                     self.assertEqual(return_code, 0x02)
                     self.assertNotIn(client.session.client_id, broker._sessions)
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_subscribe(self, MockPluginManager):
@@ -208,7 +208,7 @@ class BrokerTest(unittest.TestCase):
                 any_order=True,
             )
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_subscribe_twice(self, MockPluginManager):
@@ -249,7 +249,7 @@ class BrokerTest(unittest.TestCase):
                 any_order=True,
             )
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_unsubscribe(self, MockPluginManager):
@@ -291,7 +291,7 @@ class BrokerTest(unittest.TestCase):
                 any_order=True,
             )
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_publish(self, MockPluginManager):
@@ -321,7 +321,7 @@ class BrokerTest(unittest.TestCase):
                 any_order=True,
             )
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     # @patch('distmqtt.broker.PluginManager', new_callable=AsyncMock)
     def test_client_publish_dup(self):
@@ -360,7 +360,7 @@ class BrokerTest(unittest.TestCase):
                     disconnect = DisconnectPacket()
                     await disconnect.to_stream(stream)
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_publish_invalid_topic(
@@ -380,7 +380,7 @@ class BrokerTest(unittest.TestCase):
 
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_publish_big(self, MockPluginManager):
@@ -411,7 +411,7 @@ class BrokerTest(unittest.TestCase):
                 any_order=True,
             )
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_publish_retain(self, MockPluginManager):  # pylint: disable=unused-argument
@@ -435,7 +435,7 @@ class BrokerTest(unittest.TestCase):
                 self.assertEqual(retained_message.qos, QOS_0)
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_publish_retain_delete(
@@ -456,7 +456,7 @@ class BrokerTest(unittest.TestCase):
                 self.assertNotIn("/topic", broker._retained_messages)
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_subscribe_publish(self, MockPluginManager):  # pylint: disable=unused-argument
@@ -484,7 +484,7 @@ class BrokerTest(unittest.TestCase):
                         self.assertEqual(message.qos, qos)
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_subscribe_invalid(self, MockPluginManager):  # pylint: disable=unused-argument
@@ -508,7 +508,7 @@ class BrokerTest(unittest.TestCase):
 
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro, backend="trio")
+        anyio_run(test_coro, backend="trio")
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_subscribe_publish_dollar_topic_1(
@@ -537,7 +537,7 @@ class BrokerTest(unittest.TestCase):
                     self.assertIsNone(message)
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_subscribe_publish_dollar_topic_2(
@@ -566,7 +566,7 @@ class BrokerTest(unittest.TestCase):
                     self.assertIsNone(message)
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     @patch("distmqtt.broker.PluginManager", new_callable=AsyncMock)
     def test_client_publish_retain_subscribe(
@@ -600,7 +600,7 @@ class BrokerTest(unittest.TestCase):
                         self.assertEqual(message.qos, qos)
             self.assertTrue(broker.transitions.is_stopped())
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     async def _client_publish(self, topic, data, qos, retain=False):
         async with open_mqttclient() as pub_client:

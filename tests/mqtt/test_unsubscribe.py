@@ -13,7 +13,7 @@ class UnsubscribePacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b"\xa2\x0c\x00\n\x00\x03a/b\x00\x03c/d"
         stream = BufferAdapter(data)
-        message = anyio.run(UnsubscribePacket.from_stream, stream)
+        message = anyio_run(UnsubscribePacket.from_stream, stream)
         self.assertEqual(message.payload.topics[0], "a/b")
         self.assertEqual(message.payload.topics[1], "c/d")
 

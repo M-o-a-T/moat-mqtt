@@ -129,7 +129,7 @@ class MQTTVariableHeader:
     def __init__(self):
         pass
 
-    async def to_stream(self, writer: anyio.abc.Stream):
+    async def to_stream(self, writer: anyio.abc.ByteStream):
         await writer.write(self.to_bytes())
 
     def to_bytes(self) -> bytes:
@@ -179,7 +179,7 @@ class MQTTPayload:
     @classmethod
     async def from_stream(
         cls,
-        reader: anyio.abc.Stream,
+        reader: anyio.abc.ByteStream,
         fixed_header: MQTTFixedHeader,
         variable_header: MQTTVariableHeader,
     ):
@@ -205,7 +205,7 @@ class MQTTPacket:
         self.payload = payload
         self.protocol_ts = None
 
-    async def to_stream(self, writer: anyio.abc.Stream):
+    async def to_stream(self, writer: anyio.abc.ByteStream):
         await writer.write(self.to_bytes())
         self.protocol_ts = datetime.now()
 
