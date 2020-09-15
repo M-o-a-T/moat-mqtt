@@ -5,7 +5,6 @@ Priority: optional
 Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9),
   python3-setuptools-scm,
   python3-anyio (>= 2.0),
-  distkv (>= 0.32),
   python3-trio (>= 0.17),
 Standards-Version: 3.9.6
 Homepage: https://github.com/smurfix/distmqtt

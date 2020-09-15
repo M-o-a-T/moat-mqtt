@@ -1,3 +1,9 @@
+distmqtt (0.32.0-2) unstable; urgency=medium
+
+  * Don't fail build if no distkv
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Tue, 15 Sep 2020 17:30:32 +0200
+
 distmqtt (0.32.0-1) unstable; urgency=medium
 
   * AnyIO 2.0
