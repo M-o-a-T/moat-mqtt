@@ -16,7 +16,7 @@ except ImportError:
 from wsproto.utilities import ProtocolError
 from asyncwebsockets import create_websocket
 
-from distmqtt.utils import match_topic
+from distmqtt.utils import match_topic, create_queue
 from distmqtt.session import Session
 from distmqtt.errors import NoDataException
 from distmqtt.mqtt.connack import CONNECTION_ACCEPTED, CLIENT_ERROR
@@ -262,7 +262,7 @@ class MQTTClient:
             if self._disconnect_task is not None:
                 await self._disconnect_task.cancel()
             await self._handler.mqtt_disconnect()
-            self._connected_state.clear()
+            self._connected_state = anyio.create_event()  # clear
             await self._handler.stop()
             self.session.transitions.disconnect()
         else:
@@ -460,7 +460,7 @@ class MQTTClient:
                 return self._id == getattr(other, "_id", other)
 
             async def __aenter__(self):
-                self._q = anyio.create_queue(QSIZE)
+                self._q = create_queue(QSIZE)
                 await self.client._subscribe(self)
                 return self
 
@@ -649,14 +649,13 @@ class MQTTClient:
 
         try:
             adapter = None
-            self._connected_state.clear()
+            self._connected_state = anyio.create_event()  # clear
             # Open connection
             if scheme in ("mqtt", "mqtts"):
                 conn = await anyio.connect_tcp(
-                    self.session.remote_address, self.session.remote_port, **kwargs
-                )
-                if secure:
-                    await conn.start_tls()
+                    self.session.remote_address, self.session.remote_port)
+                if kwargs.pop("autostart_tls", False):
+                    conn = await anyio.streams.tls.TLSStream.wrap(conn, ssl_context=kwargs.pop("ssl_context"), server_side=False)
                 adapter = StreamAdapter(conn)
             elif scheme in ("ws", "wss"):
                 if kwargs.pop("autostart_tls", False):
@@ -718,7 +717,7 @@ class MQTTClient:
         self.logger.warning("Disconnected from broker")
 
         # Block client API
-        self._connected_state.clear()
+        self._connected_state = anyio.create_event()  # .clear()
 
         # stop and clean handler
         await self._handler.stop()

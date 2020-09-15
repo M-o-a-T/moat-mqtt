@@ -13,7 +13,7 @@ class SubackPacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b"\x90\x06\x00\x0a\x00\x01\x02\x80"
         stream = BufferAdapter(data)
-        message = anyio.run(SubackPacket.from_stream, stream)
+        message = anyio_run(SubackPacket.from_stream, stream)
         self.assertEqual(message.payload.return_codes[0], SubackPayload.RETURN_CODE_00)
         self.assertEqual(message.payload.return_codes[1], SubackPayload.RETURN_CODE_01)
         self.assertEqual(message.payload.return_codes[2], SubackPayload.RETURN_CODE_02)

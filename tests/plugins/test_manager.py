@@ -42,7 +42,7 @@ class TestPluginManager(unittest.TestCase):
                 manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 self.assertTrue(len(manager._plugins) > 0)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_fire_event(self):
         async def fire_event(manager):
@@ -57,7 +57,7 @@ class TestPluginManager(unittest.TestCase):
                 plugin = manager.get_plugin("event_plugin")
                 self.assertTrue(plugin.object.test_flag)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_fire_event_wait(self):
         async def fire_event(manager):
@@ -71,7 +71,7 @@ class TestPluginManager(unittest.TestCase):
                 plugin = manager.get_plugin("event_plugin")
                 self.assertTrue(plugin.object.test_flag)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_map_coro(self):
         async def call_coro(manager):
@@ -84,7 +84,7 @@ class TestPluginManager(unittest.TestCase):
                 plugin = manager.get_plugin("event_plugin")
                 self.assertTrue(plugin.object.test_coro)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_map_coro_return(self):
         async def call_coro(manager):
@@ -97,7 +97,7 @@ class TestPluginManager(unittest.TestCase):
                 plugin = manager.get_plugin("event_plugin")
                 self.assertEqual(ret[plugin], "TEST")
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_map_coro_filter(self):
         """
@@ -114,4 +114,4 @@ class TestPluginManager(unittest.TestCase):
                 ret = await call_coro(manager)
                 self.assertTrue(len(ret) == 0)
 
-        anyio.run(coro)
+        anyio_run(coro)

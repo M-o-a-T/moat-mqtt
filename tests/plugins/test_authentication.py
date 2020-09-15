@@ -27,7 +27,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             ret = await auth_plugin.authenticate(session=s)
             self.assertTrue(ret)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_disallow_anonymous(self):
         context = BaseContext()
@@ -41,7 +41,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             ret = await auth_plugin.authenticate(session=s)
             self.assertFalse(ret)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_allow_nonanonymous(self):
         context = BaseContext()
@@ -55,7 +55,7 @@ class TestAnonymousAuthPlugin(unittest.TestCase):
             ret = await auth_plugin.authenticate(session=s)
             self.assertTrue(ret)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
 
 class TestFileAuthPlugin(unittest.TestCase):
@@ -78,7 +78,7 @@ class TestFileAuthPlugin(unittest.TestCase):
             ret = await auth_plugin.authenticate(session=s)
             self.assertTrue(ret)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_wrong_password(self):
         context = BaseContext()
@@ -99,7 +99,7 @@ class TestFileAuthPlugin(unittest.TestCase):
             ret = await auth_plugin.authenticate(session=s)
             self.assertFalse(ret)
 
-        anyio.run(coro)
+        anyio_run(coro)
 
     def test_unknown_password(self):
         context = BaseContext()
@@ -120,4 +120,4 @@ class TestFileAuthPlugin(unittest.TestCase):
             ret = await auth_plugin.authenticate(session=s)
             self.assertFalse(ret)
 
-        anyio.run(coro)
+        anyio_run(coro)

@@ -4,6 +4,10 @@
 import anyio
 from struct import pack, unpack
 from distmqtt.errors import NoDataException
+try:
+    IncompleteRead = anyio.exceptions.IncompleteRead
+except AttributeError:
+    IncompleteRead = anyio.IncompleteRead
 
 # Collection of basic codecs for the messages' payload
 
@@ -52,7 +56,7 @@ async def read_or_raise(reader, n=-1):
     """
     try:
         data = await reader.read(n)
-    except (anyio.exceptions.IncompleteRead, ConnectionResetError):
+    except (IncompleteRead, ConnectionResetError):
         data = None
     if not data:
         raise NoDataException("No more data")

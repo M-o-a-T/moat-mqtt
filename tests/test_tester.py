@@ -2,7 +2,11 @@ import pytest
 import trio  # noqa: F401
 
 from distmqtt.test import test_server, test_client
-from distkv.util import P
+
+try:
+    from distkv.util import P
+except ImportError:
+    pytestmark = pytest.mark.skip
 
 
 @pytest.mark.trio

@@ -5,8 +5,12 @@ import io
 from asyncwebsockets import Websocket
 from wsproto.events import CloseConnection, BytesMessage
 import anyio
+import anyio.streams.buffered
 import logging
-
+try:
+    ClosedResourceError = anyio.exceptions.ClosedResourceError
+except AttributeError:
+    ClosedResourceError = anyio.ClosedResourceError
 
 class BaseAdapter:
     """
@@ -66,7 +70,7 @@ class WebSocketsAdapter(BaseAdapter):
         while len(buffer) < n:
             try:
                 message = await self._websocket._next_event()
-            except anyio.exceptions.ClosedResourceError:
+            except ClosedResourceError:
                 message = None
             if isinstance(message, CloseConnection):
                 message = None
@@ -85,9 +89,8 @@ class WebSocketsAdapter(BaseAdapter):
         await self._websocket.send(data)
 
     def get_peer_info(self):
-        sock = self._websocket._sock._socket._raw_socket
-        extra_info = sock.getpeername()
-        return extra_info[0], extra_info[1]
+        res = self._websocket._sock.extra(anyio.abc.SocketAttribute.remote_address)
+        return res[0:2]
 
     async def close(self):
         await self._websocket.close()
@@ -100,27 +103,30 @@ class StreamAdapter(BaseAdapter):
     Because API is very close, this class is trivial
     """
 
-    def __init__(self, stream: anyio.abc.Stream):
+    def __init__(self, stream: anyio.abc.ByteStream):
         self.logger = logging.getLogger(__name__)
         self._stream = stream
+        self._rstream = anyio.streams.buffered.BufferedByteReceiveStream(stream)
 
     async def read(self, n=-1) -> bytes:
         if n == -1:
-            data = await self._stream.receive_some(4096)
+            data = await self._rstream.receive(4096)
         else:
-            data = await self._stream.receive_exactly(n)
+            data = await self._rstream.receive_exactly(n)
         return data
 
     async def write(self, data):
-        await self._stream.send_all(data)
+        await self._stream.send(data)
 
     def get_peer_info(self):
-        sock = self._stream._socket._raw_socket
-        extra_info = sock.getpeername()
-        return extra_info[0], extra_info[1]
+        res = self._stream.extra(anyio.abc.SocketAttribute.remote_address)
+        return res[0:2]
 
     async def close(self):
-        await self._stream.close()
+        try:
+            await self._stream.close()
+        except AttributeError:
+            await self._stream.aclose()
 
 
 class BufferAdapter(BaseAdapter):

@@ -12,7 +12,7 @@ class PubackPacketTest(unittest.TestCase):
     def test_from_stream(self):
         data = b"\x40\x02\x00\x0a"
         stream = BufferAdapter(data)
-        message = anyio.run(PubackPacket.from_stream, stream)
+        message = anyio_run(PubackPacket.from_stream, stream)
         self.assertEqual(message.variable_header.packet_id, 10)
 
     def test_to_bytes(self):

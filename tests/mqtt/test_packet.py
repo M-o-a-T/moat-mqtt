@@ -13,7 +13,7 @@ class TestMQTTFixedHeaderTest(unittest.TestCase):
     def test_from_bytes(self):
         data = b"\x10\x7f"
         stream = BufferAdapter(data)
-        header = anyio.run(MQTTFixedHeader.from_stream, stream)
+        header = anyio_run(MQTTFixedHeader.from_stream, stream)
         self.assertEqual(header.packet_type, CONNECT)
         self.assertFalse(header.flags & 0x08)
         self.assertEqual((header.flags & 0x06) >> 1, 0)
@@ -23,7 +23,7 @@ class TestMQTTFixedHeaderTest(unittest.TestCase):
     def test_from_bytes_with_length(self):
         data = b"\x10\xff\xff\xff\x7f"
         stream = BufferAdapter(data)
-        header = anyio.run(MQTTFixedHeader.from_stream, stream)
+        header = anyio_run(MQTTFixedHeader.from_stream, stream)
         self.assertEqual(header.packet_type, CONNECT)
         self.assertFalse(header.flags & 0x08)
         self.assertEqual((header.flags & 0x06) >> 1, 0)
@@ -34,7 +34,7 @@ class TestMQTTFixedHeaderTest(unittest.TestCase):
         data = b"\x10\xff\xff\xff\xff\x7f"
         stream = BufferAdapter(data)
         with self.assertRaises(MQTTException):
-            anyio.run(MQTTFixedHeader.from_stream, stream)
+            anyio_run(MQTTFixedHeader.from_stream, stream)
 
     def test_to_bytes(self):
         header = MQTTFixedHeader(CONNECT, 0x00, 0)

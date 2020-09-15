@@ -25,7 +25,7 @@ class TestCodecs(unittest.TestCase):
             ret = await decode_string(stream)
             self.assertEqual(ret, "AA")
 
-        anyio.run(test_coro)
+        anyio_run(test_coro)
 
     def test_encode_string(self):
         encoded = encode_string("AA")
