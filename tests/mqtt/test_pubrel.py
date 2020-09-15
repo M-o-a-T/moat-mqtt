@@ -1,11 +1,12 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
 import unittest
 
 from distmqtt.mqtt.pubrel import PubrelPacket, PacketIdVariableHeader
 from distmqtt.adapters import BufferAdapter
+
+from .. import anyio_run
 
 
 class PubrelPacketTest(unittest.TestCase):

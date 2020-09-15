@@ -133,17 +133,22 @@ try:
     from anyio import create_queue
 except ImportError:
     from anyio import create_memory_object_stream as _cmos
+
     class Queue:
-        def __init__(self, len=0):
-            self._s,self._r = _cmos(len)
-        def put(self,x):
+        def __init__(self, length=0):
+            self._s, self._r = _cmos(length)
+
+        def put(self, x):
             return self._s.send(x)
+
         def get(self):
             return self._r.receive()
+
         def qsize(self):
             return len(self._s._state.buffer)  # ugh
+
         def empty(self):
             return not len(self._s._state.buffer)  # ugh
-    def create_queue(len=0):
-        return Queue(len)
 
+    def create_queue(length=0):
+        return Queue(length)

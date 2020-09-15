@@ -24,7 +24,9 @@ if _Server:
             An async context manager that returns a client that's connected to
             this server.
             """
-            async with open_client(connect=dict(host="127.0.0.1", port=self.distkv_port)) as client:
+            async with open_client(
+                connect=dict(host="127.0.0.1", port=self.distkv_port)
+            ) as client:
                 yield client
 
 

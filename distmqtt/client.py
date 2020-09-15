@@ -312,7 +312,9 @@ class MQTTClient:
                     self.logger.error(
                         "Maximum number of connection attempts reached. Reconnection aborted"
                     )
-                    raise ConnectException("Too many connection attempts failed")
+                    raise ConnectException(  # pylint: disable=W0707
+                        "Too many connection attempts failed"
+                    )
                 exp = 2 ** nb_attempt
                 delay = exp if exp < reconnect_max_interval else reconnect_max_interval
                 self.logger.debug("Waiting %d second before next attempt", delay)
@@ -653,9 +655,12 @@ class MQTTClient:
             # Open connection
             if scheme in ("mqtt", "mqtts"):
                 conn = await anyio.connect_tcp(
-                    self.session.remote_address, self.session.remote_port)
+                    self.session.remote_address, self.session.remote_port
+                )
                 if kwargs.pop("autostart_tls", False):
-                    conn = await anyio.streams.tls.TLSStream.wrap(conn, ssl_context=kwargs.pop("ssl_context"), server_side=False)
+                    conn = await anyio.streams.tls.TLSStream.wrap(
+                        conn, ssl_context=kwargs.pop("ssl_context"), server_side=False
+                    )
                 adapter = StreamAdapter(conn)
             elif scheme in ("ws", "wss"):
                 if kwargs.pop("autostart_tls", False):
@@ -673,7 +678,7 @@ class MQTTClient:
                 return_code = await self._handler.mqtt_connect()
             except NoDataException:
                 self.logger.warning("Connection broken by broker")
-                raise ConnectException("Connection broken by broker")
+                raise ConnectException("Connection broken by broker")  # pylint: disable=W0707
             if return_code != CONNECTION_ACCEPTED:
                 self.session.transitions.disconnect()
                 self.logger.warning("Connection rejected with code '%s'", return_code)

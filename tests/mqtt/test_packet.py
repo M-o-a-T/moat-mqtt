@@ -2,11 +2,12 @@
 #
 # See the file license.txt for copying permission.
 import unittest
-import anyio
 
 from distmqtt.mqtt.packet import CONNECT, MQTTFixedHeader
 from distmqtt.errors import MQTTException
 from distmqtt.adapters import BufferAdapter
+
+from .. import anyio_run
 
 
 class TestMQTTFixedHeaderTest(unittest.TestCase):

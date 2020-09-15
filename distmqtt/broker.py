@@ -218,7 +218,7 @@ class Broker:
         self._sessions = dict()
         self._subscriptions = dict()
 
-        self._broadcast_queue_s,self._broadcast_queue_r = anyio.create_memory_object_stream(100)
+        self._broadcast_queue_s, self._broadcast_queue_r = anyio.create_memory_object_stream(100)
         self._tg = tg
         self._do_retain = self.config.get("retain", True)
         if self._do_retain:
@@ -289,7 +289,9 @@ class Broker:
         except (MachineError, ValueError) as exc:
             # Backwards compat: MachineError is raised by transitions < 0.5.0.
             self.logger.warning("[WARN-0001] Invalid method call at this moment: %r", exc)
-            raise BrokerException("Broker instance can't be started: %s" % exc)
+            raise BrokerException(  # pylint:disable=W0707
+                "Broker instance can't be started: %s" % exc
+            )
 
         await self.plugins_manager.fire_event(EVENT_BROKER_PRE_START)
         try:
@@ -325,11 +327,11 @@ class Broker:
                             sc.load_cert_chain(listener["certfile"], listener["keyfile"])
                             sc.verify_mode = ssl.CERT_OPTIONAL
                         except KeyError as ke:
-                            raise BrokerException(
+                            raise BrokerException(  # pylint:disable=W0707
                                 "'certfile' or 'keyfile' configuration parameter missing: %s" % ke
                             )
                         except FileNotFoundError as fnfe:
-                            raise BrokerException(
+                            raise BrokerException(  # pylint:disable=W0707
                                 "Can't read cert files '%s' or '%s' : %s"
                                 % (listener["certfile"], listener["keyfile"], fnfe)
                             )
@@ -339,27 +341,37 @@ class Broker:
                     try:
                         port = int(s_port)
                     except ValueError:
-                        raise BrokerException(
+                        raise BrokerException(  # pylint:disable=W0707
                             "Invalid port value in bind value: %s" % listener["bind"]
                         )
 
-                    async def server_task(evt, cb, address, port, ssl_context):
+                    async def server_task(
+                        evt, cb, address, port, ssl_context, listener, listener_name
+                    ):
                         async with anyio.open_cancel_scope() as scope:
                             try:
-                                sock = await anyio.create_tcp_listener(local_port=port, local_host=address)
+                                sock = await anyio.create_tcp_listener(
+                                    local_port=port, local_host=address
+                                )
                                 await evt.set(scope)
-                                async def _maybe_wrap(conn):
+
+                                async def _maybe_wrap(listener, listener_name, conn):
                                     if ssl_context:
                                         try:
-                                            conn = await anyio.streams.tls.TLSStream.wrap(conn, ssl_context=ssl_context, server_side=True)
+                                            conn = await anyio.streams.tls.TLSStream.wrap(
+                                                conn, ssl_context=ssl_context, server_side=True
+                                            )
                                         except Exception:
                                             self.logger.error(
-                                                "Listener '%s': unknown type '%s'", listener_name, listener["type"],
+                                                "Listener '%s': unknown type '%s'",
+                                                listener_name,
+                                                listener["type"],
                                             )
 
                                             return
                                     await cb(conn)
-                                await sock.serve(_maybe_wrap)
+
+                                await sock.serve(partial(_maybe_wrap, listener, listener_name))
                             finally:
                                 await sock.aclose()
 
@@ -374,7 +386,15 @@ class Broker:
                         continue
                     fut = Future()
                     await self._tg.spawn(
-                        server_task, fut, cb_partial, address, port, sc, name=listener_name,
+                        server_task,
+                        fut,
+                        cb_partial,
+                        address,
+                        port,
+                        sc,
+                        listener,
+                        listener_name,
+                        name=listener_name,
                     )
                     instance = await fut.get()
                     self._servers[listener_name] = Server(listener_name, instance, max_connections)
