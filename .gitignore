@@ -1,5 +1,6 @@
 *.egg-info
 *.pyc
+/*.cfg
 .idea/distmqtt.iml
 .tox/
 /.coverage
@@ -8,10 +9,5 @@ __pycache__
 /dist/
 /tests/plugins/test.db
 /obj
-<<<<<<< master
-||||||| deb
-/.pybuild/
-=======
 /.pybuild/
 /.eggs/
->>>>>>> local
