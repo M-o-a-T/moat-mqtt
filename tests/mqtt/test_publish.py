@@ -1,12 +1,13 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
 import unittest
 
 from distmqtt.mqtt.publish import PublishPacket, PublishVariableHeader, PublishPayload
 from distmqtt.adapters import BufferAdapter
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+
+from .. import anyio_run
 
 
 class PublishPacketTest(unittest.TestCase):

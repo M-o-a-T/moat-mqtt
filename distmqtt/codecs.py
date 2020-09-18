@@ -4,6 +4,7 @@
 import anyio
 from struct import pack, unpack
 from distmqtt.errors import NoDataException
+
 try:
     IncompleteRead = anyio.exceptions.IncompleteRead
 except AttributeError:

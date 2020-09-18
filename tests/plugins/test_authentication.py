@@ -5,10 +5,11 @@
 import unittest
 import logging
 import os
-import anyio
 from distmqtt.plugins.manager import BaseContext
 from distmqtt.plugins.authentication import AnonymousAuthPlugin, FileAuthPlugin
 from distmqtt.session import Session
+
+from .. import anyio_run
 
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)

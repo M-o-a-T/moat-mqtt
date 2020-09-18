@@ -22,6 +22,8 @@ from distmqtt.mqtt.pubrec import PubrecPacket
 from distmqtt.mqtt.pubrel import PubrelPacket
 from distmqtt.mqtt.pubcomp import PubcompPacket
 
+from ... import anyio_run
+
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)
 log = logging.getLogger(__name__)
@@ -34,13 +36,15 @@ def rand_packet_id():
 def adapt(conn):
     return StreamAdapter(conn)
 
+
 PORT = 40000 + (os.getpid() + 8) % 10000
+
 
 class ProtocolHandlerTest(unittest.TestCase):
     handler = session = plugin_manager = None  # appease pylint
     listen_ctx = None
 
-    async def listener_(self, server_mock, server, sock):
+    async def listener_(self, server_mock, sock):
         if not hasattr(sock, "read"):
             setattr(sock, "read", sock.receive)
         if not hasattr(sock, "write"):
@@ -53,7 +57,7 @@ class ProtocolHandlerTest(unittest.TestCase):
                 self.plugin_manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 server = await anyio.create_tcp_listener(local_port=PORT, local_host="127.0.0.1")
                 try:
-                    await tg.spawn(server.serve,partial(self.listener_,server_mock, server))
+                    await tg.spawn(server.serve, partial(self.listener_, server_mock))
                     async with await anyio.connect_tcp("127.0.0.1", PORT) as conn:
                         sr = adapt(conn)
                         await test_coro(sr)

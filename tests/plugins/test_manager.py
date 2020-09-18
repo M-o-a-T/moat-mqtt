@@ -7,6 +7,8 @@ import logging
 import anyio
 from distmqtt.plugins.manager import PluginManager
 
+from .. import anyio_run
+
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=formatter)
 

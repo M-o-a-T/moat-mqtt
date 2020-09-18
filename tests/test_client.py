@@ -9,6 +9,8 @@ from distmqtt.client import open_mqttclient, ConnectException
 from distmqtt.broker import create_broker
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
+from . import anyio_run
+
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.ERROR, format=formatter)
 log = logging.getLogger(__name__)

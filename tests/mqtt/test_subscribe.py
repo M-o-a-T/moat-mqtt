@@ -1,13 +1,14 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
 import unittest
 
 from distmqtt.mqtt.subscribe import SubscribePacket, SubscribePayload
 from distmqtt.mqtt.packet import PacketIdVariableHeader
 from distmqtt.mqtt.constants import QOS_1, QOS_2
 from distmqtt.adapters import BufferAdapter
+
+from .. import anyio_run
 
 
 class SubscribePacketTest(unittest.TestCase):

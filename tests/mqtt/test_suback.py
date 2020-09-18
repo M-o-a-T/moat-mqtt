@@ -1,12 +1,13 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
 import unittest
 
 from distmqtt.mqtt.suback import SubackPacket, SubackPayload
 from distmqtt.mqtt.packet import PacketIdVariableHeader
 from distmqtt.adapters import BufferAdapter
+
+from .. import anyio_run
 
 
 class SubackPacketTest(unittest.TestCase):

@@ -32,6 +32,7 @@ from distmqtt.mqtt import (
 from distmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
+from . import anyio_run
 
 formatter = "%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=formatter)

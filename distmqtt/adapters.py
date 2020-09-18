@@ -7,10 +7,12 @@ from wsproto.events import CloseConnection, BytesMessage
 import anyio
 import anyio.streams.buffered
 import logging
+
 try:
     ClosedResourceError = anyio.exceptions.ClosedResourceError
 except AttributeError:
     ClosedResourceError = anyio.ClosedResourceError
+
 
 class BaseAdapter:
     """

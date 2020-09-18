@@ -1,3 +1,9 @@
+distmqtt (0.32.1-1) unstable; urgency=medium
+
+  * Merge
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Fri, 18 Sep 2020 10:39:11 +0200
+
 distmqtt (0.32.0-2) unstable; urgency=medium
 
   * Don't fail build if no distkv

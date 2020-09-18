@@ -26,6 +26,8 @@ except ImportError:
 
 from functools import partial
 
+from . import anyio_run
+
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=formatter)
 log = logging.getLogger(__name__)

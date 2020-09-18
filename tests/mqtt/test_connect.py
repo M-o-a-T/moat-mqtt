@@ -2,11 +2,12 @@
 #
 # See the file license.txt for copying permission.
 import unittest
-import anyio
 
 from distmqtt.mqtt.connect import ConnectPacket, ConnectVariableHeader, ConnectPayload
 from distmqtt.mqtt.packet import MQTTFixedHeader, CONNECT
 from distmqtt.adapters import BufferAdapter
+
+from .. import anyio_run
 
 
 class ConnectPacketTest(unittest.TestCase):
