@@ -150,5 +150,11 @@ except ImportError:
         def empty(self):
             return not len(self._s._state.buffer)  # ugh
 
+        def __aiter__(self):
+            return self
+
+        def __anext__(self):
+            return self._r.__anext__()
+
     def create_queue(length=0):
         return Queue(length)
