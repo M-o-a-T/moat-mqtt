@@ -156,5 +156,11 @@ except ImportError:
         def __anext__(self):
             return self._r.__anext__()
 
+        def close_sender(self):
+            return self._s.aclose()
+
+        def close_receiver(self):
+            return self._r.aclose()
+
     def create_queue(length=0):
         return Queue(length)
