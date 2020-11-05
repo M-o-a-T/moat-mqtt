@@ -435,7 +435,7 @@ class MQTTClient:
 
         You can use either multiple calls to `subscription`, or manage
         message dispatching yourself with `subscribe` and `deliver_message`.
-        Using both methods in parallel are not supported.
+        Using both methods in parallel is not supported.
 
         """
 
@@ -716,7 +716,6 @@ class MQTTClient:
         async with anyio.open_cancel_scope() as scope:
             self._disconnect_task = scope
             await evt.set()
-            self.logger.debug("Wait for broker disconnection")
             # Wait for disconnection from broker (like connection lost)
             await self._handler.wait_disconnect()
         self.logger.warning("Disconnected from broker")
