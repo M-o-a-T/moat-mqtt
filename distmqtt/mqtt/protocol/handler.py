@@ -155,6 +155,7 @@ class ProtocolHandler:
             "Broker" if "Broker" in type(self).__name__ else "Client",
             self.session.client_id if self.session else "?",
         )
+        await self._reader_task.spawn(self._timeout_loop)
 
     async def stop(self):
         # Stop messages flow waiter
@@ -436,9 +437,22 @@ class ProtocolHandler:
             await self._send_packet(pubcomp_packet)
             app_message.pubcomp_packet = pubcomp_packet
 
+    async def _timeout_loop(self):
+        while True:
+            async with anyio.move_on_after(keepalive_timeout):
+                while True:
+                    await self._got_packet.wait()
+                    self._got_packet = anyio.create_event()
+            self.logger.debug(
+                "%s Input stream read timeout",
+                self.session.client_id if self.session else "?",
+            )
+            await self.handle_read_timeout()
+
     async def _reader_loop(self, evt):
         self.logger.debug("%s Starting reader coro", self.session.client_id)
         keepalive_timeout = self.session.keep_alive
+        self._got_packet = anyio.create_event()
         if keepalive_timeout <= 0:
             keepalive_timeout = None
 
@@ -448,8 +462,7 @@ class ProtocolHandler:
                 await evt.set()
                 while True:
                     try:
-                        async with anyio.fail_after(keepalive_timeout):
-                            fixed_header = await MQTTFixedHeader.from_stream(self.stream)
+                        fixed_header = await MQTTFixedHeader.from_stream(self.stream)
                         if fixed_header is None:
                             self.logger.debug(
                                 "%s No more data (EOF received), stopping reader coro",
@@ -467,9 +480,12 @@ class ProtocolHandler:
                             )
                             await self.handle_connection_closed()
                             break
+
+
                         cls = packet_class(fixed_header)
                         packet = await cls.from_stream(self.stream, fixed_header=fixed_header)
                         # self.logger.debug("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
+                        await self._got_packet.set() # don't wait for the body
                         await self.plugins_manager.fire_event(
                             EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session,
                         )
@@ -493,12 +509,6 @@ class ProtocolHandler:
 
                     except MQTTException:
                         self.logger.debug("Message discarded")
-                    except TimeoutError:
-                        self.logger.debug(
-                            "%s Input stream read timeout",
-                            self.session.client_id if self.session else "?",
-                        )
-                        await self.handle_read_timeout()
                     except NoDataException:
                         self.logger.debug("%s No data available", self.session.client_id)
                         break  # XXX
