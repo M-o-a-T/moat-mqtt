@@ -438,6 +438,10 @@ class ProtocolHandler:
             app_message.pubcomp_packet = pubcomp_packet
 
     async def _timeout_loop(self):
+        keepalive_timeout = self.session.keep_alive
+        if keepalive_timeout <= 0:
+            keepalive_timeout = None
+
         while True:
             async with anyio.move_on_after(keepalive_timeout):
                 while True:
@@ -451,10 +455,7 @@ class ProtocolHandler:
 
     async def _reader_loop(self, evt):
         self.logger.debug("%s Starting reader coro", self.session.client_id)
-        keepalive_timeout = self.session.keep_alive
         self._got_packet = anyio.create_event()
-        if keepalive_timeout <= 0:
-            keepalive_timeout = None
 
         try:
             async with anyio.create_task_group() as tg:
