@@ -89,30 +89,28 @@ class MQTTFixedHeader:
             Decode message length according to MQTT specifications
             :return:
             """
-            multiplier = 1
+            shift = 0
             value = 0
             buffer = bytearray()
             while True:
-                encoded_byte = await reader.read(1)
-                int_byte = unpack("!B", encoded_byte)
-                buffer.append(int_byte[0])
-                value += (int_byte[0] & 0x7F) * multiplier
-                if (int_byte[0] & 0x80) == 0:
-                    break
-                else:
-                    multiplier *= 128
-                    if multiplier > 128 * 128 * 128:
+                int_byte = (await reader.read(1))[0]
+                buffer.append(int_byte)
+                value |= (int_byte & 0x7F) << shift
+                if int_byte & 0x80:
+                    shift += 7
+                    if shift > 21:
                         raise MQTTException(
                             "Invalid remaining length bytes:%s, packet_type=%d"
                             % (bytes_to_hex_str(buffer), msg_type)
                         )
+                else:
+                    break
             return value
 
         try:
-            byte1 = await read_or_raise(reader, 1)
-            int1 = unpack("!B", byte1)
-            msg_type = (int1[0] & 0xF0) >> 4
-            flags = int1[0] & 0x0F
+            int1 = (await read_or_raise(reader, 1))[0]
+            msg_type = int1 >> 4
+            flags = int1 & 0x0F
             remain_length = await decode_remaining_length()
 
             return cls(msg_type, flags, remain_length)
@@ -228,22 +226,19 @@ class MQTTPacket:
     async def from_stream(cls, reader: StreamAdapter, fixed_header=None, variable_header=None):
         if fixed_header is None:
             fixed_header = await cls.FIXED_HEADER.from_stream(reader)
-        if cls.VARIABLE_HEADER:
-            if variable_header is None:
-                variable_header = await cls.VARIABLE_HEADER.from_stream(reader, fixed_header)
-        else:
-            variable_header = None
+        if variable_header is None and cls.VARIABLE_HEADER:
+            variable_header = await cls.VARIABLE_HEADER.from_stream(reader, fixed_header)
         if cls.PAYLOAD:
             payload = await cls.PAYLOAD.from_stream(reader, fixed_header, variable_header)
         else:
             payload = None
 
-        if fixed_header and not variable_header and not payload:
-            instance = cls(fixed_header)
-        elif fixed_header and not payload:
+        if payload:
+            instance = cls(fixed_header, variable_header, payload)
+        elif variable_header:
             instance = cls(fixed_header, variable_header)
         else:
-            instance = cls(fixed_header, variable_header, payload)
+            instance = cls(fixed_header)
         instance.protocol_ts = datetime.now()
         return instance
 
