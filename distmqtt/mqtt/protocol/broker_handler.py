@@ -42,7 +42,7 @@ class BrokerProtocolHandler(ProtocolHandler):
         pass
 
     async def handle_read_timeout(self):
-        await self.stop()
+        raise TimeoutError
 
     async def _handle_disconnect(self, disconnect, wait=True):  # pylint: disable=arguments-differ
         self.logger.debug("Client disconnecting")
