@@ -421,7 +421,7 @@ class MQTTClient:
 
     def subscription(self, topic, qos=QOS_0, codec=None):
         """
-        Iterate over a message.
+        Iterate over a topic.
 
             :param topic: topic (including wildcards) to receive from.
             :param qos: minimum QOS to receive with.

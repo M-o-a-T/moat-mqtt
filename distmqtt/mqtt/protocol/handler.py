@@ -443,10 +443,11 @@ class ProtocolHandler:
             keepalive_timeout = None
 
         while True:
-            async with anyio.move_on_after(keepalive_timeout):
-                while True:
+            while True:
+                async with anyio.move_on_after(keepalive_timeout):
                     await self._got_packet.wait()
                     self._got_packet = anyio.create_event()
+                    continue
             self.logger.debug(
                 "%s Input stream read timeout",
                 self.session.client_id if self.session else "?",

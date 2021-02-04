@@ -373,7 +373,8 @@ class Broker:
 
                                 await sock.serve(partial(_maybe_wrap, listener, listener_name))
                             finally:
-                                await sock.aclose()
+                                async with anyio.fail_after(2, shield=True):
+                                    await sock.aclose()
 
                     if listener["type"] == "tcp":
                         cb_partial = partial(self.stream_connected, listener_name=listener_name)

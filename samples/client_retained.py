@@ -27,9 +27,7 @@ async def test_coro():
         await _client_publish("/qos0", b"data", QOS_0, retain=True)
         await _client_publish("/qos1", b"data", QOS_1, retain=True)
         await _client_publish("/qos2", b"data", QOS_2, retain=True)
-        import pdb
 
-        pdb.set_trace()
         await sub_client.reconnect()
         for qos in [QOS_0, QOS_1, QOS_2]:
             logger.debug("TEST QOS: %d", qos)
