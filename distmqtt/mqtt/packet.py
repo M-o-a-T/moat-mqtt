@@ -12,7 +12,6 @@ from distmqtt.codecs import (
 from distmqtt.errors import CodecException, MQTTException, NoDataException
 from distmqtt.adapters import StreamAdapter
 from datetime import datetime
-from struct import unpack
 
 
 RESERVED_0 = 0x00

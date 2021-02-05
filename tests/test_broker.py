@@ -107,10 +107,12 @@ class BrokerTest(unittest.TestCase):
             MockPluginManager.assert_has_calls(
                 [
                     call().fire_event(
-                        EVENT_BROKER_CLIENT_CONNECTED, client_id=client.session.client_id,
+                        EVENT_BROKER_CLIENT_CONNECTED,
+                        client_id=client.session.client_id,
                     ),
                     call().fire_event(
-                        EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client.session.client_id,
+                        EVENT_BROKER_CLIENT_DISCONNECTED,
+                        client_id=client.session.client_id,
                     ),
                 ],
                 any_order=True,

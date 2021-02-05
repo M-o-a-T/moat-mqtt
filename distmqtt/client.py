@@ -88,8 +88,8 @@ class ConnectException(ClientException):
 
 class ClientContext(BaseContext):
     """
-        ClientContext is used as the context passed to plugins interacting with the client.
-        It act as an adapter to client services from plugins
+    ClientContext is used as the context passed to plugins interacting with the client.
+    It act as an adapter to client services from plugins
     """
 
     def __init__(self, config):
@@ -102,9 +102,9 @@ base_logger = logging.getLogger(__name__)
 
 def mqtt_connected(func):
     """
-        MQTTClient coroutines decorator which will wait until connection before calling the decorated method.
-        :param func: coroutine to be called once connected
-        :return: coroutine result
+    MQTTClient coroutines decorator which will wait until connection before calling the decorated method.
+    :param func: coroutine to be called once connected
+    :return: coroutine result
     """
 
     @wraps(func)
@@ -130,26 +130,26 @@ def mqtt_connected(func):
 async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
     # pylint: disable=dangerous-default-value
     """
-        MQTT client implementation.
+    MQTT client implementation.
 
-        MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
+    MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
 
-        :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
-        :param config: Client configuration
-        :param codec: Codec to default to, the config or "no-op" if not given.
-        :return: async context manager returning a class instance
+    :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
+    :param config: Client configuration
+    :param codec: Codec to default to, the config or "no-op" if not given.
+    :return: async context manager returning a class instance
 
-        Example usage::
+    Example usage::
 
-            async with open_mqttclient(config=dict(uri="mqtt://my-broker.example")) as client:
-                # await client.connect("mqtt://my-broker.example")  # alternate use
-                await C.subscribe([
-                        ('$SYS/broker/uptime', QOS_1),
-                        ('$SYS/broker/load/#', QOS_2),
-                    ])
-                async for msg in client:
-                    packet = message.publish_packet
-                    print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
+        async with open_mqttclient(config=dict(uri="mqtt://my-broker.example")) as client:
+            # await client.connect("mqtt://my-broker.example")  # alternate use
+            await C.subscribe([
+                    ('$SYS/broker/uptime', QOS_1),
+                    ('$SYS/broker/load/#', QOS_2),
+                ])
+            async for msg in client:
+                packet = message.publish_packet
+                print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
 
     """
     async with anyio.create_task_group() as tg:
@@ -168,18 +168,18 @@ async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
 
 class MQTTClient:
     """
-        MQTT client implementation.
+    MQTT client implementation.
 
-        MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
+    MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
 
-        :param tg: The task group in which to run open-ended subtasks.
-        :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
-        :param config: Client configuration
-        :param codec: Codec to default to, the config or "no-op" if not given.
-        :return: class instance
+    :param tg: The task group in which to run open-ended subtasks.
+    :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
+    :param config: Client configuration
+    :param codec: Codec to default to, the config or "no-op" if not given.
+    :return: class instance
 
-        You should use :func:`open_mqttclient` to create an instance of
-        this class.
+    You should use :func:`open_mqttclient` to create an instance of
+    this class.
     """
 
     def __init__(self, tg: anyio.abc.TaskGroup, client_id=None, config=None, codec=None):
@@ -212,24 +212,30 @@ class MQTTClient:
         self.client_task = None
 
     async def connect(
-        self, uri=None, cleansession=None, cafile=None, capath=None, cadata=None, extra_headers={},
+        self,
+        uri=None,
+        cleansession=None,
+        cafile=None,
+        capath=None,
+        cadata=None,
+        extra_headers={},
     ):
         # pylint: disable=dangerous-default-value
         """
-            Connect to a remote broker.
+        Connect to a remote broker.
 
-            At first, a network connection is established with the server using the given protocol (``mqtt``, ``mqtts``, ``ws`` or ``wss``). Once the socket is connected, a `CONNECT <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718028>`_ message is sent with the requested informations.
+        At first, a network connection is established with the server using the given protocol (``mqtt``, ``mqtts``, ``ws`` or ``wss``). Once the socket is connected, a `CONNECT <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718028>`_ message is sent with the requested informations.
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
 
-            :param uri: Broker URI connection, conforming to `MQTT URI scheme <https://github.com/mqtt/mqtt.github.io/wiki/URI-Scheme>`_. Uses ``uri`` config attribute by default.
-            :param cleansession: MQTT CONNECT clean session flag
-            :param cafile: server certificate authority file (optional, used for secured connection)
-            :param capath: server certificate authority path (optional, used for secured connection)
-            :param cadata: server certificate authority data (optional, used for secured connection)
-            :param extra_headers: a dictionary with additional http headers that should be sent on the initial connection (optional, used only with websocket connections)
-            :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
-            :raise: :class:`distmqtt.client.ConnectException` if connection fails
+        :param uri: Broker URI connection, conforming to `MQTT URI scheme <https://github.com/mqtt/mqtt.github.io/wiki/URI-Scheme>`_. Uses ``uri`` config attribute by default.
+        :param cleansession: MQTT CONNECT clean session flag
+        :param cafile: server certificate authority file (optional, used for secured connection)
+        :param capath: server certificate authority path (optional, used for secured connection)
+        :param cadata: server certificate authority data (optional, used for secured connection)
+        :param extra_headers: a dictionary with additional http headers that should be sent on the initial connection (optional, used only with websocket connections)
+        :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
+        :raise: :class:`distmqtt.client.ConnectException` if connection fails
         """
         self.session = self._initsession(uri, cleansession, cafile, capath, cadata)
         self.extra_headers = extra_headers
@@ -247,11 +253,11 @@ class MQTTClient:
 
     async def disconnect(self):
         """
-            Disconnect from the connected broker.
+        Disconnect from the connected broker.
 
-            This method sends a `DISCONNECT <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718090>`_ message and closes the network socket.
+        This method sends a `DISCONNECT <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718090>`_ message and closes the network socket.
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
         """
 
         # do not reconnect any more
@@ -279,16 +285,16 @@ class MQTTClient:
 
     async def reconnect(self, cleansession=None):
         """
-            Reconnect a previously connected broker.
+        Reconnect a previously connected broker.
 
-            Reconnection tries to establish a network connection and send a `CONNECT <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718028>`_ message.
-            Retries interval and attempts can be controled with the ``reconnect_max_interval`` and ``reconnect_retries`` configuration parameters.
+        Reconnection tries to establish a network connection and send a `CONNECT <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718028>`_ message.
+        Retries interval and attempts can be controled with the ``reconnect_max_interval`` and ``reconnect_retries`` configuration parameters.
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
 
-            :param cleansession: clean session flag used in MQTT CONNECT messages sent for reconnections.
-            :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
-            :raise: :class:`distmqtt.client.ConnectException` if re-connection fails after max retries.
+        :param cleansession: clean session flag used in MQTT CONNECT messages sent for reconnections.
+        :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
+        :raise: :class:`distmqtt.client.ConnectException` if re-connection fails after max retries.
         """
 
         if self.session.transitions.is_connected():
@@ -331,11 +337,11 @@ class MQTTClient:
     @mqtt_connected
     async def ping(self):
         """
-            Ping the broker.
+        Ping the broker.
 
-            Send a MQTT `PINGREQ <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718081>`_ message for response.
+        Send a MQTT `PINGREQ <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718081>`_ message for response.
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
         """
 
         if self.session.transitions.is_connected():
@@ -349,17 +355,17 @@ class MQTTClient:
     @mqtt_connected
     async def publish(self, topic, message, qos=None, retain=None, codec=None):
         """
-            Publish a message to the broker.
+        Publish a message to the broker.
 
-            Send a MQTT `PUBLISH <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718037>`_ message and wait for acknowledgment depending on Quality Of Service
+        Send a MQTT `PUBLISH <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718037>`_ message and wait for acknowledgment depending on Quality Of Service
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
 
-            :param topic: topic name to which message data is published
-            :param message: payload message (as bytes) to send.
-            :param qos: requested publish quality of service : QOS_0, QOS_1 or QOS_2. Defaults to ``default_qos`` config parameter or QOS_0.
-            :param retain: retain flag. Defaults to ``default_retain`` config parameter or False.
-            :param codec: Codec to encode the message with. Defaults to the connection's.
+        :param topic: topic name to which message data is published
+        :param message: payload message (as bytes) to send.
+        :param qos: requested publish quality of service : QOS_0, QOS_1 or QOS_2. Defaults to ``default_qos`` config parameter or QOS_0.
+        :param retain: retain flag. Defaults to ``default_retain`` config parameter or False.
+        :param codec: Codec to encode the message with. Defaults to the connection's.
         """
 
         codec = get_codec(codec, self.codec, config=self.config)
@@ -382,40 +388,40 @@ class MQTTClient:
     @mqtt_connected
     async def subscribe(self, topics):
         """
-            Subscribe to some topics.
+        Subscribe to some topics.
 
-            Send a MQTT `SUBSCRIBE <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718063>`_ message and wait for broker acknowledgment.
+        Send a MQTT `SUBSCRIBE <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718063>`_ message and wait for broker acknowledgment.
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
 
-            :param topics: array of topics pattern to subscribe with associated QoS.
-            :return: `SUBACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718068>`_ message return code.
+        :param topics: array of topics pattern to subscribe with associated QoS.
+        :return: `SUBACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718068>`_ message return code.
 
-            Example of ``topics`` argument expected structure:
-            ::
+        Example of ``topics`` argument expected structure:
+        ::
 
-                [
-                    ('$SYS/broker/uptime', QOS_1),
-                    ('$SYS/broker/load/#', QOS_2),
-                ]
+            [
+                ('$SYS/broker/uptime', QOS_1),
+                ('$SYS/broker/load/#', QOS_2),
+            ]
         """
         return await self._handler.mqtt_subscribe(topics, self.session.next_packet_id)
 
     @mqtt_connected
     async def unsubscribe(self, topics):
         """
-            Unsubscribe from some topics.
+        Unsubscribe from some topics.
 
-            Send a MQTT `UNSUBSCRIBE <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718072>`_ message and wait for broker `UNSUBACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718077>`_ message.
+        Send a MQTT `UNSUBSCRIBE <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718072>`_ message and wait for broker `UNSUBACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718077>`_ message.
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
 
-            :param topics: array of topics to unsubscribe from.
+        :param topics: array of topics to unsubscribe from.
 
-            Example of ``topics`` argument expected structure:
-            ::
+        Example of ``topics`` argument expected structure:
+        ::
 
-                ['$SYS/broker/uptime', '$SYS/broker/load/#']
+            ['$SYS/broker/uptime', '$SYS/broker/load/#']
         """
         await self._handler.mqtt_unsubscribe(topics, self.session.next_packet_id)
 
@@ -490,13 +496,13 @@ class MQTTClient:
 
             async def publish(self, topic, message, *a, **kw):
                 """
-                    Publish a message.
+                Publish a message.
 
-                    :param topic: topic name to which message data is published
-                    :param message: payload message (as bytes) to send.
-                    :param qos: requested publish quality of service : QOS_0, QOS_1 or QOS_2. Defaults to ``default_qos`` config parameter or QOS_0.
-                    :param retain: retain flag. Defaults to ``default_retain`` config parameter or False.
-                    :param codec: Codec to encode the message with. Defaults to the subscription's.
+                :param topic: topic name to which message data is published
+                :param message: payload message (as bytes) to send.
+                :param qos: requested publish quality of service : QOS_0, QOS_1 or QOS_2. Defaults to ``default_qos`` config parameter or QOS_0.
+                :param retain: retain flag. Defaults to ``default_retain`` config parameter or False.
+                :param codec: Codec to encode the message with. Defaults to the subscription's.
                 """
                 if topic is None:
                     topic = self.topic
@@ -547,7 +553,7 @@ class MQTTClient:
 
     async def _deliver_loop(self):
         """
-            Dispatch incoming messages to subscriptions.
+        Dispatch incoming messages to subscriptions.
         """
         async with anyio.open_cancel_scope() as scope:
             if self.client_task is not None:
@@ -568,19 +574,19 @@ class MQTTClient:
     @mqtt_connected
     async def deliver_message(self, codec=None):
         """
-            Deliver next received message.
+        Deliver next received message.
 
-            Deliver next message received from the broker. If no message is available, this methods waits until next message arrives or ``timeout`` occurs.
+        Deliver next message received from the broker. If no message is available, this methods waits until next message arrives or ``timeout`` occurs.
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
 
-            :return: instance of :class:`distmqtt.session.ApplicationMessage` containing received message information flow.
-            :raises: :class:`TimeoutError` if timeout occurs before a message is delivered
+        :return: instance of :class:`distmqtt.session.ApplicationMessage` containing received message information flow.
+        :raises: :class:`TimeoutError` if timeout occurs before a message is delivered
 
-            :param codec: Codec to decode the message with.
+        :param codec: Codec to decode the message with.
 
-            This method returns ``None`` if it is cancelled by closing the
-            connection.
+        This method returns ``None`` if it is cancelled by closing the
+        connection.
         """
         if codec is None:
             codec = self.codec
@@ -694,7 +700,9 @@ class MQTTClient:
                 if topics:
                     await self.subscribe(topics)
             self.logger.debug(
-                "connected to %s:%s", self.session.remote_address, self.session.remote_port,
+                "connected to %s:%s",
+                self.session.remote_address,
+                self.session.remote_port,
             )
             return return_code
         except ProtocolError as exc:

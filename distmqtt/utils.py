@@ -68,29 +68,25 @@ class Future:
     value = attr.ib(default=None, init=False)
 
     async def set(self, value):
-        """Set the result to return this value, and wake any waiting task.
-        """
+        """Set the result to return this value, and wake any waiting task."""
         if self.event.is_set():
             raise InvalidStateError("Value already set")
         self.value = value
         await self.event.set()
 
     async def set_error(self, exc):
-        """Set the result to raise this exceptio, and wake any waiting task.
-        """
+        """Set the result to raise this exceptio, and wake any waiting task."""
         if self.event.is_set():
             raise InvalidStateError("Value already set")
         self.value = exc
         await self.event.set()
 
     def is_set(self):
-        """Check whether the event has occurred.
-        """
+        """Check whether the event has occurred."""
         return self.value is not None
 
     async def cancel(self):
-        """Send a cancelation to the recipient.
-        """
+        """Send a cancelation to the recipient."""
         await self.set_error(CancelledError())
 
     async def get(self):
@@ -106,8 +102,7 @@ class Future:
         return self.value
 
     def done(self):
-        """Report whether this Future has been set.
-        """
+        """Report whether this Future has been set."""
         return self.event.is_set()
 
 

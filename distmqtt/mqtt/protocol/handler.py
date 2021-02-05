@@ -483,13 +483,14 @@ class ProtocolHandler:
                             await self.handle_connection_closed()
                             break
 
-
                         cls = packet_class(fixed_header)
                         packet = await cls.from_stream(self.stream, fixed_header=fixed_header)
                         # self.logger.debug("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
-                        await self._got_packet.set() # don't wait for the body
+                        await self._got_packet.set()  # don't wait for the body
                         await self.plugins_manager.fire_event(
-                            EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session,
+                            EVENT_MQTT_PACKET_RECEIVED,
+                            packet=packet,
+                            session=self.session,
                         )
                         try:
                             pt, direct = PACKET_TYPES[packet.fixed_header.packet_type]

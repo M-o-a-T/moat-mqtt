@@ -29,7 +29,9 @@ setup(
         "simplejson",
         "msgpack",
     ],
-    extras_require={"distkv": ["distkv >= 0.32"],},
+    extras_require={
+        "distkv": ["distkv >= 0.32"],
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",

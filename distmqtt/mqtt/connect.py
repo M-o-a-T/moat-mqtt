@@ -158,7 +158,12 @@ class ConnectPayload(MQTTPayload):
     )
 
     def __init__(
-        self, client_id=None, will_topic=None, will_message=None, username=None, password=None,
+        self,
+        client_id=None,
+        will_topic=None,
+        will_message=None,
+        username=None,
+        password=None,
     ):
         super().__init__()
         self.client_id_is_random = False
@@ -170,7 +175,11 @@ class ConnectPayload(MQTTPayload):
 
     def __repr__(self):
         return "ConnectVariableHeader(client_id={0}, will_topic={1}, will_message={2}, username={3}, password={4})".format(
-            self.client_id, self.will_topic, self.will_message, self.username, self.password,
+            self.client_id,
+            self.will_topic,
+            self.will_message,
+            self.username,
+            self.password,
         )
 
     @classmethod
