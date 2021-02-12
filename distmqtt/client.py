@@ -158,7 +158,9 @@ async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
             if uri is not None:
                 config["uri"] = uri
             if "uri" in config:
-                await C.connect(**config)
+                known_keys = ("uri", "cleansession", "cafile", "capath", "cadata", "extra_headers")
+                kwargs = {k: v for k, v in config.items() if k in known_keys}
+                await C.connect(**kwargs)
             yield C
         finally:
             async with anyio.fail_after(2, shield=True):
