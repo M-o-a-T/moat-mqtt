@@ -8,6 +8,7 @@ import ssl
 import copy
 from urllib.parse import urlparse, urlunparse
 from functools import wraps
+from typing import Union
 
 try:
     from contextlib import asynccontextmanager
@@ -372,6 +373,8 @@ class MQTTClient:
 
         codec = get_codec(codec, self.codec, config=self.config)
         message = codec.encode(message)
+        if not isinstance(topic, str):
+            topic = "/".join(topic)
 
         if qos is not None:
             assert qos in (QOS_0, QOS_1, QOS_2)
@@ -448,9 +451,9 @@ class MQTTClient:
         """
 
         class _Subscription:
-            def __init__(self, client, topic, qos, codec=None):
+            def __init__(self, client, topic: Union[str, tuple], qos: int, codec=None):
                 self.client = client
-                self.topic = topic
+                self.topic = topic if isinstance(topic, str) else "/".join(topic)
                 self.qos = qos
                 if codec is None:
                     codec = client.codec
