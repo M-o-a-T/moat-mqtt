@@ -66,6 +66,18 @@ class MQTTClientTest(unittest.TestCase):
 
         anyio_run(test_coro)
 
+    def test_uri_supplied_early(self):
+        config = {"auto_reconnect": False}
+
+        async def test_coro():
+            async with open_mqttclient("mqtt://test.mosquitto.org/", config=config) as client:
+                self.assertIsNotNone(client.session)
+
+        try:
+            anyio_run(test_coro)
+        except ConnectException:
+            log.error("Broken by server")
+
     def test_connect_ws(self):
         async def test_coro():
             async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):

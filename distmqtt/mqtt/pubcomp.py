@@ -23,7 +23,9 @@ class PubcompPacket(MQTTPacket):
         self.variable_header.packet_id = val
 
     def __init__(
-        self, fixed: MQTTFixedHeader = None, variable_header: PacketIdVariableHeader = None,
+        self,
+        fixed: MQTTFixedHeader = None,
+        variable_header: PacketIdVariableHeader = None,
     ):
         if fixed is None:
             header = MQTTFixedHeader(PUBCOMP, 0x00)

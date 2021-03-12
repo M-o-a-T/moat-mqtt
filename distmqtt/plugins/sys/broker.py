@@ -147,13 +147,15 @@ class BrokerSysPlugin:
             "messages/inflight/stored", int_to_bytes_str(messages_stored)
         )
         await self._broadcast_sys_topic(
-            "messages/publish/received", int_to_bytes_str(self._stats[STAT_PUBLISH_RECEIVED]),
+            "messages/publish/received",
+            int_to_bytes_str(self._stats[STAT_PUBLISH_RECEIVED]),
         )
         await self._broadcast_sys_topic(
             "messages/publish/sent", int_to_bytes_str(self._stats[STAT_PUBLISH_SENT])
         )
         await self._broadcast_sys_topic(
-            "messages/retained/count", int_to_bytes_str(len(self.context.retained_messages)),
+            "messages/retained/count",
+            int_to_bytes_str(len(self.context.retained_messages)),
         )
         await self._broadcast_sys_topic(
             "messages/subscriptions/count", int_to_bytes_str(subscriptions_count)

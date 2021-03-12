@@ -92,7 +92,9 @@ class Server:
                 )
             else:
                 self.logger.info(
-                    "Listener '%s': %d connections acquired", self.listener_name, self.conn_count,
+                    "Listener '%s': %d connections acquired",
+                    self.listener_name,
+                    self.conn_count,
                 )
             yield self
 
@@ -106,7 +108,9 @@ class Server:
                 )
             else:
                 self.logger.info(
-                    "Listener '%s': %d connections acquired", self.listener_name, self.conn_count,
+                    "Listener '%s': %d connections acquired",
+                    self.listener_name,
+                    self.conn_count,
                 )
 
     async def close_instance(self):
@@ -273,11 +277,11 @@ class Broker:
 
     async def start(self):
         """
-            Start the broker to serve with the given configuration
+        Start the broker to serve with the given configuration
 
-            Start method opens network sockets and will start listening for incoming connections.
+        Start method opens network sockets and will start listening for incoming connections.
 
-            This method is a *coroutine*.
+        This method is a *coroutine*.
         """
         try:
             self._sessions = dict()
@@ -382,7 +386,9 @@ class Broker:
                         cb_partial = partial(self.ws_connected, listener_name=listener_name)
                     else:
                         self.logger.error(
-                            "Listener '%s': unknown type '%s'", listener_name, listener["type"],
+                            "Listener '%s': unknown type '%s'",
+                            listener_name,
+                            listener["type"],
                         )
                         continue
                     fut = Future()
@@ -423,9 +429,9 @@ class Broker:
 
     async def shutdown(self):
         """
-            Stop broker instance.
+        Stop broker instance.
 
-            Closes all connected session, stop listening on network socket and free resources.
+        Closes all connected session, stop listening on network socket and free resources.
         """
         for s in self._sessions.values():
             await s[0].stop()
@@ -488,7 +494,10 @@ class Broker:
 
         remote_address, remote_port = adapter.get_peer_info()
         self.logger.info(
-            "Connection from %s:%d on listener '%s'", remote_address, remote_port, listener_name,
+            "Connection from %s:%d on listener '%s'",
+            remote_address,
+            remote_port,
+            listener_name,
         )
 
         # Wait for first packet and expect a CONNECT
@@ -570,7 +579,8 @@ class Broker:
         await handler.start()
         if self._do_retain:
             self.logger.debug(
-                "Retained messages queue size: %d", client_session.retained_messages.qsize(),
+                "Retained messages queue size: %d",
+                client_session.retained_messages.qsize(),
             )
             await self.publish_session_retained_messages(client_session)
 
@@ -690,7 +700,9 @@ class Broker:
                 if res is False:
                     auth_result = False
                     self.logger.debug(
-                        "Authentication failed due to '%s' plugin result: %s", plugin.name, res,
+                        "Authentication failed due to '%s' plugin result: %s",
+                        plugin.name,
+                        res,
                     )
                 else:
                     self.logger.debug("'%s' plugin result: %s", plugin.name, res)
@@ -715,7 +727,10 @@ class Broker:
         if topic_config and topic_config.get("enabled", False):
             topic_plugins = topic_config.get("plugins", None)
         returns = await self.plugins_manager.map_plugin_coro(
-            "topic_filtering", session=session, topic=topic, filter_plugins=topic_plugins,
+            "topic_filtering",
+            session=session,
+            topic=topic,
+            filter_plugins=topic_plugins,
         )
 
         topic_result = True
@@ -725,7 +740,9 @@ class Broker:
                 if res is False:
                     topic_result = False
                     self.logger.debug(
-                        "Topic filtering failed due to '%s' plugin result: %s", plugin.name, res,
+                        "Topic filtering failed due to '%s' plugin result: %s",
+                        plugin.name,
+                        res,
                     )
         # If all plugins returned True, authentication is success
         return topic_result
@@ -873,7 +890,10 @@ class Broker:
                                 format_client_message(session=target_session),
                             )
                         retained_message = RetainedApplicationMessage(
-                            broadcast["session"], broadcast["topic"], broadcast["data"], qos,
+                            broadcast["session"],
+                            broadcast["topic"],
+                            broadcast["data"],
+                            qos,
                         )
                         await target_session.retained_messages.put(retained_message)
 
@@ -904,7 +924,11 @@ class Broker:
             while not session.retained_messages.empty():
                 retained = await session.retained_messages.get()
                 await tg.spawn(
-                    handler.mqtt_publish, retained.topic, retained.data, retained.qos, True,
+                    handler.mqtt_publish,
+                    retained.topic,
+                    retained.data,
+                    retained.qos,
+                    True,
                 )
 
     async def publish_retained_messages_for_subscription(self, subscription, session):
@@ -921,7 +945,11 @@ class Broker:
                     self.logger.debug("%s and %s match", d_topic, subscription[0])
                     retained = self._retained_messages[d_topic]
                     await tg.spawn(
-                        handler.mqtt_publish, retained.topic, retained.data, subscription[1], True,
+                        handler.mqtt_publish,
+                        retained.topic,
+                        retained.data,
+                        subscription[1],
+                        True,
                     )
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(

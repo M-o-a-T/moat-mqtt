@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class ApplicationMessage:
 
     """
-        ApplicationMessage and subclasses are used to store published message information flow. These objects can contain different information depending on the way they were created (incoming or outgoing) and the quality of service used between peers.
+    ApplicationMessage and subclasses are used to store published message information flow. These objects can contain different information depending on the way they were created (incoming or outgoing) and the quality of service used between peers.
     """
 
     __slots__ = (
@@ -102,7 +102,7 @@ class ApplicationMessage:
 class IncomingApplicationMessage(ApplicationMessage):
 
     """
-        Incoming :class:`~distmqtt.session.ApplicationMessage`.
+    Incoming :class:`~distmqtt.session.ApplicationMessage`.
     """
 
     __slots__ = ("direction",)
@@ -115,7 +115,7 @@ class IncomingApplicationMessage(ApplicationMessage):
 class OutgoingApplicationMessage(ApplicationMessage):
 
     """
-        Outgoing :class:`~distmqtt.session.ApplicationMessage`.
+    Outgoing :class:`~distmqtt.session.ApplicationMessage`.
     """
 
     __slots__ = ("direction",)

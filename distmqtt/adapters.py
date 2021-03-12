@@ -126,9 +126,12 @@ class StreamAdapter(BaseAdapter):
 
     async def close(self):
         try:
-            await self._stream.close()
-        except AttributeError:
-            await self._stream.aclose()
+            try:
+                await self._stream.close()
+            except AttributeError:
+                await self._stream.aclose()
+        except anyio.BrokenResourceError:
+            pass
 
 
 class BufferAdapter(BaseAdapter):

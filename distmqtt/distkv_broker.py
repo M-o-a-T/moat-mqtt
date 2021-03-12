@@ -129,7 +129,10 @@ class DistKVbroker(Broker):
                     return
                 else:
                     await super().broadcast_message(
-                        session=None, topic="/".join(msg["path"]), data=data, retain=True,
+                        session=None,
+                        topic="/".join(msg["path"]),
+                        data=data,
+                        retain=True,
                     )
                 await err.record_working("distmqtt", msg.path)
 

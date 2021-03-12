@@ -171,7 +171,9 @@ class PluginManager:
                         await tg.spawn(worker, plugin)
                     except TypeError:
                         self.logger.error(
-                            "Method '%r' on plugin '%s' is not a coroutine", coro, plugin.name,
+                            "Method '%r' on plugin '%s' is not a coroutine",
+                            coro,
+                            plugin.name,
                         )
         return ret_dict
 

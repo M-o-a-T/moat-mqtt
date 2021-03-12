@@ -90,6 +90,8 @@ class ProtocolHandler:
     Class implementing the MQTT communication protocol using async features
     """
 
+    _got_packet: anyio.abc.Event = None
+
     def __init__(self, plugins_manager: PluginManager, session: Session = None):
         self.logger = logging.getLogger(__name__ + "." + self.__class__.__name__)
         if session:
@@ -483,13 +485,14 @@ class ProtocolHandler:
                             await self.handle_connection_closed()
                             break
 
-
                         cls = packet_class(fixed_header)
                         packet = await cls.from_stream(self.stream, fixed_header=fixed_header)
                         # self.logger.debug("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
-                        await self._got_packet.set() # don't wait for the body
+                        await self._got_packet.set()  # don't wait for the body
                         await self.plugins_manager.fire_event(
-                            EVENT_MQTT_PACKET_RECEIVED, packet=packet, session=self.session,
+                            EVENT_MQTT_PACKET_RECEIVED,
+                            packet=packet,
+                            session=self.session,
                         )
                         try:
                             pt, direct = PACKET_TYPES[packet.fixed_header.packet_type]
