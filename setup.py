@@ -8,7 +8,7 @@ setup(
     name="distmqtt",
     use_scm_version={"version_scheme": "guess-next-dev", "local_scheme": "dirty-tag"},
     setup_requires=["setuptools_scm", "pytest-runner"],
-    tests_require=["pytest"],
+    tests_require=["pytest", "pylint >= 2.7"],
     description="MQTT client/broker using anyio and distkv",
     author="Matthias Urlichs",
     author_email="matthias@urlichs.de",

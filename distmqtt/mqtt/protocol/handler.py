@@ -90,6 +90,8 @@ class ProtocolHandler:
     Class implementing the MQTT communication protocol using async features
     """
 
+    _got_packet: anyio.abc.Event = None
+
     def __init__(self, plugins_manager: PluginManager, session: Session = None):
         self.logger = logging.getLogger(__name__ + "." + self.__class__.__name__)
         if session:
