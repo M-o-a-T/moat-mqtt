@@ -67,7 +67,7 @@ class MQTTClientTest(unittest.TestCase):
         anyio_run(test_coro)
 
     def test_uri_supplied_early(self):
-        config = {'auto_reconnect': False}
+        config = {"auto_reconnect": False}
 
         async def test_coro():
             async with open_mqttclient("mqtt://test.mosquitto.org/", config=config) as client:
