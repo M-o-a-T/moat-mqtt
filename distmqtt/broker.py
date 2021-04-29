@@ -4,6 +4,7 @@
 import logging
 import ssl
 import anyio
+import socket
 from copy import deepcopy
 from collections import deque
 
@@ -29,6 +30,8 @@ from asyncwebsockets import create_websocket_server
 _defaults = {
     "listeners": {"default": {"type": "tcp", "bind": "0.0.0.0:1883"}},
     "timeout-disconnect-delay": 2,
+    "tcp-keepalive": 600,
+    "tcp-keepalive-count": 3,
     "auth": {"allow-anonymous": True, "password-file": None},
 }
 
@@ -547,6 +550,12 @@ class Broker:
                 client_session.keep_alive / 2 + self.config["timeout-disconnect-delay"]
             )
         self.logger.debug("Keep-alive timeout=%d", client_session.keep_alive)
+        if self.config["tcp-keepalive"]:
+            sock = adapter.raw_socket
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, self.config["tcp-keepalive"])
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL,self.config["tcp-keepalive"])
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, self.config["tcp-keepalive-count"])
 
         await handler.attach(client_session, adapter)
         self._sessions[client_session.client_id] = (client_session, handler)
