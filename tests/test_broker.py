@@ -5,6 +5,7 @@ import anyio
 import os
 import logging
 import unittest
+import pytest
 from unittest.mock import patch, call, MagicMock
 
 from distmqtt.adapters import StreamAdapter
@@ -169,10 +170,9 @@ class BrokerTest(unittest.TestCase):
                     client_id="", config={"auto_reconnect": False}
                 ) as client:
                     return_code = None
-                    try:
+                    with pytest.raises(ConnectException) as ce:
                         await client.connect(URL, cleansession=False)
-                    except ConnectException as ce:
-                        return_code = ce.return_code
+                    return_code = ce.value.return_code
                     self.assertEqual(return_code, 0x02)
                     self.assertNotIn(client.session.client_id, broker._sessions)
 
@@ -535,7 +535,7 @@ class BrokerTest(unittest.TestCase):
                     await self._client_publish("$topic", b"data", QOS_0)
                     message = None
                     with self.assertRaises(TimeoutError):
-                        async with anyio.fail_after(1):
+                        with anyio.fail_after(1):
                             message = await sub_client.deliver_message()
                     self.assertIsNone(message)
             self.assertTrue(broker.transitions.is_stopped())
@@ -564,7 +564,7 @@ class BrokerTest(unittest.TestCase):
                     await self._client_publish("$SYS/monitor/Clients", b"data", QOS_0)
                     message = None
                     with self.assertRaises(TimeoutError):
-                        async with anyio.fail_after(1):
+                        with anyio.fail_after(1):
                             message = await sub_client.deliver_message()
                     self.assertIsNone(message)
             self.assertTrue(broker.transitions.is_stopped())

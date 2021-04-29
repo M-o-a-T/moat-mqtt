@@ -61,8 +61,8 @@ all message types. Fortunately `distmqtt` has a built-in dispatcher.
             # Subscribe to '$SYS/broker/uptime' with QOS=1
             # Subscribe to '$SYS/broker/load/#' with QOS=2
             async with anyio.create_task_group() as tg:
-               await tg.spawn(show, C, '$SYS/broker/uptime', QOS_1);
-               await tg.spawn(show, C, '$SYS/broker/load/#', QOS_2);
+               tg.spawn(show, C, '$SYS/broker/uptime', QOS_1);
+               tg.spawn(show, C, '$SYS/broker/load/#', QOS_2);
 
     if __name__ == '__main__':
         formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
@@ -91,9 +91,9 @@ For the purposes of the test, each message is published with a different Quality
         """Publish in parallel"""
         async with open_mqttclient(uri='mqtt://test.mosquitto.org/') as C:
             async with anyio.create_task_group() as tg:
-                await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_0')
-                await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)),
-                await tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)),
+                tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_0')
+                tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_1', qos=QOS_1)),
+                tg.spawn(C.publish,'a/b', b'TEST MESSAGE WITH QOS_2', qos=QOS_2)),
             logger.info("messages published")
 
 

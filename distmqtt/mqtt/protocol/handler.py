@@ -104,8 +104,8 @@ class ProtocolHandler:
 
         self._reader_task = None
         self._sender_task = None
-        self._reader_stopped = anyio.create_event()
-        self._sender_stopped = anyio.create_event()
+        self._reader_stopped = anyio.Event()
+        self._sender_stopped = anyio.Event()
         self._send_q = create_queue(10)
 
         self._puback_waiters = dict()
@@ -115,7 +115,7 @@ class ProtocolHandler:
 
         self._disconnecting = False
         self._disconnect_waiter = None
-        self._write_lock = anyio.create_lock()
+        self._write_lock = anyio.Lock()
 
     def _init_session(self, session: Session):
         assert session
@@ -131,8 +131,8 @@ class ProtocolHandler:
             raise ProtocolHandlerException("Handler is already attached to a session")
         self._init_session(session)
         self.stream = stream
-        evt = anyio.create_event()
-        await self._tg.spawn(self._sender_loop, evt)
+        evt = anyio.Event()
+        self._tg.spawn(self._sender_loop, evt)
         await evt.wait()
 
     async def detach(self):
@@ -143,11 +143,11 @@ class ProtocolHandler:
         return self.session is not None
 
     async def start(self):
-        self._disconnect_waiter = anyio.create_event()
+        self._disconnect_waiter = anyio.Event()
         if not self._is_attached():
             raise ProtocolHandlerException("Handler is not attached to a stream")
-        evt = anyio.create_event()
-        await self._tg.spawn(self._reader_loop, evt)
+        evt = anyio.Event()
+        self._tg.spawn(self._reader_loop, evt)
         await evt.wait()
 
         self.logger.debug("Handler tasks started")
@@ -157,7 +157,10 @@ class ProtocolHandler:
             "Broker" if "Broker" in type(self).__name__ else "Client",
             self.session.client_id if self.session else "?",
         )
-        await self._reader_task.spawn(self._timeout_loop)
+        await anyio.sleep(0.01)
+        if self._reader_task is None:
+            return
+        self._reader_task.spawn(self._timeout_loop)
 
     async def stop(self):
         # Stop messages flow waiter
@@ -170,7 +173,7 @@ class ProtocolHandler:
         t, self._reader_task = self._reader_task, None
         if t:
             self.logger.debug("waiting for reader %s to be stopped", t)
-            await t.cancel_scope.cancel()
+            t.cancel_scope.cancel()
             await self._reader_stopped.wait()
         t, self._sender_task = self._sender_task, None
         if t:
@@ -181,7 +184,7 @@ class ProtocolHandler:
         if self.stream is not None:
             await self.stream.close()
         if self._disconnect_waiter is not None:
-            await self._disconnect_waiter.set()
+            self._disconnect_waiter.set()
         self.logger.debug("closed writer")
 
     async def _stop_waiters(self):
@@ -213,7 +216,7 @@ class ProtocolHandler:
         self.logger.debug("Begin messages delivery retries")
 
         async def process_one(message):
-            async with anyio.move_on_after(10):
+            with anyio.move_on_after(10):
                 try:
                     await self._handle_message_flow(message)
                 except CancelledError:
@@ -227,7 +230,7 @@ class ProtocolHandler:
                 self.session.inflight_in.values(), self.session.inflight_out.values()
             ):
                 pending += 1
-                await tg.spawn(process_one, message)
+                tg.spawn(process_one, message)
         pending -= done
 
         self.logger.debug("%d messages redelivered", done)
@@ -446,9 +449,9 @@ class ProtocolHandler:
 
         while True:
             while True:
-                async with anyio.move_on_after(keepalive_timeout):
+                with anyio.move_on_after(keepalive_timeout):
                     await self._got_packet.wait()
-                    self._got_packet = anyio.create_event()
+                    self._got_packet = anyio.Event()
                     continue
             self.logger.debug(
                 "%s Input stream read timeout",
@@ -458,12 +461,12 @@ class ProtocolHandler:
 
     async def _reader_loop(self, evt):
         self.logger.debug("%s Starting reader coro", self.session.client_id)
-        self._got_packet = anyio.create_event()
+        self._got_packet = anyio.Event()
 
         try:
             async with anyio.create_task_group() as tg:
                 self._reader_task = tg
-                await evt.set()
+                evt.set()
                 while True:
                     try:
                         fixed_header = await MQTTFixedHeader.from_stream(self.stream)
@@ -488,7 +491,7 @@ class ProtocolHandler:
                         cls = packet_class(fixed_header)
                         packet = await cls.from_stream(self.stream, fixed_header=fixed_header)
                         # self.logger.debug("< %s %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
-                        await self._got_packet.set()  # don't wait for the body
+                        self._got_packet.set()  # don't wait for the body
                         await self.plugins_manager.fire_event(
                             EVENT_MQTT_PACKET_RECEIVED,
                             packet=packet,
@@ -508,7 +511,7 @@ class ProtocolHandler:
                                 if direct:
                                     await fn(packet)
                                 else:
-                                    await tg.spawn(fn, packet)
+                                    tg.spawn(fn, packet)
                             except StopAsyncIteration:
                                 break
 
@@ -527,15 +530,15 @@ class ProtocolHandler:
                             exc_info=e,
                         )
                         raise
-                await tg.cancel_scope.cancel()
+                tg.cancel_scope.cancel()
         finally:
-            async with anyio.fail_after(2, shield=True):
+            with anyio.fail_after(2, shield=True):
                 self.logger.debug(
                     "%s %s coro stopped",
                     "Broker" if "Broker" in type(self).__name__ else "Client",
                     self.session.client_id if self.session else "?",
                 )
-                await self._reader_stopped.set()
+                self._reader_stopped.set()
                 if self._reader_task is not None:
                     self._reader_task = None
                     await self.handle_connection_closed()
@@ -549,12 +552,12 @@ class ProtocolHandler:
             keepalive_timeout = None
 
         try:
-            async with anyio.open_cancel_scope() as scope:
+            with anyio.CancelScope() as scope:
                 self._sender_task = scope
-                await evt.set()
+                evt.set()
                 while True:
                     packet = None
-                    async with anyio.move_on_after(keepalive_timeout):
+                    with anyio.move_on_after(keepalive_timeout):
                         packet = await self._send_q.get()
                         if packet is None:  # closing
                             break
@@ -577,8 +580,8 @@ class ProtocolHandler:
             self.logger.warning("Unhandled exception", exc_info=e)
             raise
         finally:
-            async with anyio.fail_after(2, shield=True):
-                await self._sender_stopped.set()
+            with anyio.fail_after(2, shield=True):
+                self._sender_stopped.set()
             self._sender_task = None
 
     async def handle_write_timeout(self):
@@ -623,7 +626,7 @@ class ProtocolHandler:
     async def handle_disconnect(self, disconnect: DisconnectPacket):
         if not self._disconnecting:
             self._disconnecting = True
-            await self._tg.spawn(self._handle_disconnect, disconnect)
+            self._tg.spawn(self._handle_disconnect, disconnect)
         else:
             self.logger.debug("%s DISCONNECT ignored", self.session.client_id)
         raise StopAsyncIteration  # end of the line
@@ -693,7 +696,7 @@ class ProtocolHandler:
             if incoming_message.qos == QOS_0:
                 await self._handle_message_flow(incoming_message)
             else:
-                await self._reader_task.spawn(self._handle_message_flow, incoming_message)
+                self._reader_task.spawn(self._handle_message_flow, incoming_message)
 
         #           if self.session is not None:
         #               self.logger.debug("Message queue size: %d", self.session._delivered_message_queue.qsize())

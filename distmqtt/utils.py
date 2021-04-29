@@ -64,7 +64,7 @@ class Future:
     Note that the value can only be read once.
     """
 
-    event = attr.ib(factory=anyio.create_event, init=False)
+    event = attr.ib(factory=anyio.Event, init=False)
     value = attr.ib(default=None, init=False)
 
     async def set(self, value):
@@ -72,14 +72,14 @@ class Future:
         if self.event.is_set():
             raise InvalidStateError("Value already set")
         self.value = value
-        await self.event.set()
+        self.event.set()
 
     async def set_error(self, exc):
         """Set the result to raise this exceptio, and wake any waiting task."""
         if self.event.is_set():
             raise InvalidStateError("Value already set")
         self.value = exc
-        await self.event.set()
+        self.event.set()
 
     def is_set(self):
         """Check whether the event has occurred."""

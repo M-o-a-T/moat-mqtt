@@ -47,9 +47,9 @@ class BrokerProtocolHandler(ProtocolHandler):
     async def _handle_disconnect(self, disconnect, wait=True):  # pylint: disable=arguments-differ
         self.logger.debug("Client disconnecting")
         self.clean_disconnect = False  # depending on 'disconnect' (if set)
-        async with anyio.fail_after(2, shield=True):
+        with anyio.fail_after(2, shield=True):
             if wait:
-                async with anyio.move_on_after(self.session.keep_alive):
+                with anyio.move_on_after(self.session.keep_alive):
                     await self._reader_stopped.wait()
             await self.stop()
 

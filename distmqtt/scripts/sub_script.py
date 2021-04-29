@@ -79,14 +79,14 @@ async def do_sub(client, arguments):
         )
         async with anyio.create_task_group() as tg:
             for topic in arguments["-t"]:
-                await tg.spawn(run_sub, client, topic, arguments)
+                tg.spawn(run_sub, client, topic, arguments)
 
     except KeyboardInterrupt:
         pass
     except ConnectException as ce:
         logger.fatal("connection to '%s' failed: %r", arguments["--url"], ce)
     finally:
-        async with anyio.fail_after(2, shield=True):
+        with anyio.fail_after(2, shield=True):
             await client.disconnect()
 
 
