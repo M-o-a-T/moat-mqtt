@@ -26,9 +26,9 @@ async def test_coro():
     async with open_mqttclient(config=config) as C:
         await C.connect("mqtts://test.mosquitto.org/", cafile="mosquitto.org.crt")
         async with anyio.create_task_group() as tg:
-            tg.spawn(C.publish("a/b", b"TEST MESSAGE WITH QOS_0"))
-            tg.spawn(C.publish("a/b", b"TEST MESSAGE WITH QOS_1", qos=QOS_1))
-            tg.spawn(C.publish("a/b", b"TEST MESSAGE WITH QOS_2", qos=QOS_2))
+            tg.start_soon(C.publish("a/b", b"TEST MESSAGE WITH QOS_0"))
+            tg.start_soon(C.publish("a/b", b"TEST MESSAGE WITH QOS_1", qos=QOS_1))
+            tg.start_soon(C.publish("a/b", b"TEST MESSAGE WITH QOS_2", qos=QOS_2))
         logger.info("messages published")
 
 

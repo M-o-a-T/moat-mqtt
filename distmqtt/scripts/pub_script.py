@@ -121,7 +121,7 @@ async def do_pub(client, arguments):
         async with anyio.create_task_group() as tg:
             for message in _get_message(arguments):
                 logger.info("%s Publishing to '%s'", client.client_id, topic)
-                tg.spawn(client.publish, topic, message, qos, retain)
+                tg.start_soon(client.publish, topic, message, qos, retain)
         logger.info("%s Disconnected from broker", client.client_id)
     except KeyboardInterrupt:
         logger.info("%s Disconnected from broker", client.client_id)

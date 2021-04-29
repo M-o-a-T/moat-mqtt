@@ -24,7 +24,7 @@ setup(
         "passlib",
         "docopt",
         "pyyaml",
-        "anyio >= 2.0",
+        "anyio >= 3",
         "attrs >= 19",
         "simplejson",
         "msgpack",

@@ -61,7 +61,7 @@ async def test_server(mqtt_port: int = None, distkv_port: int = None):
     server = Server(name="gpio_test", cfg=server_cfg, init="GPIO")
     async with create_broker(config=broker_cfg) as broker:
         evt = anyio.Event()
-        broker._tg.spawn(partial(server.serve, ready_evt=evt))
+        broker._tg.start_soon(partial(server.serve, ready_evt=evt))
         await evt.wait()
 
         server.distkv_port = distkv_port  # pylint: disable=attribute-defined-outside-init

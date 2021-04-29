@@ -79,7 +79,7 @@ async def do_sub(client, arguments):
         )
         async with anyio.create_task_group() as tg:
             for topic in arguments["-t"]:
-                tg.spawn(run_sub, client, topic, arguments)
+                tg.start_soon(run_sub, client, topic, arguments)
 
     except KeyboardInterrupt:
         pass

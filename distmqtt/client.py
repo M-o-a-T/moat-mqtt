@@ -118,7 +118,7 @@ def mqtt_connected(func):
                     await self._no_more_connections.wait()
                     raise ClientException("Will not reconnect")
 
-                tg.spawn(wait_no_more)
+                tg.start_soon(wait_no_more)
 
                 await self._connected_state.wait()
                 tg.cancel_scope.cancel()
@@ -333,7 +333,7 @@ class MQTTClient:
     async def _do_connect(self):
         return_code = await self._connect_coro()
         evt = anyio.Event()
-        self._tg.spawn(self.handle_connection_close, evt)
+        self._tg.start_soon(self.handle_connection_close, evt)
         await evt.wait()
         return return_code
 
@@ -521,7 +521,7 @@ class MQTTClient:
         topic = handler.topic
         if self._subscriptions is None:
             self._subscriptions = dict()
-            self._tg.spawn(self._deliver_loop)
+            self._tg.start_soon(self._deliver_loop)
         clients = self._subscriptions.get(topic, None)
         if clients is None:
             self._subscriptions[topic] = clients = _set()

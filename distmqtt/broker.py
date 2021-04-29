@@ -383,7 +383,7 @@ class Broker:
                         )
                         continue
                     fut = Future()
-                    self._tg.spawn(
+                    self._tg.start_soon(
                         server_task,
                         fut,
                         cb_partial,
@@ -408,7 +408,7 @@ class Broker:
             await self.plugins_manager.fire_event(EVENT_BROKER_POST_START)
 
             # Start broadcast loop
-            self._tg.spawn(self._broadcast_loop)
+            self._tg.start_soon(self._broadcast_loop)
 
             self.logger.debug("Broker started")
         except Exception as e:
@@ -622,8 +622,8 @@ class Broker:
                                 )
                     self.logger.debug(repr(self._subscriptions))
 
-            tg.spawn(handle_unsubscribe)
-            tg.spawn(handle_subscribe)
+            tg.start_soon(handle_unsubscribe)
+            tg.start_soon(handle_subscribe)
 
             try:
                 await handler.wait_disconnect()
@@ -869,7 +869,7 @@ class Broker:
                                 format_client_message(session=target_session),
                             )
                         handler = self._get_handler(target_session)
-                        tg.spawn(
+                        tg.start_soon(
                             partial(
                                 handler.mqtt_publish,
                                 broadcast["topic"],
@@ -920,7 +920,7 @@ class Broker:
         async with anyio.create_task_group() as tg:
             while not session.retained_messages.empty():
                 retained = await session.retained_messages.get()
-                tg.spawn(
+                tg.start_soon(
                     handler.mqtt_publish,
                     retained.topic,
                     retained.data,
@@ -941,7 +941,7 @@ class Broker:
                 if match_topic(topic, sub):
                     self.logger.debug("%s and %s match", d_topic, subscription[0])
                     retained = self._retained_messages[d_topic]
-                    tg.spawn(
+                    tg.start_soon(
                         handler.mqtt_publish,
                         retained.topic,
                         retained.data,

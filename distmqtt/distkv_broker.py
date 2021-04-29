@@ -89,7 +89,7 @@ class DistKVbroker(Broker):
 
                 async def start(p, *a):
                     evt = anyio.Event()
-                    tg.spawn(p, *a, client, cfg, evt)
+                    tg.start_soon(p, *a, client, cfg, evt)
                     await evt.wait()
 
                 if self.__topic:
@@ -142,11 +142,11 @@ class DistKVbroker(Broker):
         await super().start()
 
         evt = anyio.Event()
-        self._tg.spawn(self.__session, cfg, evt)
+        self._tg.start_soon(self.__session, cfg, evt)
         await evt.wait()
 
         evt = anyio.Event()
-        self._tg.spawn(self.__retain_reader, cfg, evt)
+        self._tg.start_soon(self.__retain_reader, cfg, evt)
         await evt.wait()
 
     async def broadcast_message(

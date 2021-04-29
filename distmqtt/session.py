@@ -196,7 +196,7 @@ class Session:
             self._broker = broker
             if self._delivery_task is not None:
                 raise RuntimeError("Already running")
-            broker._tg.spawn(self._delivery_loop)
+            broker._tg.start_soon(self._delivery_loop)
 
     async def stop(self):
         if self._delivery_task is not None:

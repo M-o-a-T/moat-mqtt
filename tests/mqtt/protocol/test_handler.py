@@ -64,7 +64,7 @@ class ProtocolHandlerTest(unittest.TestCase):
                 async def _serve():
                     async with server:
                         await server.serve(partial(self.listener_, server_mock), task_group=tg)
-                tg.spawn(_serve)
+                tg.start_soon(_serve)
 
                 async with await anyio.connect_tcp("127.0.0.1", PORT) as conn:
                     sr = adapt(conn)

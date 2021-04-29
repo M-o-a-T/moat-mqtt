@@ -82,7 +82,7 @@ async def distkv_server(n):
         async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins"):
             s = Server("test", cfg=broker_config["distkv"], init="test")
             evt = anyio.Event()
-            tg.spawn(partial(s.serve, ready_evt=evt))
+            tg.start_soon(partial(s.serve, ready_evt=evt))
             await evt.wait()
 
             async with open_client(**broker_config["distkv"]) as cl:

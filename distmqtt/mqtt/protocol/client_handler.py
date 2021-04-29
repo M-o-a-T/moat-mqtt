@@ -82,7 +82,7 @@ class ClientProtocolHandler(ProtocolHandler):
             if self.session is not None and not self._ping_task:
                 self.logger.debug("Scheduling Ping")
                 evt = anyio.Event()
-                self._tg.spawn(self.mqtt_ping, evt)
+                self._tg.start_soon(self.mqtt_ping, evt)
                 await evt.wait()
         except BaseException as be:
             self.logger.debug("Exception in ping task: %r", be)

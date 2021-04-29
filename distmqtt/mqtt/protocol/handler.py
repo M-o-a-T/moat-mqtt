@@ -132,7 +132,7 @@ class ProtocolHandler:
         self._init_session(session)
         self.stream = stream
         evt = anyio.Event()
-        self._tg.spawn(self._sender_loop, evt)
+        self._tg.start_soon(self._sender_loop, evt)
         await evt.wait()
 
     async def detach(self):
@@ -147,7 +147,7 @@ class ProtocolHandler:
         if not self._is_attached():
             raise ProtocolHandlerException("Handler is not attached to a stream")
         evt = anyio.Event()
-        self._tg.spawn(self._reader_loop, evt)
+        self._tg.start_soon(self._reader_loop, evt)
         await evt.wait()
 
         self.logger.debug("Handler tasks started")
@@ -160,7 +160,7 @@ class ProtocolHandler:
         await anyio.sleep(0.01)
         if self._reader_task is None:
             return
-        self._reader_task.spawn(self._timeout_loop)
+        self._reader_task.start_soon(self._timeout_loop)
 
     async def stop(self):
         # Stop messages flow waiter
@@ -230,7 +230,7 @@ class ProtocolHandler:
                 self.session.inflight_in.values(), self.session.inflight_out.values()
             ):
                 pending += 1
-                tg.spawn(process_one, message)
+                tg.start_soon(process_one, message)
         pending -= done
 
         self.logger.debug("%d messages redelivered", done)
@@ -511,7 +511,7 @@ class ProtocolHandler:
                                 if direct:
                                     await fn(packet)
                                 else:
-                                    tg.spawn(fn, packet)
+                                    tg.start_soon(fn, packet)
                             except StopAsyncIteration:
                                 break
 
@@ -626,7 +626,7 @@ class ProtocolHandler:
     async def handle_disconnect(self, disconnect: DisconnectPacket):
         if not self._disconnecting:
             self._disconnecting = True
-            self._tg.spawn(self._handle_disconnect, disconnect)
+            self._tg.start_soon(self._handle_disconnect, disconnect)
         else:
             self.logger.debug("%s DISCONNECT ignored", self.session.client_id)
         raise StopAsyncIteration  # end of the line
@@ -696,7 +696,7 @@ class ProtocolHandler:
             if incoming_message.qos == QOS_0:
                 await self._handle_message_flow(incoming_message)
             else:
-                self._reader_task.spawn(self._handle_message_flow, incoming_message)
+                self._reader_task.start_soon(self._handle_message_flow, incoming_message)
 
         #           if self.session is not None:
         #               self.logger.debug("Message queue size: %d", self.session._delivered_message_queue.qsize())
