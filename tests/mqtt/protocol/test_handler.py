@@ -49,21 +49,28 @@ class ProtocolHandlerTest(unittest.TestCase):
             setattr(sock, "read", sock.receive)
         if not hasattr(sock, "write"):
             setattr(sock, "write", sock.send)
-        await server_mock(sock)
+        try:
+            await server_mock(sock)
+        finally:
+            with anyio.fail_after(1, shield=True):
+                await sock.aclose()
 
     def run_(self, server_mock, test_coro):
         async def runner():
             async with anyio.create_task_group() as tg:
                 self.plugin_manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
                 server = await anyio.create_tcp_listener(local_port=PORT, local_host="127.0.0.1")
-                try:
-                    await tg.spawn(server.serve, partial(self.listener_, server_mock))
-                    async with await anyio.connect_tcp("127.0.0.1", PORT) as conn:
-                        sr = adapt(conn)
-                        await test_coro(sr)
-                        await tg.cancel_scope.cancel()
-                finally:
-                    await server.aclose()
+
+                async def _serve():
+                    async with server:
+                        await server.serve(partial(self.listener_, server_mock), task_group=tg)
+                tg.start_soon(_serve)
+
+                async with await anyio.connect_tcp("127.0.0.1", PORT) as conn:
+                    sr = adapt(conn)
+                    await test_coro(sr)
+                    tg.cancel_scope.cancel()
+                pass # waiting for taskgroup
 
         anyio_run(runner)
 

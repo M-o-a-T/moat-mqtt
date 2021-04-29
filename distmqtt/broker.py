@@ -4,6 +4,7 @@
 import logging
 import ssl
 import anyio
+import socket
 from copy import deepcopy
 from collections import deque
 
@@ -29,6 +30,8 @@ from asyncwebsockets import create_websocket_server
 _defaults = {
     "listeners": {"default": {"type": "tcp", "bind": "0.0.0.0:1883"}},
     "timeout-disconnect-delay": 2,
+    "tcp-keepalive": 600,
+    "tcp-keepalive-count": 3,
     "auth": {"allow-anonymous": True, "password-file": None},
 }
 
@@ -66,7 +69,7 @@ class Server:
 
         self.max_connections = max_connections
         if self.max_connections > 0:
-            self.semaphore = anyio.create_semaphore(self.max_connections)
+            self.semaphore = anyio.Semaphore(self.max_connections)
         else:
             self.semaphore = None
 
@@ -114,7 +117,7 @@ class Server:
                 )
 
     async def close_instance(self):
-        await self.instance.cancel()
+        self.instance.cancel()
 
 
 class BrokerContext(BaseContext):
@@ -170,9 +173,9 @@ async def create_broker(config=None, plugin_namespace=None):
             await b.start()
             yield b
         finally:
-            async with anyio.fail_after(2, shield=True):
+            with anyio.fail_after(2, shield=True):
                 await b.shutdown()
-                await tg.cancel_scope.cancel()
+                tg.cancel_scope.cancel()
 
 
 class Broker:
@@ -191,7 +194,7 @@ class Broker:
                 await b.start()
                 pass ## do something with the broker
             finally:
-                async with anyio.fail_after(2, shield=True):
+                with anyio.fail_after(2, shield=True):
                     await b.shutdown()
                     await tg.cancel_scope.cancel()
 
@@ -352,33 +355,21 @@ class Broker:
                     async def server_task(
                         evt, cb, address, port, ssl_context, listener, listener_name
                     ):
-                        async with anyio.open_cancel_scope() as scope:
-                            try:
-                                sock = await anyio.create_tcp_listener(
-                                    local_port=port, local_host=address
-                                )
-                                await evt.set(scope)
+                        with anyio.CancelScope() as scope:
+                            sock = await anyio.create_tcp_listener(
+                                local_port=port, local_host=address
+                            )
+                            await evt.set(scope)
 
-                                async def _maybe_wrap(listener, listener_name, conn):
-                                    if ssl_context:
-                                        try:
-                                            conn = await anyio.streams.tls.TLSStream.wrap(
-                                                conn, ssl_context=ssl_context, server_side=True
-                                            )
-                                        except Exception:
-                                            self.logger.error(
-                                                "Listener '%s': unknown type '%s'",
-                                                listener_name,
-                                                listener["type"],
-                                            )
+                            async def _maybe_wrap(listener, listener_name, conn):
+                                if ssl_context:
+                                    conn = await anyio.streams.tls.TLSStream.wrap(
+                                        conn, ssl_context=ssl_context, server_side=True
+                                    )
+                                await cb(conn)
 
-                                            return
-                                    await cb(conn)
-
+                            async with sock:
                                 await sock.serve(partial(_maybe_wrap, listener, listener_name))
-                            finally:
-                                async with anyio.fail_after(2, shield=True):
-                                    await sock.aclose()
 
                     if listener["type"] == "tcp":
                         cb_partial = partial(self.stream_connected, listener_name=listener_name)
@@ -392,7 +383,7 @@ class Broker:
                         )
                         continue
                     fut = Future()
-                    await self._tg.spawn(
+                    self._tg.start_soon(
                         server_task,
                         fut,
                         cb_partial,
@@ -417,7 +408,7 @@ class Broker:
             await self.plugins_manager.fire_event(EVENT_BROKER_POST_START)
 
             # Start broadcast loop
-            await self._tg.spawn(self._broadcast_loop)
+            self._tg.start_soon(self._broadcast_loop)
 
             self.logger.debug("Broker started")
         except Exception as e:
@@ -547,6 +538,12 @@ class Broker:
                 client_session.keep_alive / 2 + self.config["timeout-disconnect-delay"]
             )
         self.logger.debug("Keep-alive timeout=%d", client_session.keep_alive)
+        if self.config["tcp-keepalive"]:
+            sock = adapter.raw_socket
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, self.config["tcp-keepalive"])
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL,self.config["tcp-keepalive"])
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, self.config["tcp-keepalive-count"])
 
         await handler.attach(client_session, adapter)
         self._sessions[client_session.client_id] = (client_session, handler)
@@ -625,8 +622,8 @@ class Broker:
                                 )
                     self.logger.debug(repr(self._subscriptions))
 
-            await tg.spawn(handle_unsubscribe)
-            await tg.spawn(handle_subscribe)
+            tg.start_soon(handle_unsubscribe)
+            tg.start_soon(handle_subscribe)
 
             try:
                 await handler.wait_disconnect()
@@ -659,8 +656,8 @@ class Broker:
                     EVENT_BROKER_CLIENT_DISCONNECTED, client_id=client_session.client_id
                 )
             finally:
-                async with anyio.fail_after(2, shield=True):
-                    await tg.cancel_scope.cancel()
+                with anyio.fail_after(2, shield=True):
+                    tg.cancel_scope.cancel()
             pass  # end taskgroup
 
         self.logger.debug("%s Client disconnected", client_session.client_id)
@@ -872,7 +869,7 @@ class Broker:
                                 format_client_message(session=target_session),
                             )
                         handler = self._get_handler(target_session)
-                        await tg.spawn(
+                        tg.start_soon(
                             partial(
                                 handler.mqtt_publish,
                                 broadcast["topic"],
@@ -923,7 +920,7 @@ class Broker:
         async with anyio.create_task_group() as tg:
             while not session.retained_messages.empty():
                 retained = await session.retained_messages.get()
-                await tg.spawn(
+                tg.start_soon(
                     handler.mqtt_publish,
                     retained.topic,
                     retained.data,
@@ -944,7 +941,7 @@ class Broker:
                 if match_topic(topic, sub):
                     self.logger.debug("%s and %s match", d_topic, subscription[0])
                     retained = self._retained_messages[d_topic]
-                    await tg.spawn(
+                    tg.start_soon(
                         handler.mqtt_publish,
                         retained.topic,
                         retained.data,

@@ -81,8 +81,8 @@ async def distkv_server(n):
     async with anyio.create_task_group() as tg:
         async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins"):
             s = Server("test", cfg=broker_config["distkv"], init="test")
-            evt = anyio.create_event()
-            await tg.spawn(partial(s.serve, ready_evt=evt))
+            evt = anyio.Event()
+            tg.start_soon(partial(s.serve, ready_evt=evt))
             await evt.wait()
 
             async with open_client(**broker_config["distkv"]) as cl:
@@ -99,8 +99,8 @@ async def distkv_server(n):
 
                 await cl.scope.spawn(msglog)
                 yield s
-                await cl.scope.cancel()
-            await tg.cancel_scope.cancel()
+                cl.scope.cancel()
+            tg.cancel_scope.cancel()
     if len(msgs) != n:
         log.error("MsgCount %d %d", len(msgs), n)
     # assert len(msgs) == n, msgs
@@ -119,7 +119,7 @@ class MQTTClientTest(unittest.TestCase):
                         self.assertEqual(ret[0], QOS_0)
                         async with open_mqttclient(config=broker_config["broker"]) as client_pub:
                             await client_pub.publish("test_topic", data, QOS_0, retain=False)
-                        async with anyio.fail_after(0.5):
+                        with anyio.fail_after(0.5):
                             message = await client.deliver_message()
                         self.assertIsNotNone(message)
                         self.assertIsNotNone(message.publish_packet)
@@ -143,7 +143,7 @@ class MQTTClientTest(unittest.TestCase):
                         self.assertEqual(ret[0], QOS_0)
                         async with open_mqttclient(config=broker_config["broker"]) as client_pub:
                             await client_pub.publish("test/vis/foo", data, QOS_0, retain=False)
-                        async with anyio.fail_after(0.5):
+                        with anyio.fail_after(0.5):
                             message = await client.deliver_message()
                         self.assertIsNotNone(message)
                         self.assertIsNotNone(message.publish_packet)
@@ -167,7 +167,7 @@ class MQTTClientTest(unittest.TestCase):
                         self.assertEqual(ret[0], QOS_0)
                         async with open_mqttclient(config=broker_config["broker"]) as client_pub:
                             await client_pub.publish("test_topic", data, QOS_0, retain=False)
-                        async with anyio.fail_after(0.5):
+                        with anyio.fail_after(0.5):
                             message = await client.deliver_message()
                         self.assertIsNotNone(message)
                         self.assertIsNotNone(message.publish_packet)
@@ -184,7 +184,7 @@ class MQTTClientTest(unittest.TestCase):
                         ret = await client.subscribe([("test_topic", QOS_0)])
                         self.assertEqual(ret[0], QOS_0)
                         with self.assertRaises(TimeoutError):
-                            async with anyio.fail_after(2):
+                            with anyio.fail_after(2):
                                 await client.deliver_message()
 
         anyio_run(test_coro, backend="trio")

@@ -30,7 +30,7 @@ class ClientProtocolHandler(ProtocolHandler):
         try:
             await super().stop()
         finally:
-            async with anyio.fail_after(2, shield=True):
+            with anyio.fail_after(2, shield=True):
                 t, self._ping_task = self._ping_task, None
                 if t:
                     self.logger.debug("Cancel ping task")
@@ -81,8 +81,8 @@ class ClientProtocolHandler(ProtocolHandler):
         try:
             if self.session is not None and not self._ping_task:
                 self.logger.debug("Scheduling Ping")
-                evt = anyio.create_event()
-                await self._tg.spawn(self.mqtt_ping, evt)
+                evt = anyio.Event()
+                self._tg.start_soon(self.mqtt_ping, evt)
                 await evt.wait()
         except BaseException as be:
             self.logger.debug("Exception in ping task: %r", be)
@@ -156,10 +156,10 @@ class ClientProtocolHandler(ProtocolHandler):
         await self._send_packet(disconnect_packet)
 
     async def mqtt_ping(self, evt=None):
-        async with anyio.open_cancel_scope() as scope:
+        with anyio.CancelScope() as scope:
             self._ping_task = scope
             if evt is not None:
-                await evt.set()
+                evt.set()
 
             try:
                 ping_packet = PingReqPacket()
@@ -175,4 +175,4 @@ class ClientProtocolHandler(ProtocolHandler):
     async def handle_connection_closed(self):
         self.logger.debug("Broker closed connection")
         if self._disconnect_waiter:
-            await self._disconnect_waiter.set()
+            self._disconnect_waiter.set()

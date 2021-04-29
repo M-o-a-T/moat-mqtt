@@ -127,7 +127,7 @@ class PluginManager:
         async def _schedule_coro(tg, coro):
             if kwargs:
                 coro = partial(coro, **kwargs)
-            await tg.spawn(coro, *args)
+            tg.start_soon(coro, *args)
 
         async with _event_tg(wait) as tg:
             event_method_name = "on_" + event_name
@@ -168,7 +168,7 @@ class PluginManager:
             for plugin in self._plugins:
                 if plugin.name in p_list:
                     try:
-                        await tg.spawn(worker, plugin)
+                        tg.start_soon(worker, plugin)
                     except TypeError:
                         self.logger.error(
                             "Method '%r' on plugin '%s' is not a coroutine",

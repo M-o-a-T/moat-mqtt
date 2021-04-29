@@ -118,10 +118,10 @@ def mqtt_connected(func):
                     await self._no_more_connections.wait()
                     raise ClientException("Will not reconnect")
 
-                await tg.spawn(wait_no_more)
+                tg.start_soon(wait_no_more)
 
                 await self._connected_state.wait()
-                await tg.cancel_scope.cancel()
+                tg.cancel_scope.cancel()
         return await func(self, *args, **kwargs)
 
     return wrapper
@@ -164,9 +164,9 @@ async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
                 await C.connect(**kwargs)
             yield C
         finally:
-            async with anyio.fail_after(2, shield=True):
+            with anyio.move_on_after(2, shield=True):
                 await C.disconnect()
-                await tg.cancel_scope.cancel()
+                tg.cancel_scope.cancel()
 
 
 class MQTTClient:
@@ -202,8 +202,8 @@ class MQTTClient:
         self._tg = tg
         self._handler = None
         self._disconnect_task = None
-        self._connected_state = anyio.create_event()
-        self._no_more_connections = anyio.create_event()
+        self._connected_state = anyio.Event()
+        self._no_more_connections = anyio.Event()
         self.extra_headers = {}
         self.codec = get_codec(codec, config=self.config)
 
@@ -265,26 +265,26 @@ class MQTTClient:
 
         # do not reconnect any more
         self.config["auto_reconnect"] = False
-        await self.cancel_tasks()
+        self.cancel_tasks()
 
         if self.session is not None and self.session.transitions.is_connected():
             if self._disconnect_task is not None:
-                await self._disconnect_task.cancel()
+                self._disconnect_task.cancel()
             await self._handler.mqtt_disconnect()
-            self._connected_state = anyio.create_event()  # clear
+            self._connected_state = anyio.Event()  # clear
             await self._handler.stop()
             self.session.transitions.disconnect()
         else:
             self.logger.warning("Client session is not currently connected, ignoring call")
 
-    async def cancel_tasks(self):
+    def cancel_tasks(self):
         """
         Before disconnection need to cancel all pending tasks
         :return:
         """
         if self.client_task is not None:
             task, self.client_task = self.client_task, None
-            await task.cancel()
+            task.cancel()
 
     async def reconnect(self, cleansession=None):
         """
@@ -332,8 +332,8 @@ class MQTTClient:
 
     async def _do_connect(self):
         return_code = await self._connect_coro()
-        evt = anyio.create_event()
-        await self._tg.spawn(self.handle_connection_close, evt)
+        evt = anyio.Event()
+        self._tg.start_soon(self.handle_connection_close, evt)
         await evt.wait()
         return return_code
 
@@ -480,7 +480,7 @@ class MQTTClient:
             async def __aexit__(self, *tb):
                 self._q = None
                 try:
-                    async with anyio.move_on_after(2, shield=True):
+                    with anyio.move_on_after(2, shield=True):
                         await self.client._unsubscribe(self)
                 except ClientException:
                     pass
@@ -521,7 +521,7 @@ class MQTTClient:
         topic = handler.topic
         if self._subscriptions is None:
             self._subscriptions = dict()
-            await self._tg.spawn(self._deliver_loop)
+            self._tg.start_soon(self._deliver_loop)
         clients = self._subscriptions.get(topic, None)
         if clients is None:
             self._subscriptions[topic] = clients = _set()
@@ -560,7 +560,7 @@ class MQTTClient:
         """
         Dispatch incoming messages to subscriptions.
         """
-        async with anyio.open_cancel_scope() as scope:
+        with anyio.CancelScope() as scope:
             if self.client_task is not None:
                 raise RuntimeError("You can't listen in more than one task")
             self.client_task = scope
@@ -598,7 +598,7 @@ class MQTTClient:
         elif isinstance(codec, str):
             codec = _codecs[codec]()
 
-        async with anyio.open_cancel_scope() as scope:
+        with anyio.CancelScope() as scope:
             if self.session is None:
                 return None
             if self.client_task is not None:
@@ -662,16 +662,21 @@ class MQTTClient:
 
         try:
             adapter = None
-            self._connected_state = anyio.create_event()  # clear
+            self._connected_state = anyio.Event()  # clear
             # Open connection
             if scheme in ("mqtt", "mqtts"):
                 conn = await anyio.connect_tcp(
                     self.session.remote_address, self.session.remote_port
                 )
                 if kwargs.pop("autostart_tls", False):
-                    conn = await anyio.streams.tls.TLSStream.wrap(
-                        conn, ssl_context=kwargs.pop("ssl_context"), server_side=False
-                    )
+                    try:
+                        conn = await anyio.streams.tls.TLSStream.wrap(
+                            conn, ssl_context=kwargs.pop("ssl_context"), server_side=False
+                        )
+                    except BaseException:
+                        with anyio.move_on_after(1, shield=True):
+                            await conn.aclose()
+                        raise
                 adapter = StreamAdapter(conn)
             elif scheme in ("ws", "wss"):
                 if kwargs.pop("autostart_tls", False):
@@ -683,6 +688,8 @@ class MQTTClient:
                     **kwargs
                 )
                 adapter = WebSocketsAdapter(websocket)
+            else:
+                raise ConnectException("Unknown URL scheme")
             # Start MQTT protocol
             await self._handler.attach(self.session, adapter)
             try:
@@ -697,7 +704,7 @@ class MQTTClient:
             # Handle MQTT protocol
             await self._handler.start()
             self.session.transitions.connect()
-            await self._connected_state.set()
+            self._connected_state.set()
             topics = []
             if self._subscriptions is not None:
                 for s in self._subscriptions.values():
@@ -713,28 +720,36 @@ class MQTTClient:
         except ProtocolError as exc:
             self.logger.warning("connection failed: invalid websocket handshake")
             self.session.transitions.disconnect()
+            await adapter.close()
             raise ConnectException("connection failed: invalid websocket handshake") from exc
         except (ProtocolHandlerException, ConnectionError, OSError) as exc:
             self.logger.warning("MQTT connection failed")
             self.session.transitions.disconnect()
+            if adapter is not None:
+                await adapter.close()
             raise ConnectException from exc
+        except BaseException:
+            with anyio.move_on_after(1, shield=True):
+                if adapter is not None:
+                    await adapter.close()
+            raise
 
     async def handle_connection_close(self, evt):
-        async def cancel_tasks():
-            await self._no_more_connections.set()
+        def cancel_tasks():
+            self._no_more_connections.set()
             if self.client_task:
                 task, self.client_task = self.client_task, None
-                await task.cancel()
+                task.cancel()
 
-        async with anyio.open_cancel_scope() as scope:
+        with anyio.CancelScope() as scope:
             self._disconnect_task = scope
-            await evt.set()
+            evt.set()
             # Wait for disconnection from broker (like connection lost)
             await self._handler.wait_disconnect()
         self.logger.warning("Disconnected from broker")
 
         # Block client API
-        self._connected_state = anyio.create_event()  # .clear()
+        self._connected_state = anyio.Event()  # .clear()
 
         # stop and clean handler
         await self._handler.stop()
@@ -748,10 +763,10 @@ class MQTTClient:
                 await self.reconnect()
             except ConnectException:
                 # Cancel client pending tasks
-                await cancel_tasks()
+                cancel_tasks()
         else:
             # Cancel client pending tasks
-            await cancel_tasks()
+            cancel_tasks()
 
     def _initsession(
         self, uri=None, cleansession=None, cafile=None, capath=None, cadata=None

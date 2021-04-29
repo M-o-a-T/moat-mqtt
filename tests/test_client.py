@@ -5,6 +5,7 @@ import unittest
 import anyio
 import os
 import logging
+import pytest
 from distmqtt.client import open_mqttclient, ConnectException
 from distmqtt.broker import create_broker
 from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
@@ -55,14 +56,10 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_connect_tcp_failure(self):
         async def test_coro():
-            try:
+            with pytest.raises(ConnectException):
                 config = {"auto_reconnect": False}
                 async with open_mqttclient(config=config) as client:
                     await client.connect(URI)
-            except ConnectException:
-                pass
-            else:
-                raise RuntimeError("should not be able to connect")
 
         anyio_run(test_coro)
 
@@ -183,7 +180,7 @@ class MQTTClientTest(unittest.TestCase):
                     ret = await client.subscribe([("test_topic", QOS_0)])
                     self.assertEqual(ret[0], QOS_0)
                     with self.assertRaises(TimeoutError):
-                        async with anyio.fail_after(2):
+                        with anyio.fail_after(2):
                             await client.deliver_message()
                     await client.unsubscribe(["$SYS/broker/uptime"])
 

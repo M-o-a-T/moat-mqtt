@@ -108,8 +108,8 @@ class IncomingApplicationMessage(ApplicationMessage):
     __slots__ = ("direction",)
 
     def __init__(self, packet_id, topic, qos, data, retain):
-        super().__init__(packet_id, topic, qos, data, retain)
         self.direction = INCOMING
+        super().__init__(packet_id, topic, qos, data, retain)
 
 
 class OutgoingApplicationMessage(ApplicationMessage):
@@ -121,8 +121,8 @@ class OutgoingApplicationMessage(ApplicationMessage):
     __slots__ = ("direction",)
 
     def __init__(self, packet_id, topic, qos, data, retain):
-        super().__init__(packet_id, topic, qos, data, retain)
         self.direction = OUTGOING
+        super().__init__(packet_id, topic, qos, data, retain)
 
 
 class Session:
@@ -167,7 +167,7 @@ class Session:
 
         # The actual delivery process
         self._delivery_task = None
-        self._delivery_stopped = anyio.create_event()
+        self._delivery_stopped = anyio.Event()
 
         # The broker we're attached to
         self._broker = None
@@ -196,11 +196,11 @@ class Session:
             self._broker = broker
             if self._delivery_task is not None:
                 raise RuntimeError("Already running")
-            await broker._tg.spawn(self._delivery_loop)
+            broker._tg.start_soon(self._delivery_loop)
 
     async def stop(self):
         if self._delivery_task is not None:
-            await self._delivery_task.cancel()
+            self._delivery_task.cancel()
             await self._delivery_stopped.wait()
         self._broker = None  # break ref loop
 
@@ -239,7 +239,7 @@ class Session:
     async def _delivery_loop(self):
         """Server: process incoming messages"""
         try:
-            async with anyio.open_cancel_scope() as scope:
+            with anyio.CancelScope() as scope:
                 self._delivery_task = scope
                 broker = self._broker
                 broker.logger.debug("%s handling message delivery", self.client_id)
@@ -259,10 +259,10 @@ class Session:
                         retain=app_message.publish_packet.retain_flag,
                     )
         finally:
-            async with anyio.fail_after(2, shield=True):
+            with anyio.fail_after(2, shield=True):
                 broker.logger.debug("%s finished message delivery", self.client_id)
                 self._delivery_task = None
-                await self._delivery_stopped.set()
+                self._delivery_stopped.set()
 
     @property
     def next_packet_id(self):

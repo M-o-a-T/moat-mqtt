@@ -6,6 +6,7 @@ from asyncwebsockets import Websocket
 from wsproto.events import CloseConnection, BytesMessage
 import anyio
 import anyio.streams.buffered
+from anyio.abc import SocketAttribute
 import logging
 
 try:
@@ -20,6 +21,8 @@ class BaseAdapter:
 
     Reader adapters are used to adapt read operations on the network depending on the protocol used
     """
+
+    raw_socket = None
 
     async def read(self, n=-1) -> bytes:
         """
@@ -57,6 +60,10 @@ class WebSocketsAdapter(BaseAdapter):
     def __init__(self, websocket: Websocket):
         self._websocket = websocket
         self._buffer = io.BytesIO(b"")
+
+    @property
+    def raw_socket(self):
+        return self._websocket.raw_socket
 
     async def read(self, n=-1) -> bytes:
         await self._feed_buffer(n)
@@ -109,6 +116,10 @@ class StreamAdapter(BaseAdapter):
         self.logger = logging.getLogger(__name__)
         self._stream = stream
         self._rstream = anyio.streams.buffered.BufferedByteReceiveStream(stream)
+
+    @property
+    def raw_socket(self):
+        return self._stream.extra(SocketAttribute.raw_socket)
 
     async def read(self, n=-1) -> bytes:
         if n == -1:

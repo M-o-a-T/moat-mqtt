@@ -55,7 +55,7 @@ class DistKVbroker(Broker):
 
         async with self.__client.msg_monitor(self.__topic) as q:
             if evt is not None:
-                await evt.set()
+                evt.set()
             async for m in q:
                 d = m.data
                 sess = d.pop("session", None)
@@ -73,7 +73,7 @@ class DistKVbroker(Broker):
         """
         async with self.__client.msg_monitor(topic, raw=True) as q:
             if evt is not None:
-                await evt.set()
+                evt.set()
             async for m in q:
                 d = m.raw
                 t = m.topic
@@ -88,8 +88,8 @@ class DistKVbroker(Broker):
             async with anyio.create_task_group() as tg:
 
                 async def start(p, *a):
-                    evt = anyio.create_event()
-                    await tg.spawn(p, *a, client, cfg, evt)
+                    evt = anyio.Event()
+                    tg.start_soon(p, *a, client, cfg, evt)
                     await evt.wait()
 
                 if self.__topic:
@@ -99,7 +99,7 @@ class DistKVbroker(Broker):
                     await start(self.__read_topic, t + ("#",))
 
                 if evt is not None:
-                    await evt.set()
+                    evt.set()
                 # The taskgroup waits for it all to finish, i.e. indefinitely
         finally:
             self.__client = None
@@ -114,7 +114,7 @@ class DistKVbroker(Broker):
         pl = PathLongener(self.__base)
         err = await ErrorRoot.as_handler(self.__client)
         async with self.__client.watch(self.__base, fetch=True, long_path=False) as w:
-            await evt.set()
+            evt.set()
             async for msg in w:
                 if "path" not in msg:
                     continue
@@ -141,12 +141,12 @@ class DistKVbroker(Broker):
 
         await super().start()
 
-        evt = anyio.create_event()
-        await self._tg.spawn(self.__session, cfg, evt)
+        evt = anyio.Event()
+        self._tg.start_soon(self.__session, cfg, evt)
         await evt.wait()
 
-        evt = anyio.create_event()
-        await self._tg.spawn(self.__retain_reader, cfg, evt)
+        evt = anyio.Event()
+        self._tg.start_soon(self.__retain_reader, cfg, evt)
         await evt.wait()
 
     async def broadcast_message(
