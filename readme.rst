@@ -24,7 +24,6 @@ DistMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and pr
 - SSL support over TCP and websocket
 - Plugin system
 - Optional: Storage of retained messages in DistKV
-- Testing: DistKV test server
 
 Build status
 ------------
@@ -65,3 +64,18 @@ Bug reports, patches and suggestions welcome! Just `open an issue`_.
 .. _MQTT 3.1.1: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
 .. _Read the Docs: http://distmqtt.readthedocs.org/
 .. _open an issue: https://github.com/smurfix/distmqtt/issues/new
+
+DistMQTT? DistKV? DistWhatever?
+-------------------------------
+
+DistMQTT is a stand-alone MQTT client and server.
+
+`DistKV <https://github.com/M-o-a-T/distkv>`_ is a distributed key-value
+storage system. It uses the DistMQTT client library as its connector to
+some MQTT server, preferably Mosquitto or some other low-latency broker.
+
+A DistMQTT server can hook into DistKV so that some messages are persisted,
+translated (store `True` and `False` instead of "on" and "off"), filtered
+(e.g. the client can only modify existing messages but not add any), et
+al..
+
