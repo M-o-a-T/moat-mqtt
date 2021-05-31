@@ -147,7 +147,7 @@ class NoopCodec(BaseCodec):
         return data
 
 
-class UTF8Codec:
+class UTF8Codec(BaseCodec):
     """A codec that translates to UTF-8 strings.
 
     Your payload needs to be a single string.
@@ -166,7 +166,7 @@ class UTF8Codec:
         return data.decode("utf-8")
 
 
-class MsgPackCodec:
+class MsgPackCodec(BaseCodec):
     """A codec that encodes to "msgpack"-encoded bytestring.
 
     Your payload must consist of whatever "msgpack" accepts.
@@ -206,7 +206,7 @@ class MsgPackCodec:
         # bytestring input has been marked as such.
 
 
-class JSONCodec:
+class JSONCodec(BaseCodec):
     """A codec that encodes to JSON+utf8.
 
     Your payload must consist of whatever simplejson accepts.
@@ -223,7 +223,7 @@ class JSONCodec:
         return json.loads(data.decode("utf-8"))
 
 
-class MsgPackJSONCodec:
+class MsgPackJSONCodec(BaseCodec):
     """A codec that encodes JSON strings to MsgPack.
 
     Your payload must consist of a valid JSON string. The wire format will
@@ -254,7 +254,7 @@ class MsgPackJSONCodec:
         return json.dumps(msgpack.unpackb(data, raw=not self.use_bin_type, use_list=self.use_list))
 
 
-class BoolCodec:
+class BoolCodec(BaseCodec):
     """A codec that recognizes two strings ("on" and "off") and bool-ifies them.
 
     Or maybe three ("null") but you need to tell it to do that.
