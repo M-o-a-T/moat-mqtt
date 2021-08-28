@@ -30,7 +30,7 @@ setup(
         "msgpack",
     ],
     extras_require={
-        "distkv": ["distkv >= 0.32"],
+        "distkv": ["distkv >= 0.58.8"],
     },
     classifiers=[
         "Development Status :: 4 - Beta",

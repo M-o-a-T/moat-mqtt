@@ -61,7 +61,7 @@ async def main(config, debug):
             pass
         else:
             evt = await stack.enter_async_context(as_service())
-            await evt.set()
+            evt.set()
         while True:
             await anyio.sleep(99999)
 
