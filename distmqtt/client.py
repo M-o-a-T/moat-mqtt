@@ -246,7 +246,7 @@ class MQTTClient:
 
         try:
             return await self._do_connect()
-        except ConnectionError as e:
+        except ConnectException as e:
             self.logger.warning("Connection failed: %r", e)
             auto_reconnect = self.config.get("auto_reconnect", False)
             if not auto_reconnect:
@@ -315,7 +315,7 @@ class MQTTClient:
             try:
                 self.logger.debug("Reconnect attempt %d ...", nb_attempt)
                 return await self._do_connect()
-            except ConnectionError as e:
+            except ConnectException as e:
                 self.logger.warning("Reconnection attempt failed: %r", e)
                 if reconnect_retries >= 0 and nb_attempt > reconnect_retries:
                     self.logger.error(
@@ -329,6 +329,9 @@ class MQTTClient:
                 self.logger.debug("Waiting %d second before next attempt", delay)
                 await anyio.sleep(delay)
                 nb_attempt += 1
+            except Exception as e:
+                self.logger.error("Unknown error while reconnecting: %r", e)
+                raise
 
     async def _do_connect(self):
         return_code = await self._connect_coro()
