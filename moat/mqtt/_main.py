@@ -179,9 +179,7 @@ async def pub(obj, **args):
 	if args["msg_stdin"]+args["msg_stdin_lines"]+args["msg_stdin_eval"] > 1:
 		raise click.UsageError("You can only read from stdin once")
 	cfg = obj.cfg.mqtt.client
-	client_id = args.get("client_id", cfg.get("id",None))
-	if not client_id:
-		client_id = _gen_client_id()
+	client_id = args["client_id"] or cfg.get("id",None) or _gen_client_id()
 
 	if args["keep_alive"]:
 		config["keep_alive"] = args["keep_alive"]
@@ -251,9 +249,7 @@ async def sub(obj, args):
 	"""Subscribe to one or more MQTT topics"""
 	cfg = obj.cfg.mqtt.client
 
-	client_id = args["client_id"]
-	if not client_id:
-		client_id = _gen_client_id()
+	client_id = args["client_id"] or cfg.get("id",None) or _gen_client_id()
 
 	if args["keep_alive"]:
 		cfg["keep_alive"] = args["keep_alive"]
