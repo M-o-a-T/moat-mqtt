@@ -5,9 +5,9 @@
 import unittest
 import logging
 import os
-from distmqtt.plugins.manager import BaseContext
-from distmqtt.plugins.authentication import AnonymousAuthPlugin, FileAuthPlugin
-from distmqtt.session import Session
+from moat.mqtt.plugins.manager import BaseContext
+from moat.mqtt.plugins.authentication import AnonymousAuthPlugin, FileAuthPlugin
+from moat.mqtt.session import Session
 
 from .. import anyio_run
 

@@ -1,7 +1,7 @@
 Common API
 ==========
 
-This document describes ``DistMQTT`` common API both used by :doc:`mqttclient` and :doc:`broker`.
+This document describes ``Moat-MQTT`` common API both used by :doc:`mqttclient` and :doc:`broker`.
 
 Reference
 ---------
@@ -9,7 +9,7 @@ Reference
 ApplicationMessage
 ..................
 
-.. automodule:: distmqtt.session
+.. automodule:: moat.mqtt.session
 
     .. autoclass:: ApplicationMessage
         :members:

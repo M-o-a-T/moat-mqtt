@@ -1,8 +1,8 @@
 import logging
 import anyio
 
-from distmqtt.client import open_mqttclient
-from distmqtt.mqtt.constants import QOS_1, QOS_2
+from moat.mqtt.client import open_mqttclient
+from moat.mqtt.mqtt.constants import QOS_1, QOS_2
 
 
 #

@@ -1,7 +1,7 @@
 import logging
 import anyio
 
-from distmqtt.client import open_mqttclient, ConnectException
+from moat.mqtt.client import open_mqttclient, ConnectException
 
 
 #
@@ -20,12 +20,12 @@ async def test_coro():
             await C.publish("data/classified", b"TOP SECRET", qos=0x01)
             await C.publish("data/memes", b"REAL FUN", qos=0x01)
             await C.publish(
-                "repositories/distmqtt/master", b"NEW STABLE RELEASE", qos=0x01
+                "repositories/mqtt/master", b"NEW STABLE RELEASE", qos=0x01
             )
             await C.publish(
-                "repositories/distmqtt/devel", b"THIS NEEDS TO BE CHECKED", qos=0x01
+                "repositories/mqtt/devel", b"THIS NEEDS TO BE CHECKED", qos=0x01
             )
-            await C.publish("calendar/distmqtt/releases", b"NEW RELEASE", qos=0x01)
+            await C.publish("calendar/mqtt/releases", b"NEW RELEASE", qos=0x01)
             logger.info("messages published")
     except ConnectException as ce:
         logger.error("Connection failed: %r", ce)

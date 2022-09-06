@@ -7,20 +7,20 @@ import anyio
 import logging
 import random
 from functools import partial
-from distmqtt.plugins.manager import PluginManager
-from distmqtt.session import (
+from moat.mqtt.plugins.manager import PluginManager
+from moat.mqtt.session import (
     Session,
     OutgoingApplicationMessage,
     IncomingApplicationMessage,
 )
-from distmqtt.mqtt.protocol.handler import ProtocolHandler
-from distmqtt.adapters import StreamAdapter
-from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
-from distmqtt.mqtt.publish import PublishPacket
-from distmqtt.mqtt.puback import PubackPacket
-from distmqtt.mqtt.pubrec import PubrecPacket
-from distmqtt.mqtt.pubrel import PubrelPacket
-from distmqtt.mqtt.pubcomp import PubcompPacket
+from moat.mqtt.mqtt.protocol.handler import ProtocolHandler
+from moat.mqtt.adapters import StreamAdapter
+from moat.mqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+from moat.mqtt.mqtt.publish import PublishPacket
+from moat.mqtt.mqtt.puback import PubackPacket
+from moat.mqtt.mqtt.pubrec import PubrecPacket
+from moat.mqtt.mqtt.pubrel import PubrelPacket
+from moat.mqtt.mqtt.pubcomp import PubcompPacket
 
 from ... import anyio_run
 
@@ -58,7 +58,7 @@ class ProtocolHandlerTest(unittest.TestCase):
     def run_(self, server_mock, test_coro):
         async def runner():
             async with anyio.create_task_group() as tg:
-                self.plugin_manager = PluginManager(tg, "distmqtt.test.plugins", context=None)
+                self.plugin_manager = PluginManager(tg, "moat.mqtt.test.plugins", context=None)
                 server = await anyio.create_tcp_listener(local_port=PORT, local_host="127.0.0.1")
 
                 async def _serve():

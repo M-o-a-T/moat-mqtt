@@ -1,7 +1,7 @@
 import logging
 import anyio
 
-from distmqtt.client import open_mqttclient
+from moat.mqtt.client import open_mqttclient
 
 
 #

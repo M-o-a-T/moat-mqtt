@@ -4,5 +4,5 @@
 /*.debhelper-build-stamp
 /*.substvars
 /debhelper-build-stamp
-/distmqtt
+/moat-mqtt
 /*.service

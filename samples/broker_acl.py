@@ -1,7 +1,7 @@
 import logging
 import anyio
 import os
-from distmqtt.broker import create_broker
+from moat.mqtt.broker import create_broker
 
 logger = logging.getLogger(__name__)
 

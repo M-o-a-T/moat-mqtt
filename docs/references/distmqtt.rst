@@ -1,31 +1,31 @@
-distmqtt
-======
+moat mqtt broker
+================
 
-``distmqtt`` is a command-line script for running a MQTT 3.1.1 broker.
+``moat mqtt broker`` is a command-line script for running a MQTT 3.1.1 broker.
 
 Usage
 -----
 
-``distmqtt`` usage :
+``moat mqtt broker`` usage :
 ::
 
-  distmqtt --version
-  distmqtt (-h | --help)
-  distmqtt [-c <config_file> ] [-d]
+  moat mqtt broker --version
+  moat mqtt broker (-h | --help)
+  moat mqtt broker [-c <config_file> ] [-d]
 
 
 Options
 -------
 
---version           DistMQTT version information
--h, --help          Display ``distmqtt_sub`` usage help
+--version           MoaT-MQTT version information
+-h, --help          Display ``moat mqtt broker`` usage help
 -c                  Set the YAML configuration file to read and pass to the client runtime.
 
 
 Configuration
 -------------
 
-If ``-c`` argument is given, ``distmqtt`` will read specific MQTT settings for the given configuration file. This file must be a valid `YAML`_ file which may contains the following configuration elements :
+If ``-c`` argument is given, ``moat mqtt broker`` will read specific MQTT settings for the given configuration file. This file must be a valid `YAML`_ file which may contains the following configuration elements :
 
 * ``listeners`` : network bindings configuration list
 * ``timeout-disconnect-delay`` : client disconnect timeout after keep-alive timeout
@@ -46,7 +46,7 @@ Without the ``-c`` argument, the broker will run with the following default conf
         - auth_file
         - auth_anonymous
 
-Using this configuration, ``distmqtt`` will start a broker :
+Using this configuration, ``moat mqtt broker`` will start a broker :
 
 * listening on TCP port 1883 on all network interfaces.
 * Publishing ``$SYS``_ update messages every ``20`` seconds.
@@ -60,7 +60,7 @@ Configuration example
 
 .. code-block:: yaml
 
-    distkv:
+    kv:
         server:
             host: '127.0.0.1'
             port: 27586
@@ -95,14 +95,14 @@ Configuration example
 
 This configuration example shows the use of every parameter.
 
-The ``distkv`` section controls routing of messages via DistKV.
+The ``kv`` section controls routing of messages via MoaT-KV.
 
-* The ``server`` subsection mimics DistKV's ``connect`` section.
-  See the distKV documentation for details.
+* The ``server`` subsection mimics MoaT-KV's ``connect`` section.
+  See the MoaT-KV documentation for details.
 
-* The ``base`` list tells DistMQTT which DistKV subtree to use for
+* The ``base`` list tells MoaT-MQTT which MoaT-KV subtree to use for
   retained messages. Any changes to this subtree will be broadcast to
-  DistMQTT's clients.
+  MoaT-MQTT's clients.
 
 * Non-retained messages whose topic starts with one of the topics in the
   ``transparent`` list are exchanged across MQTT as they are, except that

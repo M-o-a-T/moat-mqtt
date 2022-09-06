@@ -1,3 +1,9 @@
+moat-mqtt (0.36.0-1) unstable; urgency=medium
+
+  * Rename
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Tue, 06 Sep 2022 11:53:59 +0200
+
 distmqtt (0.35.2-1) unstable; urgency=medium
 
   * Merge

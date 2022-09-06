@@ -1,14 +1,14 @@
 References
 ==========
 
-Reference documentation for DistMQTT console scripts and programming API.
+Reference documentation for MoaT-MQTT console scripts and programming API.
 
 Console scripts
 ---------------
 
-* :doc:`distmqtt_pub` : MQTT client for publishing messages to a broker
-* :doc:`distmqtt_sub` : MQTT client for subscribing to a topics and retrieved published messages
-* :doc:`distmqtt` : Autonomous MQTT broker
+* :doc:`moat_mqtt_pub` : MQTT client for publishing messages to a broker
+* :doc:`moat_mqtt_sub` : MQTT client for subscribing to a topics and retrieved published messages
+* :doc:`moat_mqtt_broker` : Autonomous MQTT broker
 
 Programming API
 ---------------
@@ -22,9 +22,9 @@ TBD
 .. toctree::
    :hidden:
 
-   distmqtt_pub
-   distmqtt_sub
-   distmqtt
+   moat_mqtt_pub
+   moat_mqtt_sub
+   moat_mqtt_broker
    mqttclient
    broker
    common

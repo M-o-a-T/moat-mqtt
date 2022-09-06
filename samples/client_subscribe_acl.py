@@ -1,8 +1,8 @@
 import logging
 import anyio
 
-from distmqtt.client import open_mqttclient, ClientException
-from distmqtt.mqtt.constants import QOS_1
+from moat.mqtt.client import open_mqttclient, ClientException
+from moat.mqtt.mqtt.constants import QOS_1
 
 
 #
@@ -23,9 +23,9 @@ async def uptime_coro():
                 [
                     ("data/memes", QOS_1),  # Topic allowed
                     ("data/classified", QOS_1),  # Topic forbidden
-                    ("repositories/distmqtt/master", QOS_1),  # Topic allowed
-                    ("repositories/distmqtt/devel", QOS_1),  # Topic forbidden
-                    ("calendar/distmqtt/releases", QOS_1),  # Topic allowed
+                    ("repositories/mqtt/master", QOS_1),  # Topic allowed
+                    ("repositories/mqtt/devel", QOS_1),  # Topic forbidden
+                    ("calendar/mqtt/releases", QOS_1),  # Topic allowed
                 ]
             )
             logger.info("Subscribed")
