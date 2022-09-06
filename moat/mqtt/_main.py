@@ -119,6 +119,9 @@ async def do_pub(client, args, cfg):
 		qos = _get_qos(args, cfg)
 		topic = args["topic"]
 		retain = args["retain"]
+		if retain is None:
+			retain = cfg.default_retain
+		  
 		async with anyio.create_task_group() as tg:
 			for message in _get_message(args):
 				logger.info("%s Publishing to '%s'", client.client_id, topic)
@@ -149,7 +152,9 @@ def fix_will(args, cfg):
 @click.option("--url", help="Broker connection URL (musr conform to MQTT URI scheme")
 @click.option("-i", "--client_id", help="string to use as client ID")
 @click.option("-q","--qos", type=click.IntRange(0,2), help="Quality of service to use (0-2)")
-@click.option("-r","--retain", is_flag=True, help="Set the Retain flag")
+@click.option("-r","--retain", "retain", flag_value=True, help="Set the Retain flag")
+@click.option("--no-retain", "retain", flag_value=False, help="Clear the Retain flag")
+@click.option("--default-retain", "retain", flag_value=None, help="Use the Retain flag's default", hidden=True)
 @click.option("-t","--topic", required=True, help="Message topic, '/'-separated")
 @click.option("-m","--msg", multiple=True, help="Message data (may be repeated)")
 @click.option("-M","--msg-eval", multiple=True, help="Message data (Python, evaluated, may be repeated)")
@@ -229,7 +234,6 @@ async def run_sub(client, topic, args, cfg):
 @click.option("--url", help="Broker connection URL (musr conform to MQTT URI scheme")
 @click.option("-i", "--client_id", help="string to use as client ID")
 @click.option("-q","--qos", type=click.IntRange(0,2), help="Quality of service to use (0-2)")
-@click.option("-r","--retain", is_flag=True, help="Set the Retain flag")
 @click.option("-t","--topic", multiple=True, help="Message topic, '/'-separated (can be used more than once)")
 @click.option("-n","--n_msg", type=int, default=0, help="Number of messages to read (per topic)")
 @click.option("-C","--codec", help="Message codec (default UTF-8)")
