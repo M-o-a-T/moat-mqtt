@@ -68,10 +68,9 @@ def _gen_client_id():
 
 
 def _get_qos(args, cfg):
-	try:
-		return args["qos"]
-	except Exception:
-		return cfg.qos
+	res = args["qos"]
+	if res is None:
+		return cfg.default_qos
 
 
 def _get_extra_headers(args, cfg):
@@ -149,7 +148,7 @@ def fix_will(args, cfg):
 @cli.command()
 @click.option("--url", help="Broker connection URL (musr conform to MQTT URI scheme")
 @click.option("-i", "--client_id", help="string to use as client ID")
-@click.option("-q","--qos", type=int, help="Quality of service to use (0-2)")
+@click.option("-q","--qos", type=click.IntRange(0,2), help="Quality of service to use (0-2)")
 @click.option("-r","--retain", is_flag=True, help="Set the Retain flag")
 @click.option("-t","--topic", required=True, help="Message topic, '/'-separated")
 @click.option("-m","--msg", multiple=True, help="Message data (may be repeated)")
@@ -213,8 +212,8 @@ async def do_sub(client, args, cfg):
 			await client.disconnect()
 
 
-async def run_sub(client, topic, arguments):
-	qos = _get_qos(arguments)
+async def run_sub(client, topic, args, cfg):
+	qos = _get_qos(args, cfg)
 	max_count = args["n_msg"]
 	count = 0
 
@@ -229,7 +228,7 @@ async def run_sub(client, topic, arguments):
 @cli.command()
 @click.option("--url", help="Broker connection URL (musr conform to MQTT URI scheme")
 @click.option("-i", "--client_id", help="string to use as client ID")
-@click.option("-q","--qos", type=int, help="Quality of service to use (0-2)")
+@click.option("-q","--qos", type=click.IntRange(0,2), help="Quality of service to use (0-2)")
 @click.option("-r","--retain", is_flag=True, help="Set the Retain flag")
 @click.option("-t","--topic", multiple=True, help="Message topic, '/'-separated (can be used more than once)")
 @click.option("-n","--n_msg", type=int, default=0, help="Number of messages to read (per topic)")
