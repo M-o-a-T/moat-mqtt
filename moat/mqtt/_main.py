@@ -195,16 +195,16 @@ async def do_sub(client, args, cfg):
 
 	try:
 		await client.connect(
-			uri=args.get("url",None) or cfg.url,
-			cleansession=args("clean_session"),
-			cafile=args("ca_file", None) or cfg.ca.file,
-			capath=args("ca_path", None) or cfg.ca.path,
-			cadata=args("ca_data", None) or cfg.ca.data,
+			uri=args["url"] or cfg.url,
+			cleansession=args["clean_session"],
+			cafile=args["ca_file"] or cfg.ca.file,
+			capath=args["ca_path"] or cfg.ca.path,
+			cadata=args["ca_data"] or cfg.ca.data,
 			extra_headers=_get_extra_headers(args, cfg),
 		)
 		async with anyio.create_task_group() as tg:
 			for topic in args["topic"]:
-				tg.start_soon(run_sub, client, topic, arguments)
+				tg.start_soon(run_sub, client, topic, args, cfg)
 
 	except KeyboardInterrupt:
 		pass
@@ -244,8 +244,9 @@ async def run_sub(client, topic, args, cfg):
 @click.option("--will-message", help="Message to send, when client exits")
 @click.option("--will-qos", type=int, help="QOS for Will message")
 @click.option("--will-retain", is_flag=True, help="Retain Will message?")
+@click.option("--extra-headers", type=click.File("r"), help="File to read extra MQTT headers from")
 @click.pass_obj
-async def sub(obj, args):
+async def sub(obj, **args):
 	"""Subscribe to one or more MQTT topics"""
 	cfg = obj.cfg.mqtt.client
 
@@ -256,6 +257,6 @@ async def sub(obj, args):
 
 	fix_will(args, cfg)
 
-	async with open_mqttclient(client_id=client_id, config=config, codec=args["codec"]) as C:
-		await do_sub(C, arguments)
+	async with open_mqttclient(client_id=client_id, config=cfg, codec=args["codec"]) as C:
+		await do_sub(C, args, cfg)
 
