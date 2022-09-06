@@ -5,10 +5,10 @@ import logging
 import itertools
 import anyio
 
-from . import packet_class
-from .connack import ConnackPacket
-from .connect import ConnectPacket
-from .packet import (
+from .. import packet_class
+from ..connack import ConnackPacket
+from ..connect import ConnectPacket
+from ..packet import (
     RESERVED_0,
     CONNACK,
     PUBLISH,
@@ -26,35 +26,35 @@ from .packet import (
     RESERVED_15,
     MQTTFixedHeader,
 )
-from .pingresp import PingRespPacket
-from .pingreq import PingReqPacket
-from .publish import PublishPacket
-from .pubrel import PubrelPacket
-from .puback import PubackPacket
-from .pubrec import PubrecPacket
-from .pubcomp import PubcompPacket
-from .suback import SubackPacket
-from .subscribe import SubscribePacket
-from .unsubscribe import UnsubscribePacket
-from .unsuback import UnsubackPacket
-from .disconnect import DisconnectPacket
-from ..adapters import StreamAdapter
-from ..session import (
+from ..pingresp import PingRespPacket
+from ..pingreq import PingReqPacket
+from ..publish import PublishPacket
+from ..pubrel import PubrelPacket
+from ..puback import PubackPacket
+from ..pubrec import PubrecPacket
+from ..pubcomp import PubcompPacket
+from ..suback import SubackPacket
+from ..subscribe import SubscribePacket
+from ..unsubscribe import UnsubscribePacket
+from ..unsuback import UnsubackPacket
+from ..disconnect import DisconnectPacket
+from ...adapters import StreamAdapter
+from ...session import (
     Session,
     OutgoingApplicationMessage,
     IncomingApplicationMessage,
     INCOMING,
     OUTGOING,
 )
-from .constants import QOS_0, QOS_1, QOS_2
-from ..plugins.manager import PluginManager
-from ..errors import (
+from ..constants import QOS_0, QOS_1, QOS_2
+from ...plugins.manager import PluginManager
+from ...errors import (
     MoatMQTTException,
     MQTTException,
     NoDataException,
     InvalidStateError,
 )
-from ..utils import Future, CancelledError, create_queue
+from ...utils import Future, CancelledError, create_queue
 
 try:
     ClosedResourceError = anyio.exceptions.ClosedResourceError
@@ -564,7 +564,7 @@ class ProtocolHandler:
                     if packet is None:  # timeout
                         await self.handle_write_timeout()
                         continue
-                    # self.logger.debug("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
+                    self.logger.debug("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
                     try:
                         await packet.to_stream(self.stream)
                     except ClosedResourceError:
