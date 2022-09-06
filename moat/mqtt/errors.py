@@ -3,9 +3,9 @@
 # See the file license.txt for copying permission.
 
 
-class DistMQTTException(Exception):
+class MoatMQTTException(Exception):
     """
-    DistMQTT base exception
+    MoatMQTT base exception
     """
 
     pass

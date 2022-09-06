@@ -1,0 +1,35 @@
+broker:
+  listeners:
+    default:
+      type: tcp
+      bind: 0.0.0.0:1883
+  sys_interval: 20
+  auth:
+    allow-anonymous: true
+  plugins:
+    - auth_file
+    - auth_anonymous
+  topic-check:
+    enabled: False
+
+client:
+  # id: "fufu_123"
+  url: "mqtt://localhost:1883/"
+  keep_alive: 10
+  ping_delay: 1
+  default_qos: 0
+  default_retain: false
+  auto_reconnect: false
+  reconnect_max_interval: 10
+  reconnect_retries: 2
+  extra_headers: {}
+  codec: "utf8"
+  ca:
+    file: null
+    path: null
+    data: null
+  will:
+    topic: null
+    message: null
+    qos: 0
+    retain: false

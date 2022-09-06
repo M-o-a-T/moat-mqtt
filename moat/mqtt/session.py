@@ -8,7 +8,7 @@ from transitions import Machine
 from collections import OrderedDict
 
 from .mqtt.publish import PublishPacket
-from .errors import moatMQTTException, MQTTException
+from .errors import MoatMQTTException, MQTTException
 from .mqtt.constants import QOS_0
 
 from .utils import create_queue

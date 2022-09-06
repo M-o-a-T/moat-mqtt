@@ -283,8 +283,6 @@ class Broker:
         Start the broker to serve with the given configuration
 
         Start method opens network sockets and will start listening for incoming connections.
-
-        This method is a *coroutine*.
         """
         try:
             self._sessions = dict()
