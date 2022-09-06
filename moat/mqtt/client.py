@@ -271,7 +271,7 @@ class MQTTClient:
             await self._handler.stop()
             self.session.transitions.disconnect()
         else:
-            self.logger.warning("Client session is not currently connected, ignoring call")
+            self.logger.info("Client session is not currently connected, ignoring Disconnect call")
 
     def cancel_tasks(self):
         """
