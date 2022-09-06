@@ -27,7 +27,7 @@ def gen_client_id():
     """
     import random
 
-    gen_id = "distmqtt-"
+    gen_id = "moat-mqtt-"
 
     for _ in range(16):
         gen_id += chr(random.randint(0, 26) + 97)

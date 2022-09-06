@@ -14,9 +14,9 @@ try:
 except ImportError:
     from async_generator import asynccontextmanager
 
-from distmqtt.client import open_mqttclient
-from distmqtt.broker import create_broker
-from distmqtt.mqtt.constants import QOS_0
+from moat.mqtt.client import open_mqttclient
+from moat.mqtt.broker import create_broker
+from moat.mqtt.mqtt.constants import QOS_0
 
 try:
     from distkv.server import Server
@@ -79,7 +79,7 @@ test_config = {
 async def distkv_server(n):
     msgs = []
     async with anyio.create_task_group() as tg:
-        async with create_broker(test_config, plugin_namespace="distmqtt.test.plugins"):
+        async with create_broker(test_config, plugin_namespace="moat.mqtt.test.plugins"):
             s = Server("test", cfg=broker_config["distkv"], init="test")
             evt = anyio.Event()
             tg.start_soon(partial(s.serve, ready_evt=evt))
@@ -112,7 +112,7 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(1):
-                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
+                async with create_broker(broker_config, plugin_namespace="moat.mqtt.test.plugins"):
                     async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([("test_topic", QOS_0)])
@@ -136,7 +136,7 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(1):
-                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
+                async with create_broker(broker_config, plugin_namespace="moat.mqtt.test.plugins"):
                     async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([("test/vis/foo", QOS_0)])
@@ -160,7 +160,7 @@ class MQTTClientTest(unittest.TestCase):
 
         async def test_coro():
             async with distkv_server(0):
-                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
+                async with create_broker(broker_config, plugin_namespace="moat.mqtt.test.plugins"):
                     async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([("test_topic", QOS_0)])
@@ -178,7 +178,7 @@ class MQTTClientTest(unittest.TestCase):
     def test_deliver_timeout(self):
         async def test_coro():
             async with distkv_server(0):
-                async with create_broker(broker_config, plugin_namespace="distmqtt.test.plugins"):
+                async with create_broker(broker_config, plugin_namespace="moat.mqtt.test.plugins"):
                     async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
                         ret = await client.subscribe([("test_topic", QOS_0)])

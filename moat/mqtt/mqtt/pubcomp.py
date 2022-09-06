@@ -1,13 +1,13 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     PUBCOMP,
     PacketIdVariableHeader,
 )
-from distmqtt.errors import DistMQTTException
+from ..errors import MoatMQTTException
 
 
 class PubcompPacket(MQTTPacket):
@@ -31,7 +31,7 @@ class PubcompPacket(MQTTPacket):
             header = MQTTFixedHeader(PUBCOMP, 0x00)
         else:
             if fixed.packet_type != PUBCOMP:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for PubcompPacket init" % fixed.packet_type
                 )
             header = fixed

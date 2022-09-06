@@ -1,19 +1,19 @@
 [Unit]
-Description=DistMQTT main server
-After=distkv.service
-Wants=distkv.service
+Description=MoaT-MQTT broker
+After=moat-kv.service
+Wants=moat-kv.service
 
-ConditionFileNotEmpty=/etc/distmqtt.cfg
+ConditionFileNotEmpty=/etc/moat/mqtt.cfg
 
 [Install]
 WantedBy=multi-user.target
 
 [Service]
 Type=notify
-ExecStart=/usr/bin/distmqtt -c /etc/distmqtt.cfg
+ExecStart=/usr/bin/moat mqtt -c /etc/moat/mqtt.cfg broker
 
-User=distkv
-Group=distkv
+User=moat
+Group=moat
 
 TimeoutSec=30
 WatchdogSec=10

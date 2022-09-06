@@ -3,7 +3,7 @@
 # See the file license.txt for copying permission.
 import anyio
 from struct import pack, unpack
-from distmqtt.errors import NoDataException
+from .errors import NoDataException
 
 try:
     IncompleteRead = anyio.exceptions.IncompleteRead

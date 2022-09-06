@@ -3,8 +3,8 @@
 # See the file license.txt for copying permission.
 import unittest
 
-from distmqtt.mqtt.puback import PubackPacket, PacketIdVariableHeader
-from distmqtt.adapters import BufferAdapter
+from moat.mqtt.mqtt.puback import PubackPacket, PacketIdVariableHeader
+from moat.mqtt.adapters import BufferAdapter
 
 from .. import anyio_run
 

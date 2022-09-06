@@ -1,7 +1,7 @@
 Quickstart
 ==========
 
-A quick way for getting started with ``DistMQTT`` is to use console scripts provided for :
+A quick way for getting started with ``MoaT-MQTT`` is to use console scripts provided for :
 
 * publishing a message on some topic on an external MQTT broker.
 * subscribing some topics and getting published messages.
@@ -13,13 +13,13 @@ Installation
 
 That's easy::
 
-  (venv) $ pip install distmqtt
+  (venv) $ pip install moat-mqtt
 
 
 Sample code
 +++++++++++
 
-As ``DistMQTT`` is async Python, you need to wrap all examples with::
+As ``MoaT-MQTT`` is async Python, you need to wrap all examples with::
 
    async def main():
       [ actual sample code here ]
@@ -73,58 +73,58 @@ is to use multiple tasks.
 Console scripts
 +++++++++++++++
 
-A quick way for getting started with ``DistMQTT`` is to examine the code in
-``DistMQTT``'s console scripts.
+A quick way for getting started with ``MoaT-MQTT`` is to examine the code in
+``MoaT-MQTT``'s console scripts.
 
-These scripts are installed automatically when installing ``DistMQTT``.
+These scripts are installed automatically when installing ``MoaT-MQTT``.
 
 Publishing messages
 -------------------
 
-``distmqtt_pub`` is a command-line tool which can be used for publishing some messages on a topic. It requires a few arguments like broker URL, topic name, QoS and data to send. Additional options allow more complex use case.
+``moat mqtt pub`` is a command-line tool which can be used for publishing some messages on a topic. It requires a few arguments like broker URL, topic name, QoS and data to send. Additional options allow more complex use case.
 
 Publishing ```some_data`` to a ``/test`` topic on is as simple as :
 ::
 
-    $ distmqtt_pub --url mqtt://test.mosquitto.org -t /test -m some_data
-    [2015-11-06 22:21:55,108] :: INFO - distmqtt_pub/5135-MacBook-Pro.local Connecting to broker
-    [2015-11-06 22:21:55,333] :: INFO - distmqtt_pub/5135-MacBook-Pro.local Publishing to '/test'
-    [2015-11-06 22:21:55,336] :: INFO - distmqtt_pub/5135-MacBook-Pro.local Disconnected from broker
+    $ moat mqtt pub --url mqtt://test.mosquitto.org -t /test -m some_data
+    [2015-11-06 22:21:55,108] :: INFO - pub/5135-MacBook-Pro.local Connecting to broker
+    [2015-11-06 22:21:55,333] :: INFO - pub/5135-MacBook-Pro.local Publishing to '/test'
+    [2015-11-06 22:21:55,336] :: INFO - pub/5135-MacBook-Pro.local Disconnected from broker
 
-This will use insecure TCP connection to connect to test.mosquitto.org. ``distmqtt_pub`` also allows websockets and secure connection:
+This will use insecure TCP connection to connect to test.mosquitto.org. ``moat mqtt pub`` also allows websockets and secure connection:
 ::
 
-    $ distmqtt_pub --url ws://test.mosquitto.org:8080 -t /test -m some_data
-    [2015-11-06 22:22:42,542] :: INFO - distmqtt_pub/5157-MacBook-Pro.local Connecting to broker
-    [2015-11-06 22:22:42,924] :: INFO - distmqtt_pub/5157-MacBook-Pro.local Publishing to '/test'
-    [2015-11-06 22:22:52,926] :: INFO - distmqtt_pub/5157-MacBook-Pro.local Disconnected from broker
+    $ moat mqtt pub --url ws://test.mosquitto.org:8080 -t /test -m some_data
+    [2015-11-06 22:22:42,542] :: INFO - pub/5157-MacBook-Pro.local Connecting to broker
+    [2015-11-06 22:22:42,924] :: INFO - pub/5157-MacBook-Pro.local Publishing to '/test'
+    [2015-11-06 22:22:52,926] :: INFO - pub/5157-MacBook-Pro.local Disconnected from broker
 
-``distmqtt_pub`` can read from file or stdin and use data read as message payload:
+``moat mqtt pub`` can read from file or stdin and use data read as message payload:
 ::
 
-    $ some_command | distmqtt_pub --url mqtt://localhost -t /test -l
+    $ some_command | moat mqtt pub --url mqtt://localhost -t /test -l
 
-See :doc:`references/distmqtt_pub` reference documentation for details about available options and settings.
+See :doc:`references/moat_mqtt_pub` reference documentation for details about available options and settings.
 
 Subscribing a topic
 -------------------
 
-``distmqtt_sub`` is a command-line tool which can be used to subscribe for some pattern(s) on a broker and get date from messages published on topics matching these patterns by other MQTT clients.
+``moat mqtt sub`` is a command-line tool which can be used to subscribe for some pattern(s) on a broker and get date from messages published on topics matching these patterns by other MQTT clients.
 
 Subscribing a ``/test/#`` topic pattern is done with :
 ::
 
-  $ distmqtt_sub --url mqtt://localhost -t /test/#
+  $ moat mqtt sub --url mqtt://localhost -t /test/#
 
 This command will run forever and print on the standard output every messages received from the broker. The ``-n`` option allows to set a maximum number of messages to receive before stopping.
 
-See :doc:`references/distmqtt_sub` reference documentation for details about available options and settings.
+See :doc:`references/moat_mqtt_sub` reference documentation for details about available options and settings.
 
 
 URL Scheme
 ----------
 
-DistMQTT command line tools use the ``--url`` to establish a network connection with the broker. The ``--url`` parameter value must conform to the `MQTT URL scheme`_. The general accepted form is :
+MoaT-MQTT command line tools use the ``--url`` to establish a network connection with the broker. The ``--url`` parameter value must conform to the `MQTT URL scheme`_. The general accepted form is :
 ::
 
     {mqtt,ws}[s]://[username][:password]@host.domain[:port]
@@ -144,10 +144,10 @@ Here are some examples of valid URLs:
 Running a broker
 ----------------
 
-``distmqtt`` is a command-line tool for running a MQTT broker:
+``moat mqtt broker`` is a command-line tool for running a MQTT broker:
 ::
 
-    $ distmqtt
+    $ moat mqtt broker
     [2015-11-06 22:45:16,470] :: INFO - Listener 'default' bind to 0.0.0.0:1883 (max_connections=-1)
 
-See :doc:`references/distmqtt` reference documentation for details about available options and settings.
+See :doc:`references/moat_mqtt_broker` reference documentation for details about available options and settings.

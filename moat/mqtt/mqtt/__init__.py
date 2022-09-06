@@ -1,8 +1,8 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from distmqtt.errors import DistMQTTException
-from distmqtt.mqtt.packet import (
+from ..errors import MoatMQTTException
+from .packet import (
     CONNECT,
     CONNACK,
     PUBLISH,
@@ -19,20 +19,20 @@ from distmqtt.mqtt.packet import (
     DISCONNECT,
     MQTTFixedHeader,
 )
-from distmqtt.mqtt.connect import ConnectPacket
-from distmqtt.mqtt.connack import ConnackPacket
-from distmqtt.mqtt.disconnect import DisconnectPacket
-from distmqtt.mqtt.pingreq import PingReqPacket
-from distmqtt.mqtt.pingresp import PingRespPacket
-from distmqtt.mqtt.publish import PublishPacket
-from distmqtt.mqtt.puback import PubackPacket
-from distmqtt.mqtt.pubrec import PubrecPacket
-from distmqtt.mqtt.pubrel import PubrelPacket
-from distmqtt.mqtt.pubcomp import PubcompPacket
-from distmqtt.mqtt.subscribe import SubscribePacket
-from distmqtt.mqtt.suback import SubackPacket
-from distmqtt.mqtt.unsubscribe import UnsubscribePacket
-from distmqtt.mqtt.unsuback import UnsubackPacket
+from .connect import ConnectPacket
+from .connack import ConnackPacket
+from .disconnect import DisconnectPacket
+from .pingreq import PingReqPacket
+from .pingresp import PingRespPacket
+from .publish import PublishPacket
+from .puback import PubackPacket
+from .pubrec import PubrecPacket
+from .pubrel import PubrelPacket
+from .pubcomp import PubcompPacket
+from .subscribe import SubscribePacket
+from .suback import SubackPacket
+from .unsubscribe import UnsubscribePacket
+from .unsuback import UnsubackPacket
 
 packet_dict = {
     CONNECT: ConnectPacket,
@@ -57,6 +57,6 @@ def packet_class(fixed_header: MQTTFixedHeader):
         cls = packet_dict[fixed_header.packet_type]
         return cls
     except KeyError:
-        raise DistMQTTException(  # pylint:disable=W0707
+        raise MoatMQTTException(  # pylint:disable=W0707
             "Unexpected packet Type '%s'" % fixed_header.packet_type
         )

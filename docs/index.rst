@@ -1,15 +1,15 @@
-DistMQTT
-======
+MoaT-MQTT
+=========
 
-``DistMQTT`` is an open source `MQTT`_ client and broker implementation.
+``MoaT-MQTT`` is an open source `MQTT`_ client and broker implementation.
 
-Built on top of :mod:`asyncio`, Python's standard asynchronous I/O framework, DistMQTT provides a straightforward API
+Built on top of :mod:`asyncio`, Python's standard asynchronous I/O framework, MoaT-MQTT provides a straightforward API
 based on coroutines, making it easy to write highly concurrent applications.
 
 Features
 --------
 
-DistMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and provides the following features:
+MoaT-MQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and provides the following features:
 
 - Support QoS 0, QoS 1 and QoS 2 messages flow
 - Client auto-reconnection on network lost
@@ -23,30 +23,28 @@ DistMQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and pr
 Requirements
 ------------
 
-DistMQTT is built on Python :mod:`asyncio` library which was introduced in Python 3.4. Tests have shown that DistMQTT run
-best with Python 3.4.3. Python 3.5.0 is also fully supported and recommended. Make sure you use one of these version
-before installing DistMQTT.
+MoaT-MQTT is written in asynchronous Python, based on the :mod:`anyio` library.
 
 Installation
 ------------
 
 It is not recommended to install third-party library in Python system packages directory. The preferred way for
-installing DistMQTT is to create a virtual environment and then install all the dependencies you need. Refer to
+installing MoaT-MQTT is to create a virtual environment and then install all the dependencies you need. Refer to
 `PEP 405`_ to learn more.
 
-Once you have a environment setup and ready, DistMQTT can be installed with the following command ::
+Once you have a environment setup and ready, MoaT-MQTT can be installed with the following command ::
 
-  (venv) $ pip install distmqtt
+  (venv) $ pip install moat-mqtt
 
-``pip`` will download and install DistMQTT and all its dependencies.
+``pip`` will download and install MoaT-MQTT and all its dependencies.
 
 
 User guide
 ----------
 
-If you need DistMQTT for running a MQTT client or deploying a MQTT broker, the :doc:`quickstart` describes how to use console scripts provided by DistMQTT.
+If you need MoaT-MQTT for running a MQTT client or deploying a MQTT broker, the :doc:`quickstart` describes how to use console scripts provided by MoaT-MQTT.
 
-If you want to develop an application which needs to connect to a MQTT broker, the :doc:`references/mqttclient` documentation explains how to use DistMQTT API for connecting, publishing and subscribing with a MQTT broker.
+If you want to develop an application which needs to connect to a MQTT broker, the :doc:`references/mqttclient` documentation explains how to use MoaT-MQTT API for connecting, publishing and subscribing with a MQTT broker.
 
 If you want to run you own MQTT broker, th :doc:`references/broker` reference documentation explains how to embed a MQTT broker inside a Python application.
 

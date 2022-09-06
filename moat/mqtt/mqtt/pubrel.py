@@ -1,13 +1,13 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     PUBREL,
     PacketIdVariableHeader,
 )
-from distmqtt.errors import DistMQTTException
+from ..errors import MoatMQTTException
 
 
 class PubrelPacket(MQTTPacket):
@@ -31,7 +31,7 @@ class PubrelPacket(MQTTPacket):
             header = MQTTFixedHeader(PUBREL, 0x02)  # [MQTT-3.6.1-1]
         else:
             if fixed.packet_type != PUBREL:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for PubrelPacket init" % fixed.packet_type
                 )
             header = fixed

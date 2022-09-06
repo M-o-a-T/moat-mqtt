@@ -3,7 +3,7 @@
 # See the file license.txt for copying permission.
 import anyio
 
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     SUBSCRIBE,
@@ -11,8 +11,8 @@ from distmqtt.mqtt.packet import (
     MQTTPayload,
     MQTTVariableHeader,
 )
-from distmqtt.errors import DistMQTTException, NoDataException
-from distmqtt.codecs import (
+from ..errors import MoatMQTTException, NoDataException
+from ..codecs import (
     bytes_to_int,
     decode_string,
     encode_string,
@@ -75,7 +75,7 @@ class SubscribePacket(MQTTPacket):
             header = MQTTFixedHeader(SUBSCRIBE, 0x02)  # [MQTT-3.8.1-1]
         else:
             if fixed.packet_type != SUBSCRIBE:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for SubscribePacket init" % fixed.packet_type
                 )
             header = fixed

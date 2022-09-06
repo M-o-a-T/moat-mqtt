@@ -2,12 +2,12 @@
 #
 # See the file license.txt for copying permission.
 """
-distmqtt_pub - MQTT 3.1.1 publisher
+moat mqtt pub - MQTT 3.1.1 publisher
 
 Usage:
-    distmqtt_pub --version
-    distmqtt_pub (-h | --help)
-    distmqtt_pub --url BROKER_URL -t TOPIC (-f FILE | -l | -m MESSAGE | -M message | -n | -s | -S) [-C codec] [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER] [-r]
+    moat mqtt pub --version
+    moat mqtt pub (-h | --help)
+    moat mqtt pub --url BROKER_URL -t TOPIC (-f FILE | -l | -m MESSAGE | -M message | -n | -s | -S) [-C codec] [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER] [-r]
 
 Options:
     -h --help           Show this screen.
@@ -43,10 +43,10 @@ import anyio
 import os
 import json
 import socket
-from distmqtt.client import open_mqttclient, ConnectException, _codecs
-from distmqtt.version import get_version
+from ..client import open_mqttclient, ConnectException, _codecs
+from ..version import get_version
 from docopt import docopt
-from distmqtt.utils import read_yaml_config
+from ..utils import read_yaml_config
 
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 def _gen_client_id():
     pid = os.getpid()
     hostname = socket.gethostname()
-    return "distmqtt_pub/%d-%s" % (pid, hostname)
+    return "moat_mqtt_pub/%d-%s" % (pid, hostname)
 
 
 def _get_qos(arguments):

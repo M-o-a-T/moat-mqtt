@@ -3,15 +3,15 @@
 # See the file license.txt for copying permission.
 import anyio
 
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     PUBLISH,
     MQTTVariableHeader,
     MQTTPayload,
 )
-from distmqtt.errors import DistMQTTException, MQTTException
-from distmqtt.codecs import decode_packet_id, decode_string, encode_string, int_to_bytes
+from ..errors import MoatMQTTException, MQTTException
+from ..codecs import decode_packet_id, decode_string, encode_string, int_to_bytes
 
 
 class PublishVariableHeader(MQTTVariableHeader):
@@ -101,7 +101,7 @@ class PublishPacket(MQTTPacket):
             header = MQTTFixedHeader(PUBLISH, 0x00)
         else:
             if fixed.packet_type != PUBLISH:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for PublishPacket init" % fixed.packet_type
                 )
             header = fixed

@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 
-from distmqtt.codecs import (
+from ..codecs import (
     bytes_to_int,
     decode_data_with_length,
     decode_string,
@@ -11,16 +11,16 @@ from distmqtt.codecs import (
     int_to_bytes,
     read_or_raise,
 )
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     CONNECT,
     MQTTVariableHeader,
     MQTTPayload,
 )
-from distmqtt.errors import DistMQTTException, NoDataException
-from distmqtt.adapters import StreamAdapter
-from distmqtt.utils import gen_client_id
+from ..errors import MoatMQTTException, NoDataException
+from ..adapters import StreamAdapter
+from ..utils import gen_client_id
 
 
 class ConnectVariableHeader(MQTTVariableHeader):
@@ -386,7 +386,7 @@ class ConnectPacket(MQTTPacket):
             header = MQTTFixedHeader(CONNECT, 0x00)
         else:
             if fixed.packet_type != CONNECT:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for ConnectPacket init" % fixed.packet_type
                 )
             header = fixed

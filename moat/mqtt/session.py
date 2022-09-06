@@ -7,9 +7,9 @@ import logging
 from transitions import Machine
 from collections import OrderedDict
 
-from distmqtt.mqtt.publish import PublishPacket
-from distmqtt.errors import DistMQTTException, MQTTException
-from distmqtt.mqtt.constants import QOS_0
+from .mqtt.publish import PublishPacket
+from .errors import moatMQTTException, MQTTException
+from .mqtt.constants import QOS_0
 
 from .utils import create_queue
 
@@ -60,26 +60,26 @@ class ApplicationMessage:
         """ Publish message retain flag"""
 
         self.publish_packet = None
-        """ :class:`distmqtt.mqtt.publish.PublishPacket` instance corresponding to the `PUBLISH <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718037>`_ packet in the messages flow. ``None`` if the PUBLISH packet has not already been received or sent."""
+        """ :class:`moat.mqtt.mqtt.publish.PublishPacket` instance corresponding to the `PUBLISH <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718037>`_ packet in the messages flow. ``None`` if the PUBLISH packet has not already been received or sent."""
 
         self.puback_packet = None
-        """ :class:`distmqtt.mqtt.puback.PubackPacket` instance corresponding to the `PUBACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718043>`_ packet in the messages flow. ``None`` if QoS != QOS_1 or if the PUBACK packet has not already been received or sent."""
+        """ :class:`moat.mqtt.mqtt.puback.PubackPacket` instance corresponding to the `PUBACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718043>`_ packet in the messages flow. ``None`` if QoS != QOS_1 or if the PUBACK packet has not already been received or sent."""
 
         self.pubrec_packet = None
-        """ :class:`distmqtt.mqtt.puback.PubrecPacket` instance corresponding to the `PUBREC <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718048>`_ packet in the messages flow. ``None`` if QoS != QOS_2 or if the PUBREC packet has not already been received or sent."""
+        """ :class:`moat.mqtt.mqtt.puback.PubrecPacket` instance corresponding to the `PUBREC <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718048>`_ packet in the messages flow. ``None`` if QoS != QOS_2 or if the PUBREC packet has not already been received or sent."""
 
         self.pubrel_packet = None
-        """ :class:`distmqtt.mqtt.puback.PubrelPacket` instance corresponding to the `PUBREL <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718053>`_ packet in the messages flow. ``None`` if QoS != QOS_2 or if the PUBREL packet has not already been received or sent."""
+        """ :class:`moat.mqtt.mqtt.puback.PubrelPacket` instance corresponding to the `PUBREL <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718053>`_ packet in the messages flow. ``None`` if QoS != QOS_2 or if the PUBREL packet has not already been received or sent."""
 
         self.pubcomp_packet = None
-        """ :class:`distmqtt.mqtt.puback.PubrelPacket` instance corresponding to the `PUBCOMP <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718058>`_ packet in the messages flow. ``None`` if QoS != QOS_2 or if the PUBCOMP packet has not already been received or sent."""
+        """ :class:`moat.mqtt.mqtt.puback.PubrelPacket` instance corresponding to the `PUBCOMP <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718058>`_ packet in the messages flow. ``None`` if QoS != QOS_2 or if the PUBCOMP packet has not already been received or sent."""
 
     def build_publish_packet(self, dup=False):
         """
-            Build :class:`distmqtt.mqtt.publish.PublishPacket` from attributes
+            Build :class:`moat.mqtt.mqtt.publish.PublishPacket` from attributes
 
         :param dup: force dup flag
-        :return: :class:`distmqtt.mqtt.publish.PublishPacket` built from ApplicationMessage instance attributes
+        :return: :class:`moat.mqtt.mqtt.publish.PublishPacket` built from ApplicationMessage instance attributes
         """
         return PublishPacket.build(
             self.topic, self.data, self.packet_id, dup, self.qos, self.retain
@@ -102,7 +102,7 @@ class ApplicationMessage:
 class IncomingApplicationMessage(ApplicationMessage):
 
     """
-    Incoming :class:`~distmqtt.session.ApplicationMessage`.
+    Incoming :class:`~moat.mqtt.session.ApplicationMessage`.
     """
 
     __slots__ = ("direction",)
@@ -115,7 +115,7 @@ class IncomingApplicationMessage(ApplicationMessage):
 class OutgoingApplicationMessage(ApplicationMessage):
 
     """
-    Outgoing :class:`~distmqtt.session.ApplicationMessage`.
+    Outgoing :class:`~moat.mqtt.session.ApplicationMessage`.
     """
 
     __slots__ = ("direction",)
@@ -275,7 +275,7 @@ class Session:
             if self._packet_id > 65535:
                 self._packet_id = 1
             if self._packet_id == limit:
-                raise DistMQTTException("More than 65535 messages pending. No free packet ID")
+                raise moatMQTTException("More than 65535 messages pending. No free packet ID")
 
         return self._packet_id
 

@@ -1,13 +1,13 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     UNSUBACK,
     PacketIdVariableHeader,
 )
-from distmqtt.errors import DistMQTTException
+from ..errors import MoatMQTTException
 
 
 class UnsubackPacket(MQTTPacket):
@@ -24,7 +24,7 @@ class UnsubackPacket(MQTTPacket):
             header = MQTTFixedHeader(UNSUBACK, 0x00)
         else:
             if fixed.packet_type != UNSUBACK:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for UnsubackPacket init" % fixed.packet_type
                 )
             header = fixed

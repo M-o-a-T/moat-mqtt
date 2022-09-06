@@ -15,14 +15,14 @@ except ImportError:
 
 from functools import partial
 from transitions import Machine, MachineError
-from distmqtt.session import Session, EVENT_BROKER_MESSAGE_RECEIVED  # noqa: F401
+from .session import Session, EVENT_BROKER_MESSAGE_RECEIVED  # noqa: F401
 
 # EVENT_BROKER_MESSAGE_RECEIVED is re-exported
-from distmqtt.mqtt.protocol.broker_handler import BrokerProtocolHandler
-from distmqtt.errors import DistMQTTException, MQTTException
-from distmqtt.utils import format_client_message, gen_client_id, Future, match_topic
-from distmqtt.mqtt.constants import QOS_0
-from distmqtt.adapters import StreamAdapter, BaseAdapter, WebSocketsAdapter
+from .mqtt.protocol.broker_handler import BrokerProtocolHandler
+from .errors import MoatMQTTException, MQTTException
+from .utils import format_client_message, gen_client_id, Future, match_topic
+from .mqtt.constants import QOS_0
+from .adapters import StreamAdapter, BaseAdapter, WebSocketsAdapter
 from .plugins.manager import PluginManager, BaseContext
 from asyncwebsockets import create_websocket_server
 
@@ -123,7 +123,7 @@ class Server:
 class BrokerContext(BaseContext):
     """
     BrokerContext is used as the context passed to plugins interacting with the broker.
-    It act as an adapter to broker services from plugins developed for DistMQTT broker
+    It act as an adapter to broker services from plugins developed for MoaT-MQTT broker
     """
 
     def __init__(self, broker, config):
@@ -152,7 +152,7 @@ class BrokerContext(BaseContext):
 async def create_broker(config=None, plugin_namespace=None):
     """MQTT 3.1.1 compliant broker implementation
     :param config: Example Yaml config
-    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``distmqtt.broker.plugins``
+    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``moat.mqtt.broker.plugins``
 
     This is an async context manager::
 
@@ -184,7 +184,7 @@ class Broker:
 
     :param tg: The task group used to run the broker's tasks.
     :param config: Example Yaml config
-    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``distmqtt.broker.plugins``
+    :param plugin_namespace: Plugin namespace to use when loading plugin entry_points. Defaults to ``moat.mqtt.broker.plugins``
 
     Usage::
 
@@ -236,7 +236,7 @@ class Broker:
         if plugin_namespace:
             namespace = plugin_namespace
         else:
-            namespace = "distmqtt.broker.plugins"
+            namespace = "moat.mqtt.broker.plugins"
         self.plugins_manager = PluginManager(tg, namespace, context)
 
     def _build_listeners_config(self, broker_config):
@@ -496,7 +496,7 @@ class Broker:
             handler, client_session = await BrokerProtocolHandler.init_from_connect(
                 adapter, self.plugins_manager
             )
-        except DistMQTTException as exc:
+        except MoatMQTTException as exc:
             self.logger.warning(
                 "[MQTT-3.1.0-1] %s: Can't read first packet an CONNECT: %s",
                 format_client_message(address=remote_address, port=remote_port),

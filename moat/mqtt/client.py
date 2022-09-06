@@ -17,16 +17,16 @@ except ImportError:
 from wsproto.utilities import ProtocolError
 from asyncwebsockets import create_websocket
 
-from distmqtt.utils import match_topic, create_queue
-from distmqtt.session import Session
-from distmqtt.errors import NoDataException
-from distmqtt.mqtt.connack import CONNECTION_ACCEPTED, CLIENT_ERROR
-from distmqtt.mqtt.protocol.client_handler import ClientProtocolHandler
-from distmqtt.adapters import StreamAdapter, WebSocketsAdapter
-from distmqtt.plugins.manager import PluginManager, BaseContext
-from distmqtt.mqtt.protocol.handler import ProtocolHandlerException
-from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
-from distmqtt import codecs
+from .utils import match_topic, create_queue
+from .session import Session
+from .errors import NoDataException
+from .mqtt.connack import CONNECTION_ACCEPTED, CLIENT_ERROR
+from .mqtt.protocol.client_handler import ClientProtocolHandler
+from .adapters import StreamAdapter, WebSocketsAdapter
+from .plugins.manager import PluginManager, BaseContext
+from .mqtt.protocol.handler import ProtocolHandlerException
+from .mqtt.constants import QOS_0, QOS_1, QOS_2
+from . import codecs
 
 
 _defaults = {
@@ -135,7 +135,7 @@ async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
 
     MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
 
-    :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
+    :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`moat.mqtt.utils.gen_client_id`
     :param config: Client configuration
     :param codec: Codec to default to, the config or "no-op" if not given.
     :return: async context manager returning a class instance
@@ -176,7 +176,7 @@ class MQTTClient:
     MQTTClient instances provides API for connecting to a broker and send/receive messages using the MQTT protocol.
 
     :param tg: The task group in which to run open-ended subtasks.
-    :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`distmqtt.utils.gen_client_id`
+    :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`moat.mqtt.utils.gen_client_id`
     :param config: Client configuration
     :param codec: Codec to default to, the config or "no-op" if not given.
     :return: class instance
@@ -193,7 +193,7 @@ class MQTTClient:
         if client_id is not None:
             self.client_id = client_id
         else:
-            from distmqtt.utils import gen_client_id
+            from moat.mqtt.utils import gen_client_id
 
             self.client_id = gen_client_id()
             self.logger.debug("Using generated client ID : %s", self.client_id)
@@ -211,7 +211,7 @@ class MQTTClient:
 
         # Init plugins manager
         context = ClientContext(self.config)
-        self.plugins_manager = PluginManager(tg, "distmqtt.client.plugins", context)
+        self.plugins_manager = PluginManager(tg, "moat.mqtt.client.plugins", context)
         self.client_task = None
 
     async def connect(
@@ -238,7 +238,7 @@ class MQTTClient:
         :param cadata: server certificate authority data (optional, used for secured connection)
         :param extra_headers: a dictionary with additional http headers that should be sent on the initial connection (optional, used only with websocket connections)
         :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
-        :raise: :class:`distmqtt.client.ConnectException` if connection fails
+        :raise: :class:`moat.mqtt.client.ConnectException` if connection fails
         """
         self.session = self._initsession(uri, cleansession, cafile, capath, cadata)
         self.extra_headers = extra_headers
@@ -297,7 +297,7 @@ class MQTTClient:
 
         :param cleansession: clean session flag used in MQTT CONNECT messages sent for reconnections.
         :return: `CONNACK <http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718033>`_ return code
-        :raise: :class:`distmqtt.client.ConnectException` if re-connection fails after max retries.
+        :raise: :class:`moat.mqtt.client.ConnectException` if re-connection fails after max retries.
         """
 
         if self.session.transitions.is_connected():
@@ -585,7 +585,7 @@ class MQTTClient:
 
         This method is a *coroutine*.
 
-        :return: instance of :class:`distmqtt.session.ApplicationMessage` containing received message information flow.
+        :return: instance of :class:`moat.mqtt.session.ApplicationMessage` containing received message information flow.
         :raises: :class:`TimeoutError` if timeout occurs before a message is delivered
 
         :param codec: Codec to decode the message with.

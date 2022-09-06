@@ -2,7 +2,7 @@
 #
 # See the file license.txt for copying permission.
 
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     SUBACK,
@@ -10,9 +10,9 @@ from distmqtt.mqtt.packet import (
     MQTTPayload,
     MQTTVariableHeader,
 )
-from distmqtt.errors import DistMQTTException, NoDataException
-from distmqtt.adapters import StreamAdapter
-from distmqtt.codecs import bytes_to_int, int_to_bytes, read_or_raise
+from ..errors import MoatMQTTException, NoDataException
+from ..adapters import StreamAdapter
+from ..codecs import bytes_to_int, int_to_bytes, read_or_raise
 
 
 class SubackPayload(MQTTPayload):
@@ -70,7 +70,7 @@ class SubackPacket(MQTTPacket):
             header = MQTTFixedHeader(SUBACK, 0x00)
         else:
             if fixed.packet_type != SUBACK:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for SubackPacket init" % fixed.packet_type
                 )
             header = fixed

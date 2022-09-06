@@ -2,8 +2,8 @@
 #
 # See the file license.txt for copying permission.
 from datetime import datetime
-from distmqtt.mqtt.packet import PUBLISH
-from distmqtt.codecs import int_to_bytes_str
+from .packet import PUBLISH
+from ..codecs import int_to_bytes_str
 import anyio
 
 
@@ -52,9 +52,9 @@ class BrokerSysPlugin:
 
     async def on_broker_post_start(self, *args, **kwargs):  # pylint: disable=unused-argument
         self._stats[STAT_START_TIME] = datetime.now()
-        from distmqtt.version import get_version
+        from ..version import get_version
 
-        version = "DistMQTT version " + get_version()
+        version = "MoaT-MQTT version " + get_version()
         await self.context.broadcast_message(
             DOLLAR_SYS_ROOT + "version", version.encode(), retain=True
         )

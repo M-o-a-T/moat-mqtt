@@ -1,7 +1,7 @@
 MQTTClient API
 ==============
 
-The :class:`~distmqtt.client.MQTTClient` class implements the client part of MQTT protocol. It can be used to publish and/or subscribe MQTT message on a broker accessible on the network through TCP or websocket protocol, both secured or unsecured.
+The :class:`~moat.mqtt.client.MQTTClient` class implements the client part of MQTT protocol. It can be used to publish and/or subscribe MQTT message on a broker accessible on the network through TCP or websocket protocol, both secured or unsecured.
 
 
 Usage examples
@@ -17,8 +17,8 @@ The example below shows how to write a simple MQTT client which subscribes a top
     import logging
     import anyio
 
-    from distmqtt.client import open_mqttclient, ClientException
-    from distmqtt.mqtt.constants import QOS_1, QOS_2
+    from moat.mqtt.client import open_mqttclient, ClientException
+    from moat.mqtt.mqtt.constants import QOS_1, QOS_2
     
     logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ The example below shows how to write a simple MQTT client which subscribes a top
         anyio.run(uptime_coro)
 
 This code has a problem: there's one central dispatcher which needs to know
-all message types. Fortunately `distmqtt` has a built-in dispatcher.
+all message types. Fortunately `moat.mqtt` has a built-in dispatcher.
 
 .. code-block:: python
 
@@ -73,7 +73,7 @@ all message types. Fortunately `distmqtt` has a built-in dispatcher.
 Publisher
 .........
 
-The example below uses the :class:`~distmqtt.client.MQTTClient` class to implement a publisher.
+The example below uses the :class:`~moat.mqtt.client.MQTTClient` class to implement a publisher.
 This test publish 3 messages asynchronously to the broker on a test topic.
 For the purposes of the test, each message is published with a different Quality Of Service.
 
@@ -82,8 +82,8 @@ For the purposes of the test, each message is published with a different Quality
     import logging
     import anyio
 
-    from distmqtt.client import MQTTClient
-    from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+    from moat.mqtt.client import MQTTClient
+    from moat.mqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
     logger = logging.getLogger(__name__)
     
@@ -125,9 +125,9 @@ Reference
 MQTTClient API
 ..............
 
-.. autofunction:: distmqtt.client.open_mqttclient
+.. autofunction:: moat.mqtt.client.open_mqttclient
 
-.. automodule:: distmqtt.client
+.. automodule:: moat.mqtt.client
 
     .. autoclass:: MQTTClient
 
@@ -145,14 +145,14 @@ MQTTClient API
 MQTTClient configuration
 ........................
 
-Typically, you create a :class:`~distmqtt.client.MQTTClient` instance with an async context manager, i.e. by way of ``async with`` :func:`~distmqtt.client.open_mqttclient`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
+Typically, you create a :class:`~moat.mqtt.client.MQTTClient` instance with an async context manager, i.e. by way of ``async with`` :func:`~moat.mqtt.client.open_mqttclient`\(). This context manager creates a taskgroup for the client's housekeeping tasks to run in.
 
-:func:`~distmqtt.client.open_mqttclient` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary which may contain the following entries:
+:func:`~moat.mqtt.client.open_mqttclient` accepts a ``config`` parameter which allows to setup some behaviour and defaults settings. This argument must be a Python dictionary which may contain the following entries:
 
-* ``keep_alive``: keep alive interval (in seconds) to send when connecting to the broker (defaults to ``10`` seconds). :class:`~distmqtt.client.MQTTClient` will *auto-ping* the broker if no message is sent within the keep-alive interval. This avoids disconnection from the broker.
+* ``keep_alive``: keep alive interval (in seconds) to send when connecting to the broker (defaults to ``10`` seconds). :class:`~moat.mqtt.client.MQTTClient` will *auto-ping* the broker if no message is sent within the keep-alive interval. This avoids disconnection from the broker.
 * ``ping_delay``: *auto-ping* delay before keep-alive times out (defaults to ``1`` seconds). This should be larger than twice the worst-case roundtrip between your client and the broker.
-* ``default_qos``: Default QoS (``0``) used by :meth:`~distmqtt.client.MQTTClient.publish` if ``qos`` argument is not given.
-* ``default_retain``: Default retain (``False``) used by :meth:`~distmqtt.client.MQTTClient.publish` if ``retain`` argument is not given.
+* ``default_qos``: Default QoS (``0``) used by :meth:`~moat.mqtt.client.MQTTClient.publish` if ``qos`` argument is not given.
+* ``default_retain``: Default retain (``False``) used by :meth:`~moat.mqtt.client.MQTTClient.publish` if ``retain`` argument is not given.
 * ``auto_reconnect``: enable or disable auto-reconnect feature (defaults to ``True``).
 * ``reconnect_max_interval``: maximum interval (in seconds) to wait before two connection retries (defaults to ``10``).
 * ``reconnect_retries``: maximum number of connect retries (defaults to ``2``). Negative value will cause client to reconnect infinietly.
@@ -191,4 +191,4 @@ With this setting any message published will set with QOS_0 and retain flag unse
 Also, 'codec="yesno"' will only accept a ``bool`` as message, and translate
 that to "yes" and "no" messages.
 
-In any case, any ``qos`` and ``retain`` arguments passed to method :meth:`~distmqtt.client.MQTTClient.publish` will override these settings.
+In any case, any ``qos`` and ``retain`` arguments passed to method :meth:`~moat.mqtt.client.MQTTClient.publish` will override these settings.

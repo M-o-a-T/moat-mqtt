@@ -7,7 +7,7 @@ import anyio
 from contextlib import asynccontextmanager
 from functools import partial
 
-from distmqtt.broker import create_broker
+from .broker import create_broker
 
 try:
     from distkv.server import Server as _Server

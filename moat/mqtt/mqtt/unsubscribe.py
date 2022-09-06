@@ -3,7 +3,7 @@
 # See the file license.txt for copying permission.
 import anyio
 
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     UNSUBSCRIBE,
@@ -11,8 +11,8 @@ from distmqtt.mqtt.packet import (
     MQTTPayload,
     MQTTVariableHeader,
 )
-from distmqtt.errors import DistMQTTException, NoDataException
-from distmqtt.codecs import decode_string, encode_string
+from ..errors import MoatMQTTException, NoDataException
+from ..codecs import decode_string, encode_string
 
 
 class UnubscribePayload(MQTTPayload):
@@ -63,7 +63,7 @@ class UnsubscribePacket(MQTTPacket):
             header = MQTTFixedHeader(UNSUBSCRIBE, 0x02)  # [MQTT-3.10.1-1]
         else:
             if fixed.packet_type != UNSUBSCRIBE:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for UnsubscribePacket init" % fixed.packet_type
                 )
             header = fixed

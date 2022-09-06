@@ -1,8 +1,8 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, DISCONNECT
-from distmqtt.errors import DistMQTTException
+from .packet import MQTTPacket, MQTTFixedHeader, DISCONNECT
+from ..errors import MoatMQTTException
 
 
 class DisconnectPacket(MQTTPacket):
@@ -14,7 +14,7 @@ class DisconnectPacket(MQTTPacket):
             header = MQTTFixedHeader(DISCONNECT, 0x00)
         else:
             if fixed.packet_type != DISCONNECT:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for DisconnectPacket init" % fixed.packet_type
                 )
             header = fixed

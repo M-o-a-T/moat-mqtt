@@ -2,10 +2,10 @@
 #
 # See the file license.txt for copying permission.
 """
-DistMQTT - MQTT 3.1.1 broker
+MoaT-MQTT - MQTT 3.1.1 broker
 
 Usage:
-    distmqtt --help
+    moat mqtt broker --help
 """
 
 import logging
@@ -13,8 +13,8 @@ import anyio
 import os
 from contextlib import AsyncExitStack
 import asyncclick as click
-from distmqtt.broker import create_broker
-from distmqtt.utils import read_yaml_config
+from ..broker import create_broker
+from ..utils import read_yaml_config
 from asyncscope import main_scope
 
 

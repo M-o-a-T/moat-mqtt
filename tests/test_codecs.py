@@ -3,8 +3,8 @@
 # See the file license.txt for copying permission.
 import unittest
 
-from distmqtt.codecs import bytes_to_hex_str, bytes_to_int, decode_string, encode_string
-from distmqtt.adapters import BufferAdapter
+from moat.mqtt.codecs import bytes_to_hex_str, bytes_to_int, decode_string, encode_string
+from moat.mqtt.adapters import BufferAdapter
 
 from . import anyio_run
 

@@ -1,8 +1,8 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from distmqtt.mqtt.packet import MQTTPacket, MQTTFixedHeader, PINGRESP
-from distmqtt.errors import DistMQTTException
+from .packet import MQTTPacket, MQTTFixedHeader, PINGRESP
+from ..errors import MoatMQTTException
 
 
 class PingRespPacket(MQTTPacket):
@@ -14,7 +14,7 @@ class PingRespPacket(MQTTPacket):
             header = MQTTFixedHeader(PINGRESP, 0x00)
         else:
             if fixed.packet_type != PINGRESP:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for PingRespPacket init" % fixed.packet_type
                 )
             header = fixed

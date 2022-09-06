@@ -5,14 +5,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="distmqtt",
+    name="moat-mqtt",
     use_scm_version={"version_scheme": "guess-next-dev", "local_scheme": "dirty-tag"},
     setup_requires=["setuptools_scm", "pytest-runner"],
     tests_require=["pytest", "pylint >= 2.7"],
     description="MQTT client/broker using anyio and distkv",
     author="Matthias Urlichs",
     author_email="matthias@urlichs.de",
-    url="https://github.com/smurfix/distmqtt",
+    url="https://github.com/M-o-a-T/moat-mqtt",
     license="MIT",
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
@@ -46,27 +46,27 @@ setup(
         "Topic :: Internet",
     ],
     entry_points={
-        "distmqtt.test.plugins": [
+        "moat.mqtt.test.plugins": [
             #           'test_plugin = tests.plugins.test_manager:SimpleTestPlugin',
             #           'event_plugin = tests.plugins.test_manager:EventTestPlugin',
-            #           'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
+            #           'packet_logger_plugin = moat.mqtt.plugins.logging:PacketLoggerPlugin',
         ],
-        "distmqtt.broker.plugins": [
-            # 'event_logger_plugin = distmqtt.plugins.logging:EventLoggerPlugin',
-            #           'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
-            "auth_anonymous = distmqtt.plugins.authentication:AnonymousAuthPlugin",
-            "auth_file = distmqtt.plugins.authentication:FileAuthPlugin",
-            "topic_taboo = distmqtt.plugins.topic_checking:TopicTabooPlugin",
-            "topic_acl = distmqtt.plugins.topic_checking:TopicAccessControlListPlugin",
-            "broker_sys = distmqtt.plugins.sys.broker:BrokerSysPlugin",
+        "moat.mqtt.broker.plugins": [
+            # 'event_logger_plugin = moat.mqtt.plugins.logging:EventLoggerPlugin',
+            #           'packet_logger_plugin = moat.mqtt.plugins.logging:PacketLoggerPlugin',
+            "auth_anonymous = moat.mqtt.plugins.authentication:AnonymousAuthPlugin",
+            "auth_file = moat.mqtt.plugins.authentication:FileAuthPlugin",
+            "topic_taboo = moat.mqtt.plugins.topic_checking:TopicTabooPlugin",
+            "topic_acl = moat.mqtt.plugins.topic_checking:TopicAccessControlListPlugin",
+            "broker_sys = moat.mqtt.plugins.sys.broker:BrokerSysPlugin",
         ],
-        "distmqtt.client.plugins": [
-            #           'packet_logger_plugin = distmqtt.plugins.logging:PacketLoggerPlugin',
+        "moat.mqtt.client.plugins": [
+            #           'packet_logger_plugin = moat.mqtt.plugins.logging:PacketLoggerPlugin',
         ],
         "console_scripts": [
-            "distmqtt = distmqtt.scripts.broker_script:main",
-            "distmqtt_pub = distmqtt.scripts.pub_script:main",
-            "distmqtt_sub = distmqtt.scripts.sub_script:main",
+            "moat_mqtt_broker = moat.mqtt.scripts.broker_script:main",
+            "moat_mqtt_pub = moat.mqtt.scripts.pub_script:main",
+            "moat_mqtt_sub = moat.mqtt.scripts.sub_script:main",
         ],
     },
 )

@@ -2,8 +2,8 @@
 #
 # See the file license.txt for copying permission.
 import anyio
-from distmqtt.mqtt.protocol.handler import ProtocolHandler
-from distmqtt.mqtt.connack import (
+from .protocol.handler import ProtocolHandler
+from .connack import (
     CONNECTION_ACCEPTED,
     UNACCEPTABLE_PROTOCOL_VERSION,
     IDENTIFIER_REJECTED,
@@ -11,18 +11,18 @@ from distmqtt.mqtt.connack import (
     NOT_AUTHORIZED,
     ConnackPacket,
 )
-from distmqtt.mqtt.connect import ConnectPacket
-from distmqtt.mqtt.pingreq import PingReqPacket
-from distmqtt.mqtt.pingresp import PingRespPacket
-from distmqtt.mqtt.subscribe import SubscribePacket
-from distmqtt.mqtt.suback import SubackPacket
-from distmqtt.mqtt.unsubscribe import UnsubscribePacket
-from distmqtt.mqtt.unsuback import UnsubackPacket
-from distmqtt.utils import format_client_message, create_queue
-from distmqtt.session import Session
-from distmqtt.plugins.manager import PluginManager
-from distmqtt.adapters import StreamAdapter
-from distmqtt.errors import MQTTException, NoDataException
+from .connect import ConnectPacket
+from .pingreq import PingReqPacket
+from .pingresp import PingRespPacket
+from .subscribe import SubscribePacket
+from .suback import SubackPacket
+from .unsubscribe import UnsubscribePacket
+from .unsuback import UnsubackPacket
+from ..utils import format_client_message, create_queue
+from ..session import Session
+from ..plugins.manager import PluginManager
+from ..adapters import StreamAdapter
+from ..errors import MQTTException, NoDataException
 from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT
 
 import logging

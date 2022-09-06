@@ -1,7 +1,6 @@
 *.egg-info
 *.pyc
 /*.cfg
-.idea/distmqtt.iml
 .tox/
 /.coverage
 __pycache__

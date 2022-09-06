@@ -2,19 +2,19 @@
 #
 # See the file license.txt for copying permission.
 import anyio
-from distmqtt.mqtt.protocol.handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
-from distmqtt.mqtt.disconnect import DisconnectPacket
-from distmqtt.mqtt.pingreq import PingReqPacket
-from distmqtt.mqtt.pingresp import PingRespPacket
-from distmqtt.mqtt.subscribe import SubscribePacket
-from distmqtt.mqtt.suback import SubackPacket
-from distmqtt.mqtt.unsubscribe import UnsubscribePacket
-from distmqtt.mqtt.unsuback import UnsubackPacket
-from distmqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload, ConnectPacket
-from distmqtt.mqtt.connack import ConnackPacket
-from distmqtt.session import Session
-from distmqtt.plugins.manager import PluginManager
-from distmqtt.utils import Future, create_queue
+from .protocol.handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
+from .disconnect import DisconnectPacket
+from .pingreq import PingReqPacket
+from .pingresp import PingRespPacket
+from .subscribe import SubscribePacket
+from .suback import SubackPacket
+from .unsubscribe import UnsubscribePacket
+from .unsuback import UnsubackPacket
+from .connect import ConnectVariableHeader, ConnectPayload, ConnectPacket
+from .connack import ConnackPacket
+from ..session import Session
+from ..plugins.manager import PluginManager
+from ..utils import Future, create_queue
 
 
 class ClientProtocolHandler(ProtocolHandler):

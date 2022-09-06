@@ -5,7 +5,7 @@ import anyio
 
 from typing import Optional
 
-from distmqtt.broker import Broker
+from .broker import Broker
 
 try:
     from distkv.client import client_scope as distkv_client_scope
@@ -124,7 +124,7 @@ class DistKVbroker(Broker):
                     data = b""
                 elif not isinstance(data, (bytes, bytearray)):
                     await err.record_error(
-                        "distmqtt", msg.path, data={"data": data}, message="non-binary data"
+                        "moat.mqtt", msg.path, data={"data": data}, message="non-binary data"
                     )
                     return
                 else:
@@ -134,7 +134,7 @@ class DistKVbroker(Broker):
                         data=data,
                         retain=True,
                     )
-                await err.record_working("distmqtt", msg.path)
+                await err.record_working("moat.mqtt", msg.path)
 
     async def start(self):
         cfg = self.config["distkv"]

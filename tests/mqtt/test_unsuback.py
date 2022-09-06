@@ -3,9 +3,9 @@
 # See the file license.txt for copying permission.
 import unittest
 
-from distmqtt.mqtt.unsuback import UnsubackPacket
-from distmqtt.mqtt.packet import PacketIdVariableHeader
-from distmqtt.adapters import BufferAdapter
+from moat.mqtt.mqtt.unsuback import UnsubackPacket
+from moat.mqtt.mqtt.packet import PacketIdVariableHeader
+from moat.mqtt.adapters import BufferAdapter
 
 from .. import anyio_run
 

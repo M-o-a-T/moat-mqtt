@@ -5,10 +5,10 @@ import logging
 import itertools
 import anyio
 
-from distmqtt.mqtt import packet_class
-from distmqtt.mqtt.connack import ConnackPacket
-from distmqtt.mqtt.connect import ConnectPacket
-from distmqtt.mqtt.packet import (
+from . import packet_class
+from .connack import ConnackPacket
+from .connect import ConnectPacket
+from .packet import (
     RESERVED_0,
     CONNACK,
     PUBLISH,
@@ -26,35 +26,35 @@ from distmqtt.mqtt.packet import (
     RESERVED_15,
     MQTTFixedHeader,
 )
-from distmqtt.mqtt.pingresp import PingRespPacket
-from distmqtt.mqtt.pingreq import PingReqPacket
-from distmqtt.mqtt.publish import PublishPacket
-from distmqtt.mqtt.pubrel import PubrelPacket
-from distmqtt.mqtt.puback import PubackPacket
-from distmqtt.mqtt.pubrec import PubrecPacket
-from distmqtt.mqtt.pubcomp import PubcompPacket
-from distmqtt.mqtt.suback import SubackPacket
-from distmqtt.mqtt.subscribe import SubscribePacket
-from distmqtt.mqtt.unsubscribe import UnsubscribePacket
-from distmqtt.mqtt.unsuback import UnsubackPacket
-from distmqtt.mqtt.disconnect import DisconnectPacket
-from distmqtt.adapters import StreamAdapter
-from distmqtt.session import (
+from .pingresp import PingRespPacket
+from .pingreq import PingReqPacket
+from .publish import PublishPacket
+from .pubrel import PubrelPacket
+from .puback import PubackPacket
+from .pubrec import PubrecPacket
+from .pubcomp import PubcompPacket
+from .suback import SubackPacket
+from .subscribe import SubscribePacket
+from .unsubscribe import UnsubscribePacket
+from .unsuback import UnsubackPacket
+from .disconnect import DisconnectPacket
+from ..adapters import StreamAdapter
+from ..session import (
     Session,
     OutgoingApplicationMessage,
     IncomingApplicationMessage,
     INCOMING,
     OUTGOING,
 )
-from distmqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
-from distmqtt.plugins.manager import PluginManager
-from distmqtt.errors import (
-    DistMQTTException,
+from .constants import QOS_0, QOS_1, QOS_2
+from ..plugins.manager import PluginManager
+from ..errors import (
+    MoatMQTTException,
     MQTTException,
     NoDataException,
     InvalidStateError,
 )
-from distmqtt.utils import Future, CancelledError, create_queue
+from ..utils import Future, CancelledError, create_queue
 
 try:
     ClosedResourceError = anyio.exceptions.ClosedResourceError
@@ -252,7 +252,7 @@ class ProtocolHandler:
         if qos in (QOS_1, QOS_2):
             packet_id = self.session.next_packet_id
             if packet_id in self.session.inflight_out:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "A message with the same packet ID '%d' is already in flight" % packet_id
                 )
         else:
@@ -278,7 +278,7 @@ class ProtocolHandler:
             elif app_message.qos == QOS_2:
                 await self._handle_qos2_message_flow(app_message)
             else:
-                raise DistMQTTException("Unexcepted QOS value '%d" % str(app_message.qos))
+                raise MoatMQTTException("Unexcepted QOS value '%d" % str(app_message.qos))
         except CancelledError:
             pass
 
@@ -315,7 +315,7 @@ class ProtocolHandler:
         """
         assert app_message.qos == QOS_1
         if app_message.puback_packet:
-            raise DistMQTTException(
+            raise MoatMQTTException(
                 "Message '%d' has already been acknowledged" % app_message.packet_id
             )
         if app_message.direction == OUTGOING:
@@ -362,7 +362,7 @@ class ProtocolHandler:
         assert app_message.qos == QOS_2
         if app_message.direction == OUTGOING:
             if app_message.pubrel_packet and app_message.pubcomp_packet:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Message '%d' has already been acknowledged" % app_message.packet_id
                 )
             if not app_message.pubrel_packet:
@@ -370,7 +370,7 @@ class ProtocolHandler:
                 if app_message.publish_packet is not None:
                     # This is a retry flow, no need to store just check the message exists in session
                     if app_message.packet_id not in self.session.inflight_out:
-                        raise DistMQTTException(
+                        raise MoatMQTTException(
                             "Unknown inflight message '%d' in session" % app_message.packet_id
                         )
                     publish_packet = app_message.build_publish_packet(dup=True)
@@ -386,7 +386,7 @@ class ProtocolHandler:
                         "Can't add PUBREC waiter, a waiter already exists for message Id '%s'",
                         app_message.packet_id,
                     )
-                    raise DistMQTTException(app_message)
+                    raise MoatMQTTException(app_message)
                 waiter = Future()
                 self._pubrec_waiters[app_message.packet_id] = waiter
                 # Send PUBLISH packet

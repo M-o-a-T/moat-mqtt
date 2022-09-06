@@ -1,13 +1,13 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from distmqtt.mqtt.packet import (
+from .packet import (
     MQTTPacket,
     MQTTFixedHeader,
     PUBACK,
     PacketIdVariableHeader,
 )
-from distmqtt.errors import DistMQTTException
+from ..errors import MoatMQTTException
 
 
 class PubackPacket(MQTTPacket):
@@ -31,7 +31,7 @@ class PubackPacket(MQTTPacket):
             header = MQTTFixedHeader(PUBACK, 0x00)
         else:
             if fixed.packet_type != PUBACK:
-                raise DistMQTTException(
+                raise MoatMQTTException(
                     "Invalid fixed packet type %s for PubackPacket init" % fixed.packet_type
                 )
             header = fixed
