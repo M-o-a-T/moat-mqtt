@@ -2,6 +2,7 @@
 *.pyc
 /*.cfg
 .tox/
+/debian/
 /.coverage
 __pycache__
 /build/
