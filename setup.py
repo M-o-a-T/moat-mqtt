@@ -63,10 +63,5 @@ setup(
         "moat.mqtt.client.plugins": [
             #           'packet_logger_plugin = moat.mqtt.plugins.logging:PacketLoggerPlugin',
         ],
-        "console_scripts": [
-            "moat_mqtt_broker = moat.mqtt.scripts.broker_script:main",
-            "moat_mqtt_pub = moat.mqtt.scripts.pub_script:main",
-            "moat_mqtt_sub = moat.mqtt.scripts.sub_script:main",
-        ],
     },
 )
