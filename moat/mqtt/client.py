@@ -790,7 +790,7 @@ class MQTTClient:
         else:
             s.clean_session = self.config.get("cleansession", True)
         s.keep_alive = self.config["keep_alive"] - self.config["ping_delay"]
-        if "will" in self.config:
+        if "will" in self.config and self.config["will"]["topic"]:
             s.will_flag = True
             s.will_retain = self.config["will"]["retain"]
             s.will_topic = self.config["will"]["topic"]
@@ -801,4 +801,5 @@ class MQTTClient:
             s.will_retain = False
             s.will_topic = None
             s.will_message = None
+            s.will_qos = 0
         return s
