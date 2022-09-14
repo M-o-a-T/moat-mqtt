@@ -1,0 +1,40 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [ "setuptools", "wheel", "setuptools-scm",]
+
+[project]
+classifiers = [ "Intended Audience :: Developers", "Programming Language :: Python :: 3", "Framework :: AsyncIO", "Framework :: Trio", "Framework :: AnyIO", "License :: OSI Approved", "Development Status :: 4 - Beta",]
+dependencies = [ "anyio >= 3.0",]
+dynamic = [ "version",]
+keywords = [ "MoaT",]
+requires-python = ">=3.8"
+name = "moat-mqtt"
+description = "Async MQTT broker and client, with optional MoaT-KV support"
+readme = "README.rst"
+[[project.authors]]
+email = "matthias@urlichs.de"
+name = "Matthias Urlichs"
+
+[project.license]
+file = "LICENSE.txt"
+
+[project.urls]
+homepage = "https://m-o-a-t.org"
+repository = "https://github.com/M-o-a-T/moat-mqtt"
+
+[tool.flake8]
+max-line-length = 99
+ignore = [ "W503", "E231", "E203",]
+
+[tool.isort]
+line_length = 88
+multi_line_output = 3
+trailing_comma = 1
+
+[tool.setuptools]
+packages = [ "moat.mqtt",]
+
+[tool.setuptools_scm]
+
+[tool.tox]
+legacy_tox_ini = "[tox]\nisolated_build = True\ncommands = \n\t   black --check moat/mqtt tests\n\t   flake8p moat/mqtt tests\n\t   black\nenvlist = check\n\n[testenv:check]\ncommands = \n\t   black --check moat/mqtt tests\n\t   flake8p moat/mqtt tests\n\t   flake8 moat/mqtt tests\ndeps = \n\t   flake8\n\t   flake8-pyproject\n\t   black\n\n"
