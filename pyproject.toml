@@ -37,9 +37,8 @@ max-line-length = 99
 ignore = [ "W503", "E231", "E203",]
 
 [tool.isort]
-line_length = 88
+line_length = 99
 multi_line_output = 3
-trailing_comma = 1
 
 [tool.setuptools]
 packages = [ "moat.mqtt",]
