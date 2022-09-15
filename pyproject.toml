@@ -3,8 +3,18 @@ build-backend = "setuptools.build_meta"
 requires = [ "setuptools", "wheel", "setuptools-scm",]
 
 [project]
-classifiers = [ "Intended Audience :: Developers", "Programming Language :: Python :: 3", "Framework :: AsyncIO", "Framework :: Trio", "Framework :: AnyIO", "License :: OSI Approved", "Development Status :: 4 - Beta",]
-dependencies = [ "anyio >= 3.0",]
+classifiers = [
+	"Intended Audience :: Developers",
+	"Programming Language :: Python :: 3",
+	"Framework :: AsyncIO",
+	"Framework :: Trio",
+	"Framework :: AnyIO",
+	"License :: OSI Approved",
+	"Development Status :: 4 - Beta",
+	]
+dependencies = [
+	"anyio ~= 3.0",
+	]
 dynamic = [ "version",]
 keywords = [ "MoaT",]
 requires-python = ">=3.8"
@@ -37,4 +47,22 @@ packages = [ "moat.mqtt",]
 [tool.setuptools_scm]
 
 [tool.tox]
-legacy_tox_ini = "[tox]\nisolated_build = True\ncommands = \n\t   black --check moat/mqtt tests\n\t   flake8p moat/mqtt tests\n\t   black\nenvlist = check\n\n[testenv:check]\ncommands = \n\t   black --check moat/mqtt tests\n\t   flake8p moat/mqtt tests\n\t   flake8 moat/mqtt tests\ndeps = \n\t   flake8\n\t   flake8-pyproject\n\t   black\n\n"
+legacy_tox_ini = """
+[tox]
+isolated_build = True
+envlist = py310,py39,check
+
+[testenv]
+setenv = 
+    PYTHONPATH = {env:PYTHONPATH}{:}{toxinidir}
+
+[testenv:check]
+commands = 
+    flake8p moat/mqtt tests
+    black --check moat/mqtt tests
+deps = 
+    black
+    flake8-pyproject
+    flake8
+
+"""
