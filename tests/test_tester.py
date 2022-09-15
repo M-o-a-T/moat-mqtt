@@ -1,7 +1,7 @@
 import pytest
 import trio  # noqa: F401
 
-from moat.mqtt.test import test_server, test_client
+from moat.mqtt.test import test_client, test_server
 
 try:
     from distkv.util import P

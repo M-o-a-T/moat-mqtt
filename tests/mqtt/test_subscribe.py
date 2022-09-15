@@ -3,10 +3,10 @@
 # See the file license.txt for copying permission.
 import unittest
 
-from moat.mqtt.mqtt.subscribe import SubscribePacket, SubscribePayload
-from moat.mqtt.mqtt.packet import PacketIdVariableHeader
-from moat.mqtt.mqtt.constants import QOS_1, QOS_2
 from moat.mqtt.adapters import BufferAdapter
+from moat.mqtt.mqtt.constants import QOS_1, QOS_2
+from moat.mqtt.mqtt.packet import PacketIdVariableHeader
+from moat.mqtt.mqtt.subscribe import SubscribePacket, SubscribePayload
 
 from .. import anyio_run
 

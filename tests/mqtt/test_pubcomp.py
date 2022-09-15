@@ -3,8 +3,8 @@
 # See the file license.txt for copying permission.
 import unittest
 
-from moat.mqtt.mqtt.pubcomp import PubcompPacket, PacketIdVariableHeader
 from moat.mqtt.adapters import BufferAdapter
+from moat.mqtt.mqtt.pubcomp import PacketIdVariableHeader, PubcompPacket
 
 from .. import anyio_run
 

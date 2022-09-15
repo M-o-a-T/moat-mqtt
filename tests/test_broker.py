@@ -1,36 +1,37 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
-import os
 import logging
+import os
 import unittest
+from unittest.mock import MagicMock, call, patch
+
+import anyio
 import pytest
-from unittest.mock import patch, call, MagicMock
 
 from moat.mqtt.adapters import StreamAdapter
 from moat.mqtt.broker import (
-    EVENT_BROKER_PRE_START,
-    EVENT_BROKER_POST_START,
-    EVENT_BROKER_PRE_SHUTDOWN,
-    EVENT_BROKER_POST_SHUTDOWN,
     EVENT_BROKER_CLIENT_CONNECTED,
     EVENT_BROKER_CLIENT_DISCONNECTED,
     EVENT_BROKER_CLIENT_SUBSCRIBED,
     EVENT_BROKER_CLIENT_UNSUBSCRIBED,
     EVENT_BROKER_MESSAGE_RECEIVED,
+    EVENT_BROKER_POST_SHUTDOWN,
+    EVENT_BROKER_POST_START,
+    EVENT_BROKER_PRE_SHUTDOWN,
+    EVENT_BROKER_PRE_START,
     create_broker,
 )
-from moat.mqtt.client import open_mqttclient, ConnectException
+from moat.mqtt.client import ConnectException, open_mqttclient
 from moat.mqtt.mqtt import (
-    ConnectPacket,
     ConnackPacket,
+    ConnectPacket,
+    DisconnectPacket,
     PublishPacket,
     PubrecPacket,
     PubrelPacket,
-    DisconnectPacket,
 )
-from moat.mqtt.mqtt.connect import ConnectVariableHeader, ConnectPayload
+from moat.mqtt.mqtt.connect import ConnectPayload, ConnectVariableHeader
 from moat.mqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
 from . import anyio_run

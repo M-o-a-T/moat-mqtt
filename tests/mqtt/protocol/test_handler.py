@@ -1,26 +1,24 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import unittest
-import os
-import anyio
 import logging
+import os
 import random
+import unittest
 from functools import partial
-from moat.mqtt.plugins.manager import PluginManager
-from moat.mqtt.session import (
-    Session,
-    OutgoingApplicationMessage,
-    IncomingApplicationMessage,
-)
-from moat.mqtt.mqtt.protocol.handler import ProtocolHandler
+
+import anyio
+
 from moat.mqtt.adapters import StreamAdapter
 from moat.mqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
-from moat.mqtt.mqtt.publish import PublishPacket
+from moat.mqtt.mqtt.protocol.handler import ProtocolHandler
 from moat.mqtt.mqtt.puback import PubackPacket
+from moat.mqtt.mqtt.pubcomp import PubcompPacket
+from moat.mqtt.mqtt.publish import PublishPacket
 from moat.mqtt.mqtt.pubrec import PubrecPacket
 from moat.mqtt.mqtt.pubrel import PubrelPacket
-from moat.mqtt.mqtt.pubcomp import PubcompPacket
+from moat.mqtt.plugins.manager import PluginManager
+from moat.mqtt.session import IncomingApplicationMessage, OutgoingApplicationMessage, Session
 
 from ... import anyio_run
 
@@ -64,13 +62,14 @@ class ProtocolHandlerTest(unittest.TestCase):
                 async def _serve():
                     async with server:
                         await server.serve(partial(self.listener_, server_mock), task_group=tg)
+
                 tg.start_soon(_serve)
 
                 async with await anyio.connect_tcp("127.0.0.1", PORT) as conn:
                     sr = adapt(conn)
                     await test_coro(sr)
                     tg.cancel_scope.cancel()
-                pass # waiting for taskgroup
+                pass  # waiting for taskgroup
 
         anyio_run(runner)
 

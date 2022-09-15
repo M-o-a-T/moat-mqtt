@@ -1,10 +1,12 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import unittest
-import pytest
 import logging
+import unittest
+
 import anyio
+import pytest
+
 from moat.mqtt.plugins.manager import PluginManager
 
 from .. import anyio_run

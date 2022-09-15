@@ -1,13 +1,15 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import unittest
-import anyio
-import os
 import logging
+import os
+import unittest
+
+import anyio
 import pytest
-from moat.mqtt.client import open_mqttclient, ConnectException
+
 from moat.mqtt.broker import create_broker
+from moat.mqtt.client import ConnectException, open_mqttclient
 from moat.mqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
 from . import anyio_run

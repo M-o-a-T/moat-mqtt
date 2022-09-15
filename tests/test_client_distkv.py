@@ -1,26 +1,27 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import unittest
-import pytest
-import anyio
-import trio
-import os
 import logging
+import os
 import random
+import unittest
+
+import anyio
+import pytest
+import trio
 
 try:
     from contextlib import asynccontextmanager
 except ImportError:
     from async_generator import asynccontextmanager
 
-from moat.mqtt.client import open_mqttclient
 from moat.mqtt.broker import create_broker
+from moat.mqtt.client import open_mqttclient
 from moat.mqtt.mqtt.constants import QOS_0
 
 try:
-    from distkv.server import Server
     from distkv.client import open_client
+    from distkv.server import Server
 except ImportError:
     pytestmark = pytest.mark.skip
 

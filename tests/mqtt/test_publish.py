@@ -3,9 +3,9 @@
 # See the file license.txt for copying permission.
 import unittest
 
-from moat.mqtt.mqtt.publish import PublishPacket, PublishVariableHeader, PublishPayload
 from moat.mqtt.adapters import BufferAdapter
 from moat.mqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
+from moat.mqtt.mqtt.publish import PublishPacket, PublishPayload, PublishVariableHeader
 
 from .. import anyio_run
 

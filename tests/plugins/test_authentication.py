@@ -2,11 +2,12 @@
 #
 # See the file license.txt for copying permission.
 
-import unittest
 import logging
 import os
-from moat.mqtt.plugins.manager import BaseContext
+import unittest
+
 from moat.mqtt.plugins.authentication import AnonymousAuthPlugin, FileAuthPlugin
+from moat.mqtt.plugins.manager import BaseContext
 from moat.mqtt.session import Session
 
 from .. import anyio_run
