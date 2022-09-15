@@ -39,6 +39,7 @@ ignore = [ "W503", "E231", "E203",]
 [tool.isort]
 line_length = 99
 multi_line_output = 3
+profile = "black"
 
 [tool.setuptools]
 packages = [ "moat.mqtt",]
