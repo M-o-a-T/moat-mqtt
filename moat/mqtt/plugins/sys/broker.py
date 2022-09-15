@@ -2,10 +2,11 @@
 #
 # See the file license.txt for copying permission.
 from datetime import datetime
-from .packet import PUBLISH
-from ..codecs import int_to_bytes_str
+
 import anyio
 
+from ..codecs import int_to_bytes_str
+from .packet import PUBLISH
 
 DOLLAR_SYS_ROOT = "$SYS/broker/"
 STAT_BYTES_SENT = "bytes_sent"

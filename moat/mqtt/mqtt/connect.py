@@ -2,6 +2,7 @@
 #
 # See the file license.txt for copying permission.
 
+from ..adapters import StreamAdapter
 from ..codecs import (
     bytes_to_int,
     decode_data_with_length,
@@ -11,16 +12,9 @@ from ..codecs import (
     int_to_bytes,
     read_or_raise,
 )
-from .packet import (
-    MQTTPacket,
-    MQTTFixedHeader,
-    CONNECT,
-    MQTTVariableHeader,
-    MQTTPayload,
-)
 from ..errors import MoatMQTTException, NoDataException
-from ..adapters import StreamAdapter
 from ..utils import gen_client_id
+from .packet import CONNECT, MQTTFixedHeader, MQTTPacket, MQTTPayload, MQTTVariableHeader
 
 
 class ConnectVariableHeader(MQTTVariableHeader):

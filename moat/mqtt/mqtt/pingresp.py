@@ -1,8 +1,8 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from .packet import MQTTPacket, MQTTFixedHeader, PINGRESP
 from ..errors import MoatMQTTException
+from .packet import PINGRESP, MQTTFixedHeader, MQTTPacket
 
 
 class PingRespPacket(MQTTPacket):

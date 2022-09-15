@@ -1,15 +1,10 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from .packet import (
-    CONNACK,
-    MQTTPacket,
-    MQTTFixedHeader,
-    MQTTVariableHeader,
-)
+from ..adapters import StreamAdapter
 from ..codecs import read_or_raise
 from ..errors import MoatMQTTException
-from ..adapters import StreamAdapter
+from .packet import CONNACK, MQTTFixedHeader, MQTTPacket, MQTTVariableHeader
 
 CONNECTION_ACCEPTED = 0x00
 UNACCEPTABLE_PROTOCOL_VERSION = 0x01

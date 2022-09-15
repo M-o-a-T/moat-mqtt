@@ -1,13 +1,8 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from .packet import (
-    MQTTPacket,
-    MQTTFixedHeader,
-    PUBCOMP,
-    PacketIdVariableHeader,
-)
 from ..errors import MoatMQTTException
+from .packet import PUBCOMP, MQTTFixedHeader, MQTTPacket, PacketIdVariableHeader
 
 
 class PubcompPacket(MQTTPacket):

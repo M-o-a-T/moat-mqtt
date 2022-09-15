@@ -1,31 +1,31 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
+import logging
+
 import anyio
-from .handler import ProtocolHandler
+
+from ...adapters import StreamAdapter
+from ...errors import MQTTException, NoDataException
+from ...plugins.manager import PluginManager
+from ...session import Session
+from ...utils import create_queue, format_client_message
 from ..connack import (
-    CONNECTION_ACCEPTED,
-    UNACCEPTABLE_PROTOCOL_VERSION,
-    IDENTIFIER_REJECTED,
     BAD_USERNAME_PASSWORD,
+    CONNECTION_ACCEPTED,
+    IDENTIFIER_REJECTED,
     NOT_AUTHORIZED,
+    UNACCEPTABLE_PROTOCOL_VERSION,
     ConnackPacket,
 )
 from ..connect import ConnectPacket
 from ..pingreq import PingReqPacket
 from ..pingresp import PingRespPacket
-from ..subscribe import SubscribePacket
 from ..suback import SubackPacket
-from ..unsubscribe import UnsubscribePacket
+from ..subscribe import SubscribePacket
 from ..unsuback import UnsubackPacket
-from ...utils import format_client_message, create_queue
-from ...session import Session
-from ...plugins.manager import PluginManager
-from ...adapters import StreamAdapter
-from ...errors import MQTTException, NoDataException
-from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT
-
-import logging
+from ..unsubscribe import UnsubscribePacket
+from .handler import EVENT_MQTT_PACKET_RECEIVED, EVENT_MQTT_PACKET_SENT, ProtocolHandler
 
 logger = logging.getLogger(__name__)
 

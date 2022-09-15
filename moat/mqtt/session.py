@@ -1,16 +1,15 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
 import logging
-
-from transitions import Machine
 from collections import OrderedDict
 
-from .mqtt.publish import PublishPacket
+import anyio
+from transitions import Machine
+
 from .errors import MoatMQTTException, MQTTException
 from .mqtt.constants import QOS_0
-
+from .mqtt.publish import PublishPacket
 from .utils import create_queue
 
 OUTGOING = 0

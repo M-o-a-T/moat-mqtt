@@ -2,17 +2,17 @@
 #
 # See the file license.txt for copying permission.
 
-from .packet import (
-    MQTTPacket,
-    MQTTFixedHeader,
-    SUBACK,
-    PacketIdVariableHeader,
-    MQTTPayload,
-    MQTTVariableHeader,
-)
-from ..errors import MoatMQTTException, NoDataException
 from ..adapters import StreamAdapter
 from ..codecs import bytes_to_int, int_to_bytes, read_or_raise
+from ..errors import MoatMQTTException, NoDataException
+from .packet import (
+    SUBACK,
+    MQTTFixedHeader,
+    MQTTPacket,
+    MQTTPayload,
+    MQTTVariableHeader,
+    PacketIdVariableHeader,
+)
 
 
 class SubackPayload(MQTTPayload):

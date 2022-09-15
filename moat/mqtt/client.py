@@ -2,32 +2,33 @@
 #
 # See the file license.txt for copying permission.
 
-import anyio
+import copy
 import logging
 import ssl
-import copy
-from urllib.parse import urlparse, urlunparse
 from functools import wraps
 from typing import Union
+from urllib.parse import urlparse, urlunparse
+
+import anyio
 
 try:
     from contextlib import asynccontextmanager
 except ImportError:
     from async_generator import asynccontextmanager
-from wsproto.utilities import ProtocolError
+
 from asyncwebsockets import create_websocket
+from wsproto.utilities import ProtocolError
 
-from .utils import match_topic, create_queue
-from .session import Session
-from .errors import NoDataException
-from .mqtt.connack import CONNECTION_ACCEPTED, CLIENT_ERROR
-from .mqtt.protocol.client_handler import ClientProtocolHandler
-from .adapters import StreamAdapter, WebSocketsAdapter
-from .plugins.manager import PluginManager, BaseContext
-from .mqtt.protocol.handler import ProtocolHandlerException
-from .mqtt.constants import QOS_0, QOS_1, QOS_2
 from . import codecs
-
+from .adapters import StreamAdapter, WebSocketsAdapter
+from .errors import NoDataException
+from .mqtt.connack import CLIENT_ERROR, CONNECTION_ACCEPTED
+from .mqtt.constants import QOS_0, QOS_1, QOS_2
+from .mqtt.protocol.client_handler import ClientProtocolHandler
+from .mqtt.protocol.handler import ProtocolHandlerException
+from .plugins.manager import BaseContext, PluginManager
+from .session import Session
+from .utils import create_queue, match_topic
 
 _defaults = {
     "keep_alive": 10,
@@ -318,7 +319,7 @@ class MQTTClient:
                     raise ConnectException(  # pylint: disable=W0707
                         "Too many connection attempts failed"
                     )
-                exp = 2 ** nb_attempt
+                exp = 2**nb_attempt
                 delay = exp if exp < reconnect_max_interval else reconnect_max_interval
                 self.logger.debug("Waiting %d second before next attempt", delay)
                 await anyio.sleep(delay)

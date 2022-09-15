@@ -3,15 +3,9 @@
 # See the file license.txt for copying permission.
 import anyio
 
-from .packet import (
-    MQTTPacket,
-    MQTTFixedHeader,
-    PUBLISH,
-    MQTTVariableHeader,
-    MQTTPayload,
-)
-from ..errors import MoatMQTTException, MQTTException
 from ..codecs import decode_packet_id, decode_string, encode_string, int_to_bytes
+from ..errors import MoatMQTTException, MQTTException
+from .packet import PUBLISH, MQTTFixedHeader, MQTTPacket, MQTTPayload, MQTTVariableHeader
 
 
 class PublishVariableHeader(MQTTVariableHeader):

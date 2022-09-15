@@ -4,19 +4,19 @@
 
 __all__ = ["BaseContext", "PluginManager"]
 
-import pkg_resources
-import logging
-import anyio
 import copy
-
+import logging
 from collections import namedtuple
+
+import anyio
+import pkg_resources
 
 try:
     from contextlib import asynccontextmanager
 except ImportError:
     from async_generator import asynccontextmanager
-from functools import partial
 
+from functools import partial
 
 Plugin = namedtuple("Plugin", ["name", "ep", "object"])
 

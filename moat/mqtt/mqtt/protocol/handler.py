@@ -1,60 +1,56 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import logging
 import itertools
+import logging
+
 import anyio
 
+from ...adapters import StreamAdapter
+from ...errors import InvalidStateError, MoatMQTTException, MQTTException, NoDataException
+from ...plugins.manager import PluginManager
+from ...session import (
+    INCOMING,
+    OUTGOING,
+    IncomingApplicationMessage,
+    OutgoingApplicationMessage,
+    Session,
+)
+from ...utils import CancelledError, Future, create_queue
 from .. import packet_class
 from ..connack import ConnackPacket
 from ..connect import ConnectPacket
+from ..constants import QOS_0, QOS_1, QOS_2
+from ..disconnect import DisconnectPacket
 from ..packet import (
-    RESERVED_0,
     CONNACK,
-    PUBLISH,
-    PUBACK,
-    PUBREC,
-    PUBREL,
-    PUBCOMP,
-    SUBSCRIBE,
-    SUBACK,
-    UNSUBSCRIBE,
-    UNSUBACK,
+    DISCONNECT,
     PINGREQ,
     PINGRESP,
-    DISCONNECT,
+    PUBACK,
+    PUBCOMP,
+    PUBLISH,
+    PUBREC,
+    PUBREL,
+    RESERVED_0,
     RESERVED_15,
+    SUBACK,
+    SUBSCRIBE,
+    UNSUBACK,
+    UNSUBSCRIBE,
     MQTTFixedHeader,
 )
-from ..pingresp import PingRespPacket
 from ..pingreq import PingReqPacket
-from ..publish import PublishPacket
-from ..pubrel import PubrelPacket
+from ..pingresp import PingRespPacket
 from ..puback import PubackPacket
-from ..pubrec import PubrecPacket
 from ..pubcomp import PubcompPacket
+from ..publish import PublishPacket
+from ..pubrec import PubrecPacket
+from ..pubrel import PubrelPacket
 from ..suback import SubackPacket
 from ..subscribe import SubscribePacket
-from ..unsubscribe import UnsubscribePacket
 from ..unsuback import UnsubackPacket
-from ..disconnect import DisconnectPacket
-from ...adapters import StreamAdapter
-from ...session import (
-    Session,
-    OutgoingApplicationMessage,
-    IncomingApplicationMessage,
-    INCOMING,
-    OUTGOING,
-)
-from ..constants import QOS_0, QOS_1, QOS_2
-from ...plugins.manager import PluginManager
-from ...errors import (
-    MoatMQTTException,
-    MQTTException,
-    NoDataException,
-    InvalidStateError,
-)
-from ...utils import Future, CancelledError, create_queue
+from ..unsubscribe import UnsubscribePacket
 
 try:
     ClosedResourceError = anyio.exceptions.ClosedResourceError
@@ -564,7 +560,9 @@ class ProtocolHandler:
                     if packet is None:  # timeout
                         await self.handle_write_timeout()
                         continue
-                    self.logger.debug("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
+                    self.logger.debug(
+                        "%s > %r", "B" if "Broker" in type(self).__name__ else "C", packet
+                    )
                     try:
                         await packet.to_stream(self.stream)
                     except ClosedResourceError:

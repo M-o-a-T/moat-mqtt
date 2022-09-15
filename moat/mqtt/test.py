@@ -2,16 +2,16 @@
 This module contains code that helps with DistKV testing.
 """
 import os
-import anyio
-
 from contextlib import asynccontextmanager
 from functools import partial
+
+import anyio
 
 from .broker import create_broker
 
 try:
-    from distkv.server import Server as _Server
     from distkv.client import open_client
+    from distkv.server import Server as _Server
 except ImportError:
     _Server = None
 

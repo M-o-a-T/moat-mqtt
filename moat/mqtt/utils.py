@@ -2,8 +2,9 @@
 #
 # See the file license.txt for copying permission.
 import logging
-import attr
+
 import anyio
+import attr
 import yaml
 
 from .errors import InvalidStateError

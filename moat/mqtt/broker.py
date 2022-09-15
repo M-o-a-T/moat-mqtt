@@ -2,11 +2,12 @@
 #
 # See the file license.txt for copying permission.
 import logging
-import ssl
-import anyio
 import socket
-from copy import deepcopy
+import ssl
 from collections import deque
+from copy import deepcopy
+
+import anyio
 
 try:
     from contextlib import asynccontextmanager
@@ -14,18 +15,19 @@ except ImportError:
     from async_generator import asynccontextmanager
 
 from functools import partial
+
+from asyncwebsockets import create_websocket_server
 from transitions import Machine, MachineError
-from .session import Session, EVENT_BROKER_MESSAGE_RECEIVED  # noqa: F401
+
+from .adapters import BaseAdapter, StreamAdapter, WebSocketsAdapter
+from .errors import MoatMQTTException, MQTTException
+from .mqtt.constants import QOS_0
 
 # EVENT_BROKER_MESSAGE_RECEIVED is re-exported
 from .mqtt.protocol.broker_handler import BrokerProtocolHandler
-from .errors import MoatMQTTException, MQTTException
-from .utils import format_client_message, gen_client_id, Future, match_topic
-from .mqtt.constants import QOS_0
-from .adapters import StreamAdapter, BaseAdapter, WebSocketsAdapter
-from .plugins.manager import PluginManager, BaseContext
-from asyncwebsockets import create_websocket_server
-
+from .plugins.manager import BaseContext, PluginManager
+from .session import EVENT_BROKER_MESSAGE_RECEIVED, Session  # noqa: F401
+from .utils import Future, format_client_message, gen_client_id, match_topic
 
 _defaults = {
     "listeners": {"default": {"type": "tcp", "bind": "0.0.0.0:1883"}},
@@ -540,8 +542,10 @@ class Broker:
             sock = adapter.raw_socket
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, self.config["tcp-keepalive"])
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL,self.config["tcp-keepalive"])
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, self.config["tcp-keepalive-count"])
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, self.config["tcp-keepalive"])
+            sock.setsockopt(
+                socket.IPPROTO_TCP, socket.TCP_KEEPCNT, self.config["tcp-keepalive-count"]
+            )
 
         await handler.attach(client_session, adapter)
         self._sessions[client_session.client_id] = (client_session, handler)

@@ -2,12 +2,13 @@
 #
 # See the file license.txt for copying permission.
 import io
-from asyncwebsockets import Websocket
-from wsproto.events import CloseConnection, BytesMessage
+import logging
+
 import anyio
 import anyio.streams.buffered
 from anyio.abc import SocketAttribute
-import logging
+from asyncwebsockets import Websocket
+from wsproto.events import BytesMessage, CloseConnection
 
 try:
     ClosedResourceError = anyio.exceptions.ClosedResourceError
