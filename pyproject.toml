@@ -11,9 +11,20 @@ classifiers = [
 	"Framework :: AnyIO",
 	"License :: OSI Approved",
 	"Development Status :: 4 - Beta",
+	"Topic :: Communications",
+	"Topic :: Internet",
 	]
 dependencies = [
 	"anyio ~= 3.0",
+	"transitions",
+	"asyncwebsockets >= 0.8",
+	"passlib",
+	"docopt",
+	"pyyaml",
+	"attrs >= 19",
+	"simplejson",
+	"msgpack",
+	"moat-util",
 	]
 dynamic = [ "version",]
 keywords = [ "MoaT",]
