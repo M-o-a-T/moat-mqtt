@@ -2,8 +2,8 @@
 #
 # See the file license.txt for copying permission.
 import anyio
-
 from moat.util import create_queue
+
 from ...plugins.manager import PluginManager
 from ...session import Session
 from ...utils import Future

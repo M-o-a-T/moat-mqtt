@@ -38,7 +38,7 @@ def gen_client_id():
 def read_yaml_config(config_file):
     config = None
     try:
-        with open(config_file, "r") as stream:
+        with open(config_file, "r") as stream:  # pylint: disable=unspecified-encoding
             config = yaml.safe_load(stream)
     except yaml.YAMLError as exc:
         logger.error("Invalid config_file %s: %r", config_file, exc)
@@ -123,4 +123,3 @@ def match_topic(topic, subscription):
         if a != b and b not in ("+", "#"):
             return False
     return True
-

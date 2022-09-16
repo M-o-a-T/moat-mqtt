@@ -5,8 +5,8 @@ import itertools
 import logging
 
 import anyio
-
 from moat.util import create_queue
+
 from ...adapters import StreamAdapter
 from ...errors import InvalidStateError, MoatMQTTException, MQTTException, NoDataException
 from ...plugins.manager import PluginManager
@@ -601,7 +601,7 @@ class ProtocolHandler:
         self.logger.debug("%s SUBSCRIBE unhandled", self.session.client_id)
 
     async def handle_unsubscribe(
-        self, subscribe: UnsubscribePacket
+        self, unsubscribe: UnsubscribePacket
     ):  # pylint: disable=unused-argument
         self.logger.debug("%s UNSUBSCRIBE unhandled", self.session.client_id)
 

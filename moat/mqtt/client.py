@@ -17,6 +17,7 @@ except ImportError:
     from async_generator import asynccontextmanager
 
 from asyncwebsockets import create_websocket
+from moat.util import create_queue
 from wsproto.utilities import ProtocolError
 
 from . import codecs
@@ -29,7 +30,6 @@ from .mqtt.protocol.handler import ProtocolHandlerException
 from .plugins.manager import BaseContext, PluginManager
 from .session import Session
 from .utils import match_topic
-from moat.util import create_queue
 
 _defaults = {
     "keep_alive": 10,
@@ -690,6 +690,7 @@ class MQTTClient:
                 self.session.transitions.disconnect()
                 self.logger.warning("Connection rejected with code '%s'", return_code)
                 raise ConnectException("Connection rejected by broker", return_code)
+
             # Handle MQTT protocol
             await self._handler.start()
             self.session.transitions.connect()

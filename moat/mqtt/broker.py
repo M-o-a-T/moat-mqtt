@@ -352,16 +352,14 @@ class Broker:
                             "Invalid port value in bind value: %s" % listener["bind"]
                         )
 
-                    async def server_task(
-                        evt, cb, address, port, ssl_context, listener, listener_name
-                    ):
+                    async def server_task(evt, cb, address, port, ssl_context):
                         with anyio.CancelScope() as scope:
                             sock = await anyio.create_tcp_listener(
                                 local_port=port, local_host=address
                             )
                             await evt.set(scope)
 
-                            async def _maybe_wrap(listener, listener_name, conn):
+                            async def _maybe_wrap(conn):
                                 if ssl_context:
                                     conn = await anyio.streams.tls.TLSStream.wrap(
                                         conn, ssl_context=ssl_context, server_side=True
@@ -369,7 +367,7 @@ class Broker:
                                 await cb(conn)
 
                             async with sock:
-                                await sock.serve(partial(_maybe_wrap, listener, listener_name))
+                                await sock.serve(_maybe_wrap)
 
                     if listener["type"] == "tcp":
                         cb_partial = partial(self.stream_connected, listener_name=listener_name)
@@ -390,8 +388,6 @@ class Broker:
                         address,
                         port,
                         sc,
-                        listener,
-                        listener_name,
                         name=listener_name,
                     )
                     instance = await fut.get()

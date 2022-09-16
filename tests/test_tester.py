@@ -1,7 +1,7 @@
 import pytest
 import trio  # noqa: F401
-
 from moat.util import P
+
 from moat.mqtt.test import test_client, test_server
 
 

@@ -98,7 +98,7 @@ async def distkv_server(n):
                             async for m in mon:
                                 log.info("Monitor Msg %r", m.data)
                                 msgs.append(m.data)
-                    except Exception as exc:
+                    except Exception:
                         log.exception("DEAD")
 
                 evt = anyio.Event()

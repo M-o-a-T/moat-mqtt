@@ -21,8 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 @click.group(short_help="MQTT client and broker")
-@click.pass_obj
-async def cli(obj):
+async def cli():
     """
     Run MQTT commands
     """
@@ -79,7 +78,7 @@ def _get_message(args):
     for m in args["msg_eval"]:
         yield codec.encode(eval(m))  # pylint: disable=eval-used
     if args["msg_lines"]:
-        with open(args["msg_lines"], "r") as f:
+        with open(args["msg_lines"], "r") as f:  # pylint: disable=unspecified-encoding
             for line in f:
                 yield line.encode(encoding="utf-8")
     if args["msg_stdin_lines"]:
@@ -95,9 +94,10 @@ def _get_message(args):
 
 async def do_pub(client, args, cfg):
     logger.info("%s Connecting to broker", client.client_id)
+    url = args["url"] or cfg.url
 
     await client.connect(
-        uri=args["url"] or cfg.url,
+        uri=url,
         cleansession=args["clean_session"],
         cafile=args["ca_file"] or cfg.ca.file,
         capath=args["ca_path"] or cfg.ca.path,
@@ -228,8 +228,8 @@ async def run_sub(client, topic, args, cfg):
     max_count = args["n_msg"]
     count = 0
 
-    async with client.subscription(topic, qos) as sub:
-        async for message in sub:
+    async with client.subscription(topic, qos) as subscr:
+        async for message in subscr:
             count += 1
             print(message.topic, message.data, sep="\t")
             if max_count and count >= max_count:

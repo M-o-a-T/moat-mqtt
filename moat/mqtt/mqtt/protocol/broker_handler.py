@@ -4,8 +4,8 @@
 import logging
 
 import anyio
-
 from moat.util import create_queue
+
 from ...adapters import StreamAdapter
 from ...errors import MQTTException, NoDataException
 from ...plugins.manager import PluginManager
@@ -50,7 +50,7 @@ class BrokerProtocolHandler(ProtocolHandler):
         self.clean_disconnect = False  # depending on 'disconnect' (if set)
         with anyio.fail_after(2, shield=True):
             if wait:
-                with anyio.move_on_after(min(self.session.keep_alive,1)):
+                with anyio.move_on_after(min(self.session.keep_alive, 1)):
                     await self._reader_stopped.wait()
             await self.stop()
 
