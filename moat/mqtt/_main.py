@@ -128,7 +128,7 @@ async def do_pub(client, args, cfg):
 def fix_will(args, cfg):
     if args["will_topic"] and args["will_message"]:
         will = attrdict()
-        will.topic = arguments["will_topic"]
+        will.topic = args["will_topic"]
         will.message = args["will_message"]
         will.qos = args["will_qos"]
         if will.qos is None:
@@ -190,7 +190,7 @@ async def pub(obj, **args):
     client_id = args["client_id"] or cfg.get("id", None) or _gen_client_id()
 
     if args["keep_alive"]:
-        config["keep_alive"] = args["keep_alive"]
+        cfg["keep_alive"] = args["keep_alive"]
 
     fix_will(args, cfg)
     cfg.codec = "noop"
