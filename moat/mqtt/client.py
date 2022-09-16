@@ -401,7 +401,6 @@ class MQTTClient:
         """
         return await self._handler.mqtt_subscribe(topics, self.session.next_packet_id)
 
-    @mqtt_connected
     async def unsubscribe(self, topics):
         """
         Unsubscribe from some topics.
@@ -414,7 +413,11 @@ class MQTTClient:
         ::
 
             ['$SYS/broker/uptime', '$SYS/broker/load/#']
+
+        This is a no-op if the client is not connected.
         """
+        if not self._connected_state.is_set():
+            return
         await self._handler.mqtt_unsubscribe(topics, self.session.next_packet_id)
 
     def subscription(self, topic, qos=QOS_0, codec=None):
