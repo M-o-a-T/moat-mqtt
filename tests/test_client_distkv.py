@@ -88,17 +88,22 @@ async def distkv_server(n):
 
             async with open_client(**broker_config["distkv"]) as cl:
 
-                async def msglog(task_status=trio.TASK_STATUS_IGNORED):
-                    async with cl._stream(
-                        "msg_monitor", topic="*"
-                    ) as mon:  # , topic=broker_config['distkv']['topic']) as mon:
-                        log.info("Monitor Start")
-                        task_status.started()
-                        async for m in mon:
-                            log.info("Monitor Msg %r", m.data)
-                            msgs.append(m.data)
+                async def msglog(evt):
+                    try:
+                        async with cl._stream(
+                            "msg_monitor", topic="*"
+                        ) as mon:  # , topic=broker_config['distkv']['topic']) as mon:
+                            log.info("Monitor Start")
+                            evt.set()
+                            async for m in mon:
+                                log.info("Monitor Msg %r", m.data)
+                                msgs.append(m.data)
+                    except Exception as exc:
+                        log.exception("DEAD")
 
-                await cl.scope.spawn(msglog)
+                evt = anyio.Event()
+                await cl.scope.spawn(msglog, evt)
+                await evt.wait()
                 yield s
                 cl.scope.cancel()
             tg.cancel_scope.cancel()
