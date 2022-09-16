@@ -274,7 +274,7 @@ class Session:
             if self._packet_id > 65535:
                 self._packet_id = 1
             if self._packet_id == limit:
-                raise moatMQTTException("More than 65535 messages pending. No free packet ID")
+                raise MoatMQTTException("More than 65535 messages pending. No free packet ID")
 
         return self._packet_id
 
@@ -306,7 +306,7 @@ class Session:
         del state["_broker"]
         return state
 
-    def __setstate(self, state):
+    def __setstate__(self, state):
         self.__dict__.update(state)
         self.retained_messages = create_queue(9999)
         self._delivered_message_queue = create_queue(9999)
