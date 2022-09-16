@@ -50,7 +50,7 @@ class BrokerProtocolHandler(ProtocolHandler):
         self.clean_disconnect = False  # depending on 'disconnect' (if set)
         with anyio.fail_after(2, shield=True):
             if wait:
-                with anyio.move_on_after(self.session.keep_alive):
+                with anyio.move_on_after(min(self.session.keep_alive,1)):
                     await self._reader_stopped.wait()
             await self.stop()
 
