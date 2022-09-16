@@ -509,6 +509,7 @@ class ProtocolHandler:
                                 else:
                                     tg.start_soon(fn, packet)
                             except StopAsyncIteration:
+                                self.logger.debug("%s Read Loop break", self.session.client_id)
                                 break
 
                     except MQTTException:
