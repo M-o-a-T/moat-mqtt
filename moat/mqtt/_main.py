@@ -5,12 +5,16 @@ import logging
 import os
 import socket
 import sys
+from contextlib import AsyncExitStack
 
 import anyio
 import asyncclick as click
-from moat.util import yload
+from asyncscope import main_scope
+from moat.util import attrdict, combine_dict, yload
 
+from .broker import create_broker
 from .client import ConnectException, _codecs, open_mqttclient
+from .utils import read_yaml_config
 from .version import get_version
 
 logger = logging.getLogger(__name__)
@@ -23,20 +27,6 @@ async def cli(obj):
     Run MQTT commands
     """
     pass
-
-
-import logging
-import os
-from contextlib import AsyncExitStack
-
-import anyio
-import asyncclick as click
-from asyncscope import main_scope
-
-from .broker import create_broker
-from .utils import read_yaml_config
-
-logger = logging.getLogger(__name__)
 
 
 @cli.command()
