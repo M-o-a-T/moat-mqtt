@@ -580,8 +580,7 @@ class ProtocolHandler:
             self.logger.warning("Unhandled exception", exc_info=e)
             raise
         finally:
-            with anyio.fail_after(2, shield=True):
-                self._sender_stopped.set()
+            self._sender_stopped.set()
             self._sender_task = None
 
     async def handle_write_timeout(self):
