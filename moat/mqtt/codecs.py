@@ -131,6 +131,11 @@ class BaseCodec:
         raise RuntimeError("You need to override me")
 
 
+# pylint doesn't (want to) understand "staticmethod"
+# https://github.com/PyCQA/pylint/issues/6019
+# pylint: disable=arguments-differ
+
+
 class NoopCodec(BaseCodec):
     """A codec that does nothing.
 

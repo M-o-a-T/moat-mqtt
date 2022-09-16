@@ -19,12 +19,14 @@ dependencies = [
 	"transitions",
 	"asyncwebsockets >= 0.9.2",
 	"passlib",
-	"docopt",
 	"pyyaml",
 	"attrs >= 19",
 	"simplejson",
 	"msgpack",
 	"moat-util",
+	"transitions",
+	"wsproto",
+	"asyncscope",
 	]
 dynamic = [ "version",]
 keywords = [ "MoaT",]
@@ -57,6 +59,9 @@ packages = [ "moat.mqtt",]
 
 [tool.setuptools_scm]
 
+[tool.black]
+line-length = 99
+
 [tool.tox]
 legacy_tox_ini = """
 [tox]
@@ -66,6 +71,9 @@ envlist = py310,py39,check
 [testenv]
 setenv = 
     PYTHONPATH = {env:PYTHONPATH}{:}{toxinidir}
+deps =
+	pytest
+	trio
 
 [testenv:check]
 commands = 
@@ -77,6 +85,8 @@ deps =
     black
     flake8-pyproject
     flake8
+    pytest
+    trio
 
 """
 
