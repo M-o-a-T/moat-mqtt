@@ -5,11 +5,12 @@ import logging
 
 import anyio
 
+from moat.util import create_queue
 from ...adapters import StreamAdapter
 from ...errors import MQTTException, NoDataException
 from ...plugins.manager import PluginManager
 from ...session import Session
-from ...utils import create_queue, format_client_message
+from ...utils import format_client_message
 from ..connack import (
     BAD_USERNAME_PASSWORD,
     CONNECTION_ACCEPTED,

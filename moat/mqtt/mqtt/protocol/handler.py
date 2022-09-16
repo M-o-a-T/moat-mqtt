@@ -6,6 +6,7 @@ import logging
 
 import anyio
 
+from moat.util import create_queue
 from ...adapters import StreamAdapter
 from ...errors import InvalidStateError, MoatMQTTException, MQTTException, NoDataException
 from ...plugins.manager import PluginManager
@@ -16,7 +17,7 @@ from ...session import (
     OutgoingApplicationMessage,
     Session,
 )
-from ...utils import CancelledError, Future, create_queue
+from ...utils import CancelledError, Future
 from .. import packet_class
 from ..connack import ConnackPacket
 from ..connect import ConnectPacket

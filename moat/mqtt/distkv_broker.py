@@ -8,9 +8,9 @@ import anyio
 from .broker import Broker
 
 try:
+    from moat.util import NotGiven, PathLongener
     from distkv.client import client_scope as distkv_client_scope
     from distkv.errors import ErrorRoot
-    from distkv.util import NotGiven, PathLongener
 except ImportError:
     pass
 

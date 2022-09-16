@@ -28,7 +28,8 @@ from .mqtt.protocol.client_handler import ClientProtocolHandler
 from .mqtt.protocol.handler import ProtocolHandlerException
 from .plugins.manager import BaseContext, PluginManager
 from .session import Session
-from .utils import create_queue, match_topic
+from .utils import match_topic
+from moat.util import create_queue
 
 _defaults = {
     "keep_alive": 10,

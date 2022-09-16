@@ -7,10 +7,10 @@ from collections import OrderedDict
 import anyio
 from transitions import Machine
 
+from moat.util import create_queue
 from .errors import MoatMQTTException, MQTTException
 from .mqtt.constants import QOS_0
 from .mqtt.publish import PublishPacket
-from .utils import create_queue
 
 OUTGOING = 0
 INCOMING = 1
