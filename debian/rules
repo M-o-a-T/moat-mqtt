@@ -11,3 +11,6 @@ debian/moat-mqtt.service: moat-mqtt.service
 
 override_dh_auto_install: debian/moat-mqtt.service
 	dh_auto_install
+
+override_dh_auto_test: 
+	: no test
