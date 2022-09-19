@@ -1,3 +1,9 @@
+moat-mqtt (0.38.2-2) unstable; urgency=medium
+
+  * Binary package naming. Owch.
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Mon, 19 Sep 2022 18:09:03 +0200
+
 moat-mqtt (0.38.2-1) unstable; urgency=medium
 
   * Merge
