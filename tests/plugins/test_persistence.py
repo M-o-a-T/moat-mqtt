@@ -2,10 +2,11 @@
 #
 # See the file license.txt for copying permission.
 
-import unittest
 import logging
 import os
 import sqlite3
+import unittest
+
 from moat.mqtt.plugins.manager import BaseContext
 from moat.mqtt.plugins.persistence import SQLitePlugin
 

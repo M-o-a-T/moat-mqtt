@@ -1,8 +1,8 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-from .packet import MQTTPacket, MQTTFixedHeader, DISCONNECT
 from ..errors import MoatMQTTException
+from .packet import DISCONNECT, MQTTFixedHeader, MQTTPacket
 
 
 class DisconnectPacket(MQTTPacket):

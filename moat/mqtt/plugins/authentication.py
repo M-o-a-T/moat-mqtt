@@ -59,7 +59,7 @@ class FileAuthPlugin(BaseAuthPlugin):
     def _read_password_file(self):
         password_file = self.auth_config.get("password-file", None)
         if password_file:
-            with open(password_file) as f:
+            with open(password_file) as f:  # pylint: disable=unspecified-encoding
                 for line in f:
                     line = line.strip()
                     if not line.startswith("#"):  # Allow comments in files

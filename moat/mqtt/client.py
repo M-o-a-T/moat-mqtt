@@ -2,32 +2,34 @@
 #
 # See the file license.txt for copying permission.
 
-import anyio
+import copy
 import logging
 import ssl
-import copy
-from urllib.parse import urlparse, urlunparse
 from functools import wraps
 from typing import Union
+from urllib.parse import urlparse, urlunparse
+
+import anyio
 
 try:
     from contextlib import asynccontextmanager
 except ImportError:
     from async_generator import asynccontextmanager
-from wsproto.utilities import ProtocolError
+
 from asyncwebsockets import create_websocket
+from moat.util import create_queue
+from wsproto.utilities import ProtocolError
 
-from .utils import match_topic, create_queue
-from .session import Session
-from .errors import NoDataException
-from .mqtt.connack import CONNECTION_ACCEPTED, CLIENT_ERROR
-from .mqtt.protocol.client_handler import ClientProtocolHandler
-from .adapters import StreamAdapter, WebSocketsAdapter
-from .plugins.manager import PluginManager, BaseContext
-from .mqtt.protocol.handler import ProtocolHandlerException
-from .mqtt.constants import QOS_0, QOS_1, QOS_2
 from . import codecs
-
+from .adapters import StreamAdapter, WebSocketsAdapter
+from .errors import NoDataException
+from .mqtt.connack import CLIENT_ERROR, CONNECTION_ACCEPTED
+from .mqtt.constants import QOS_0, QOS_1, QOS_2
+from .mqtt.protocol.client_handler import ClientProtocolHandler
+from .mqtt.protocol.handler import ProtocolHandlerException
+from .plugins.manager import BaseContext, PluginManager
+from .session import Session
+from .utils import match_topic
 
 _defaults = {
     "keep_alive": 10,
@@ -318,7 +320,7 @@ class MQTTClient:
                     raise ConnectException(  # pylint: disable=W0707
                         "Too many connection attempts failed"
                     )
-                exp = 2 ** nb_attempt
+                exp = 2**nb_attempt
                 delay = exp if exp < reconnect_max_interval else reconnect_max_interval
                 self.logger.debug("Waiting %d second before next attempt", delay)
                 await anyio.sleep(delay)
@@ -400,7 +402,6 @@ class MQTTClient:
         """
         return await self._handler.mqtt_subscribe(topics, self.session.next_packet_id)
 
-    @mqtt_connected
     async def unsubscribe(self, topics):
         """
         Unsubscribe from some topics.
@@ -413,7 +414,11 @@ class MQTTClient:
         ::
 
             ['$SYS/broker/uptime', '$SYS/broker/load/#']
+
+        This is a no-op if the client is not connected.
         """
+        if not self._connected_state.is_set():
+            return
         await self._handler.mqtt_unsubscribe(topics, self.session.next_packet_id)
 
     def subscription(self, topic, qos=QOS_0, codec=None):
@@ -685,6 +690,7 @@ class MQTTClient:
                 self.session.transitions.disconnect()
                 self.logger.warning("Connection rejected with code '%s'", return_code)
                 raise ConnectException("Connection rejected by broker", return_code)
+
             # Handle MQTT protocol
             await self._handler.start()
             self.session.transitions.connect()

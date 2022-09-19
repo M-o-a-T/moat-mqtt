@@ -1,16 +1,16 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
-
 from typing import Optional
+
+import anyio
 
 from .broker import Broker
 
 try:
     from distkv.client import client_scope as distkv_client_scope
-    from distkv.util import PathLongener, NotGiven
     from distkv.errors import ErrorRoot
+    from moat.util import NotGiven, PathLongener
 except ImportError:
     pass
 

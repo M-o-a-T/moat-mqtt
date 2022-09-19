@@ -3,9 +3,9 @@
 # See the file license.txt for copying permission.
 import unittest
 
-from moat.mqtt.mqtt.unsubscribe import UnsubscribePacket, UnubscribePayload
-from moat.mqtt.mqtt.packet import PacketIdVariableHeader
 from moat.mqtt.adapters import BufferAdapter
+from moat.mqtt.mqtt.packet import PacketIdVariableHeader
+from moat.mqtt.mqtt.unsubscribe import UnsubscribePacket, UnubscribePayload
 
 from .. import anyio_run
 

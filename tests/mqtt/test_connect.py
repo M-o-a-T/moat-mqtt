@@ -3,9 +3,9 @@
 # See the file license.txt for copying permission.
 import unittest
 
-from moat.mqtt.mqtt.connect import ConnectPacket, ConnectVariableHeader, ConnectPayload
-from moat.mqtt.mqtt.packet import MQTTFixedHeader, CONNECT
 from moat.mqtt.adapters import BufferAdapter
+from moat.mqtt.mqtt.connect import ConnectPacket, ConnectPayload, ConnectVariableHeader
+from moat.mqtt.mqtt.packet import CONNECT, MQTTFixedHeader
 
 from .. import anyio_run
 

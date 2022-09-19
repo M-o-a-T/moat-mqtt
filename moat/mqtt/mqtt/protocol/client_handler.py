@@ -2,19 +2,21 @@
 #
 # See the file license.txt for copying permission.
 import anyio
-from .handler import ProtocolHandler, EVENT_MQTT_PACKET_RECEIVED
+from moat.util import create_queue
+
+from ...plugins.manager import PluginManager
+from ...session import Session
+from ...utils import Future
+from ..connack import ConnackPacket
+from ..connect import ConnectPacket, ConnectPayload, ConnectVariableHeader
 from ..disconnect import DisconnectPacket
 from ..pingreq import PingReqPacket
 from ..pingresp import PingRespPacket
-from ..subscribe import SubscribePacket
 from ..suback import SubackPacket
-from ..unsubscribe import UnsubscribePacket
+from ..subscribe import SubscribePacket
 from ..unsuback import UnsubackPacket
-from ..connect import ConnectVariableHeader, ConnectPayload, ConnectPacket
-from ..connack import ConnackPacket
-from ...session import Session
-from ...plugins.manager import PluginManager
-from ...utils import Future, create_queue
+from ..unsubscribe import UnsubscribePacket
+from .handler import EVENT_MQTT_PACKET_RECEIVED, ProtocolHandler
 
 
 class ClientProtocolHandler(ProtocolHandler):

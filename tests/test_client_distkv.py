@@ -1,26 +1,27 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import unittest
-import pytest
-import anyio
-import trio
-import os
 import logging
+import os
 import random
+import unittest
+
+import anyio
+import pytest
+import trio
 
 try:
     from contextlib import asynccontextmanager
 except ImportError:
     from async_generator import asynccontextmanager
 
-from moat.mqtt.client import open_mqttclient
 from moat.mqtt.broker import create_broker
+from moat.mqtt.client import open_mqttclient
 from moat.mqtt.mqtt.constants import QOS_0
 
 try:
-    from distkv.server import Server
     from distkv.client import open_client
+    from distkv.server import Server
 except ImportError:
     pytestmark = pytest.mark.skip
 
@@ -87,17 +88,22 @@ async def distkv_server(n):
 
             async with open_client(**broker_config["distkv"]) as cl:
 
-                async def msglog(task_status=trio.TASK_STATUS_IGNORED):
-                    async with cl._stream(
-                        "msg_monitor", topic="*"
-                    ) as mon:  # , topic=broker_config['distkv']['topic']) as mon:
-                        log.info("Monitor Start")
-                        task_status.started()
-                        async for m in mon:
-                            log.info("Monitor Msg %r", m.data)
-                            msgs.append(m.data)
+                async def msglog(evt):
+                    try:
+                        async with cl._stream(
+                            "msg_monitor", topic="*"
+                        ) as mon:  # , topic=broker_config['distkv']['topic']) as mon:
+                            log.info("Monitor Start")
+                            evt.set()
+                            async for m in mon:
+                                log.info("Monitor Msg %r", m.data)
+                                msgs.append(m.data)
+                    except Exception:
+                        log.exception("DEAD")
 
-                await cl.scope.spawn(msglog)
+                evt = anyio.Event()
+                await cl.scope.spawn(msglog, evt)
+                await evt.wait()
                 yield s
                 cl.scope.cancel()
             tg.cancel_scope.cancel()

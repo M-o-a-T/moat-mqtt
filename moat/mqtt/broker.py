@@ -2,11 +2,12 @@
 #
 # See the file license.txt for copying permission.
 import logging
-import ssl
-import anyio
 import socket
-from copy import deepcopy
+import ssl
 from collections import deque
+from copy import deepcopy
+
+import anyio
 
 try:
     from contextlib import asynccontextmanager
@@ -14,18 +15,19 @@ except ImportError:
     from async_generator import asynccontextmanager
 
 from functools import partial
+
+from asyncwebsockets import create_websocket_server
 from transitions import Machine, MachineError
-from .session import Session, EVENT_BROKER_MESSAGE_RECEIVED  # noqa: F401
+
+from .adapters import BaseAdapter, StreamAdapter, WebSocketsAdapter
+from .errors import MoatMQTTException, MQTTException
+from .mqtt.constants import QOS_0
 
 # EVENT_BROKER_MESSAGE_RECEIVED is re-exported
 from .mqtt.protocol.broker_handler import BrokerProtocolHandler
-from .errors import MoatMQTTException, MQTTException
-from .utils import format_client_message, gen_client_id, Future, match_topic
-from .mqtt.constants import QOS_0
-from .adapters import StreamAdapter, BaseAdapter, WebSocketsAdapter
-from .plugins.manager import PluginManager, BaseContext
-from asyncwebsockets import create_websocket_server
-
+from .plugins.manager import BaseContext, PluginManager
+from .session import EVENT_BROKER_MESSAGE_RECEIVED, Session  # noqa: F401
+from .utils import Future, format_client_message, gen_client_id, match_topic
 
 _defaults = {
     "listeners": {"default": {"type": "tcp", "bind": "0.0.0.0:1883"}},
@@ -350,16 +352,14 @@ class Broker:
                             "Invalid port value in bind value: %s" % listener["bind"]
                         )
 
-                    async def server_task(
-                        evt, cb, address, port, ssl_context, listener, listener_name
-                    ):
+                    async def server_task(evt, cb, address, port, ssl_context):
                         with anyio.CancelScope() as scope:
                             sock = await anyio.create_tcp_listener(
                                 local_port=port, local_host=address
                             )
                             await evt.set(scope)
 
-                            async def _maybe_wrap(listener, listener_name, conn):
+                            async def _maybe_wrap(conn):
                                 if ssl_context:
                                     conn = await anyio.streams.tls.TLSStream.wrap(
                                         conn, ssl_context=ssl_context, server_side=True
@@ -367,7 +367,7 @@ class Broker:
                                 await cb(conn)
 
                             async with sock:
-                                await sock.serve(partial(_maybe_wrap, listener, listener_name))
+                                await sock.serve(_maybe_wrap)
 
                     if listener["type"] == "tcp":
                         cb_partial = partial(self.stream_connected, listener_name=listener_name)
@@ -388,8 +388,6 @@ class Broker:
                         address,
                         port,
                         sc,
-                        listener,
-                        listener_name,
                         name=listener_name,
                     )
                     instance = await fut.get()
@@ -540,8 +538,10 @@ class Broker:
             sock = adapter.raw_socket
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, self.config["tcp-keepalive"])
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL,self.config["tcp-keepalive"])
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, self.config["tcp-keepalive-count"])
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, self.config["tcp-keepalive"])
+            sock.setsockopt(
+                socket.IPPROTO_TCP, socket.TCP_KEEPCNT, self.config["tcp-keepalive-count"]
+            )
 
         await handler.attach(client_session, adapter)
         self._sessions[client_session.client_id] = (client_session, handler)

@@ -1,60 +1,57 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import logging
 import itertools
-import anyio
+import logging
 
+import anyio
+from moat.util import create_queue
+
+from ...adapters import StreamAdapter
+from ...errors import InvalidStateError, MoatMQTTException, MQTTException, NoDataException
+from ...plugins.manager import PluginManager
+from ...session import (
+    INCOMING,
+    OUTGOING,
+    IncomingApplicationMessage,
+    OutgoingApplicationMessage,
+    Session,
+)
+from ...utils import CancelledError, Future
 from .. import packet_class
 from ..connack import ConnackPacket
 from ..connect import ConnectPacket
+from ..constants import QOS_0, QOS_1, QOS_2
+from ..disconnect import DisconnectPacket
 from ..packet import (
-    RESERVED_0,
     CONNACK,
-    PUBLISH,
-    PUBACK,
-    PUBREC,
-    PUBREL,
-    PUBCOMP,
-    SUBSCRIBE,
-    SUBACK,
-    UNSUBSCRIBE,
-    UNSUBACK,
+    DISCONNECT,
     PINGREQ,
     PINGRESP,
-    DISCONNECT,
+    PUBACK,
+    PUBCOMP,
+    PUBLISH,
+    PUBREC,
+    PUBREL,
+    RESERVED_0,
     RESERVED_15,
+    SUBACK,
+    SUBSCRIBE,
+    UNSUBACK,
+    UNSUBSCRIBE,
     MQTTFixedHeader,
 )
-from ..pingresp import PingRespPacket
 from ..pingreq import PingReqPacket
-from ..publish import PublishPacket
-from ..pubrel import PubrelPacket
+from ..pingresp import PingRespPacket
 from ..puback import PubackPacket
-from ..pubrec import PubrecPacket
 from ..pubcomp import PubcompPacket
+from ..publish import PublishPacket
+from ..pubrec import PubrecPacket
+from ..pubrel import PubrelPacket
 from ..suback import SubackPacket
 from ..subscribe import SubscribePacket
-from ..unsubscribe import UnsubscribePacket
 from ..unsuback import UnsubackPacket
-from ..disconnect import DisconnectPacket
-from ...adapters import StreamAdapter
-from ...session import (
-    Session,
-    OutgoingApplicationMessage,
-    IncomingApplicationMessage,
-    INCOMING,
-    OUTGOING,
-)
-from ..constants import QOS_0, QOS_1, QOS_2
-from ...plugins.manager import PluginManager
-from ...errors import (
-    MoatMQTTException,
-    MQTTException,
-    NoDataException,
-    InvalidStateError,
-)
-from ...utils import Future, CancelledError, create_queue
+from ..unsubscribe import UnsubscribePacket
 
 try:
     ClosedResourceError = anyio.exceptions.ClosedResourceError
@@ -513,6 +510,7 @@ class ProtocolHandler:
                                 else:
                                     tg.start_soon(fn, packet)
                             except StopAsyncIteration:
+                                self.logger.debug("%s Read Loop break", self.session.client_id)
                                 break
 
                     except MQTTException:
@@ -564,7 +562,9 @@ class ProtocolHandler:
                     if packet is None:  # timeout
                         await self.handle_write_timeout()
                         continue
-                    self.logger.debug("%s > %r",'B' if 'Broker' in type(self).__name__ else 'C', packet)
+                    self.logger.debug(
+                        "%s > %r", "B" if "Broker" in type(self).__name__ else "C", packet
+                    )
                     try:
                         await packet.to_stream(self.stream)
                     except ClosedResourceError:
@@ -580,8 +580,7 @@ class ProtocolHandler:
             self.logger.warning("Unhandled exception", exc_info=e)
             raise
         finally:
-            with anyio.fail_after(2, shield=True):
-                self._sender_stopped.set()
+            self._sender_stopped.set()
             self._sender_task = None
 
     async def handle_write_timeout(self):
@@ -602,7 +601,7 @@ class ProtocolHandler:
         self.logger.debug("%s SUBSCRIBE unhandled", self.session.client_id)
 
     async def handle_unsubscribe(
-        self, subscribe: UnsubscribePacket
+        self, unsubscribe: UnsubscribePacket
     ):  # pylint: disable=unused-argument
         self.logger.debug("%s UNSUBSCRIBE unhandled", self.session.client_id)
 

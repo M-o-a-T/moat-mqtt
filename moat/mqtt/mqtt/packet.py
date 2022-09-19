@@ -1,18 +1,13 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
-
-from ..codecs import (
-    bytes_to_hex_str,
-    decode_packet_id,
-    int_to_bytes,
-    read_or_raise,
-)
-from ..errors import CodecException, MQTTException, NoDataException
-from ..adapters import StreamAdapter
 from datetime import datetime
 
+import anyio
+
+from ..adapters import StreamAdapter
+from ..codecs import bytes_to_hex_str, decode_packet_id, int_to_bytes, read_or_raise
+from ..errors import CodecException, MQTTException, NoDataException
 
 RESERVED_0 = 0x00
 CONNECT = 0x01

@@ -2,8 +2,9 @@
 #
 # See the file license.txt for copying permission.
 import logging
-import attr
+
 import anyio
+import attr
 import yaml
 
 from .errors import InvalidStateError
@@ -37,7 +38,7 @@ def gen_client_id():
 def read_yaml_config(config_file):
     config = None
     try:
-        with open(config_file, "r") as stream:
+        with open(config_file, "r") as stream:  # pylint: disable=unspecified-encoding
             config = yaml.safe_load(stream)
     except yaml.YAMLError as exc:
         logger.error("Invalid config_file %s: %r", config_file, exc)
@@ -122,40 +123,3 @@ def match_topic(topic, subscription):
         if a != b and b not in ("+", "#"):
             return False
     return True
-
-
-try:
-    from anyio import create_queue
-except ImportError:
-    from anyio import create_memory_object_stream as _cmos
-
-    class Queue:
-        def __init__(self, length=0):
-            self._s, self._r = _cmos(length)
-
-        def put(self, x):
-            return self._s.send(x)
-
-        def get(self):
-            return self._r.receive()
-
-        def qsize(self):
-            return len(self._s._state.buffer)  # ugh
-
-        def empty(self):
-            return not len(self._s._state.buffer)  # ugh
-
-        def __aiter__(self):
-            return self
-
-        def __anext__(self):
-            return self._r.__anext__()
-
-        def close_sender(self):
-            return self._s.aclose()
-
-        def close_receiver(self):
-            return self._r.aclose()
-
-    def create_queue(length=0):
-        return Queue(length)

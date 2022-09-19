@@ -2,32 +2,25 @@
 This module contains code that helps with DistKV testing.
 """
 import os
-import anyio
-
 from contextlib import asynccontextmanager
 from functools import partial
 
+import anyio
+from distkv.client import open_client
+from distkv.server import Server as _Server
+
 from .broker import create_broker
 
-try:
-    from distkv.server import Server as _Server
-    from distkv.client import open_client
-except ImportError:
-    _Server = None
 
-if _Server:
-
-    class Server(_Server):
-        @asynccontextmanager
-        async def test_client(self):
-            """
-            An async context manager that returns a client that's connected to
-            this server.
-            """
-            async with open_client(
-                connect=dict(host="127.0.0.1", port=self.distkv_port)
-            ) as client:
-                yield client
+class Server(_Server):
+    @asynccontextmanager
+    async def test_client(self):
+        """
+        An async context manager that returns a client that's connected to
+        this server.
+        """
+        async with open_client(connect=dict(host="127.0.0.1", port=self.distkv_port)) as client:
+            yield client
 
 
 @asynccontextmanager

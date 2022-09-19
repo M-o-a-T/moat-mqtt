@@ -1,12 +1,8 @@
 import pytest
 import trio  # noqa: F401
+from moat.util import P
 
-from moat.mqtt.test import test_server, test_client
-
-try:
-    from distkv.util import P
-except ImportError:
-    pytestmark = pytest.mark.skip
+from moat.mqtt.test import test_client, test_server
 
 
 @pytest.mark.trio

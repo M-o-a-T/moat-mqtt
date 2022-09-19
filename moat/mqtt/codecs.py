@@ -1,8 +1,10 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
 from struct import pack, unpack
+
+import anyio
+
 from .errors import NoDataException
 
 try:
@@ -127,6 +129,11 @@ class BaseCodec:
 
     def decode(self, data):
         raise RuntimeError("You need to override me")
+
+
+# pylint doesn't (want to) understand "staticmethod"
+# https://github.com/PyCQA/pylint/issues/6019
+# pylint: disable=arguments-differ
 
 
 class NoopCodec(BaseCodec):

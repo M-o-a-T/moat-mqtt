@@ -1,17 +1,16 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import anyio
 import logging
-
-from transitions import Machine
 from collections import OrderedDict
 
-from .mqtt.publish import PublishPacket
+import anyio
+from moat.util import create_queue
+from transitions import Machine
+
 from .errors import MoatMQTTException, MQTTException
 from .mqtt.constants import QOS_0
-
-from .utils import create_queue
+from .mqtt.publish import PublishPacket
 
 OUTGOING = 0
 INCOMING = 1
@@ -275,7 +274,7 @@ class Session:
             if self._packet_id > 65535:
                 self._packet_id = 1
             if self._packet_id == limit:
-                raise moatMQTTException("More than 65535 messages pending. No free packet ID")
+                raise MoatMQTTException("More than 65535 messages pending. No free packet ID")
 
         return self._packet_id
 
@@ -307,7 +306,7 @@ class Session:
         del state["_broker"]
         return state
 
-    def __setstate(self, state):
+    def __setstate__(self, state):
         self.__dict__.update(state)
         self.retained_messages = create_queue(9999)
         self._delivered_message_queue = create_queue(9999)
