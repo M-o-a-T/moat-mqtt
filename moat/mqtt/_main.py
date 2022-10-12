@@ -14,7 +14,6 @@ from moat.util import attrdict, combine_dict, yload
 
 from .broker import create_broker
 from .client import ConnectException, _codecs, open_mqttclient
-from .utils import read_yaml_config
 from .version import get_version
 
 logger = logging.getLogger(__name__)
