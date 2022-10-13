@@ -56,6 +56,8 @@ profile = "black"
 
 [tool.setuptools]
 packages = [ "moat.mqtt",]
+[tool.setuptools.package-data]
+"*" = ["*.yaml"]
 
 [tool.setuptools_scm]
 
@@ -66,7 +68,7 @@ line-length = 99
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py310,py39,check
+envlist = py310,check
 
 [testenv]
 setenv = 
@@ -74,16 +76,14 @@ setenv =
 deps = 
     trio
     pytest
-    pytest-trio
-    distkv
 commands = 
     python3 -mpytest tests/
 
 [testenv:check]
 commands = 
-    pylint moat/mqtt tests
-    flake8p moat/mqtt tests
-    black --check moat/mqtt tests
+    pylint moat tests
+    flake8p moat tests
+    black --check moat tests
 deps = 
     pytest
     pylint
@@ -96,3 +96,5 @@ deps =
 [tool.pylint]
 [tool.pylint.messages_control]
 disable = "wrong-import-order,ungrouped-imports,too-many-nested-blocks,use-dict-literal,unspecified-encoding,too-many-statements,too-many-return-statements,too-many-locals,too-many-instance-attributes,too-many-branches,too-many-arguments,too-few-public-methods,superfluous-parens,no-else-return,no-else-continue,invalid-name,fixme"
+
+[tool.moat]
