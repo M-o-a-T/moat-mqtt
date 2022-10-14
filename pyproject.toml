@@ -74,6 +74,10 @@ envlist = py310,check
 setenv = 
     PYTHONPATH = {env:PYTHONPATH}{:}{toxinidir}
 deps = 
+    anyio
+    asyncwebsockets
+    asyncclick
+    asyncscope
     trio
     pytest
 commands = 
