@@ -88,6 +88,10 @@ class ConnectException(ClientException):
 
     pass
 
+class CodecError(ClientException):
+    def __init__(self, msg):
+        self.msg = msg
+    pass
 
 class ClientContext(BaseContext):
     """
@@ -483,7 +487,10 @@ class MQTTClient:
                 if self._q is None:
                     raise RuntimeError("Overflow. Please resubscribe.")
                 message = await self._q.get()
-                message.data = self.codec.decode(message.publish_packet.data)
+                try:
+                    message.data = self.codec.decode(message.publish_packet.data)
+                except Exception as exc:
+                    raise CodecError(message) from exc
                 return message
 
             async def __len__(self):
