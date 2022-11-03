@@ -16,6 +16,7 @@ except AttributeError:
 
 import msgpack
 import simplejson as json
+from moat.util import packer as dkv_packer, unpacker as dkv_unpacker
 
 
 def bytes_to_hex_str(data):
@@ -211,6 +212,17 @@ class MsgPackCodec(BaseCodec):
         # raw=False would try to decode input bytes, which is not what you
         # want when the input is a bytestring. So we only use that if
         # bytestring input has been marked as such.
+
+
+class DistKVcodec(BaseCodec):
+    """A msgpack codec that understands DistKV extensions"""
+    name = "distkv"
+
+    def encode(self, data):
+        return dkv_packer(data)
+
+    def decode(self, data):
+        return dkv_unpacker(data)
 
 
 class JSONCodec(BaseCodec):
