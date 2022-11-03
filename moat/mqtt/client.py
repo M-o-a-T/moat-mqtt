@@ -88,10 +88,13 @@ class ConnectException(ClientException):
 
     pass
 
+
 class CodecError(ClientException):
     def __init__(self, msg):
         self.msg = msg
+
     pass
+
 
 class ClientContext(BaseContext):
     """
