@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 @click.group(short_help="MQTT client and broker")
 async def cli():
     """
-    Run MQTT commands
+    Run MQTT commands.
+
+    Paths are '/'-separated. Wildcards are '+' and '#'.
     """
     pass
 
