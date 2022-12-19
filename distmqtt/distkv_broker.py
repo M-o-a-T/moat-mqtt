@@ -9,7 +9,7 @@ from distmqtt.broker import Broker
 
 try:
     from distkv.client import client_scope as distkv_client_scope
-    from distkv.util import PathLongener, NotGiven
+    from moat.util import PathLongener, NotGiven
     from distkv.errors import ErrorRoot
 except ImportError:
     pass
