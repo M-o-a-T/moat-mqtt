@@ -7,12 +7,15 @@ from typing import Optional
 
 from distmqtt.broker import Broker
 
+import logging
+logger = logging.getLogger("__name__")
+
 try:
     from distkv.client import client_scope as distkv_client_scope
     from moat.util import PathLongener, NotGiven
     from distkv.errors import ErrorRoot
 except ImportError:
-    pass
+    logger.warning("Could not load DistKV. not installed?")
 
 
 class DistKVbroker(Broker):
