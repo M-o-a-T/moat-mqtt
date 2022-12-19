@@ -84,7 +84,7 @@ class BrokerSysPlugin:
             await self.sys_handle.cancel()
 
     async def broadcast_dollar_sys_topics_loop(self, interval, evt):
-        async with anyio.open_cancel_scope() as scope:
+        with anyio.CancelScope() as scope:
             self.sys_handle = scope
             await evt.set()
             while True:
