@@ -1,14 +1,15 @@
 #!/usr/bin/make -f
 
-PACKAGE=moat-mqtt
+PACKAGE = moat-mqtt
+MAKEINCL ?= $(shell python3 -mmoat src path)/make/py
 
-ifneq ($(wildcard /usr/share/sourcemgr/make/py),)
-include /usr/share/sourcemgr/make/py
+ifneq ($(wildcard $(MAKEINCL)),)
+include $(MAKEINCL)
 # availabe via http://github.com/smurfix/sourcemgr
 
 else
 %:
-	@echo "Please use 'python -mbuild'."
+	@echo "Please fix 'python3 -mmoat src path'."
 	@exit 1
 endif
 
