@@ -21,8 +21,8 @@ class Server(_Server):
         """
         async with open_client(
             connect=dict(host="127.0.0.1", port=self.distkv_port, name=name)
-        ) as client:
-            yield client
+        ) as c:
+            yield c
 
     async def test_client_scope(self, name=None):
         return await client_scope(connect=dict(host="127.0.0.1", port=self.distkv_port, name=name))
@@ -56,14 +56,14 @@ async def server(mqtt_port: int = None, distkv_port: int = None):
         }
     }
 
-    server = Server(name="gpio_test", cfg=server_cfg, init="GPIO")
+    s = Server(name="gpio_test", cfg=server_cfg, init="GPIO")
     async with create_broker(config=broker_cfg) as broker:
         evt = anyio.Event()
-        broker._tg.start_soon(partial(server.serve, ready_evt=evt))
+        broker._tg.start_soon(partial(s.serve, ready_evt=evt))
         await evt.wait()
 
-        server.distkv_port = distkv_port  # pylint: disable=attribute-defined-outside-init
-        yield server
+        s.distkv_port = distkv_port  # pylint: disable=attribute-defined-outside-init
+        yield s
 
 
 @asynccontextmanager
