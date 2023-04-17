@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from functools import partial
 
 import anyio
-from distkv.client import open_client
+from distkv.client import open_client, client_scope
 from distkv.server import Server as _Server
 
 from .broker import create_broker
@@ -14,17 +14,17 @@ from .broker import create_broker
 
 class Server(_Server):
     @asynccontextmanager
-    async def test_client(self):
+    async def test_client(self, name=None):
         """
         An async context manager that returns a client that's connected to
         this server.
         """
-        async with open_client(connect=dict(host="127.0.0.1", port=self.distkv_port)) as client:
+        async with open_client(connect=dict(host="127.0.0.1", port=self.distkv_port, name=name)) as client:
             yield client
 
 
 @asynccontextmanager
-async def test_server(mqtt_port: int = None, distkv_port: int = None):
+async def server(mqtt_port: int = None, distkv_port: int = None):
     """
     An async context manager which creates a stand-alone DistKV server.
 
@@ -62,10 +62,10 @@ async def test_server(mqtt_port: int = None, distkv_port: int = None):
 
 
 @asynccontextmanager
-async def test_client(mqtt_port: int = None, distkv_port: int = None):
+async def client(mqtt_port: int = None, distkv_port: int = None):
     """
     An async context manager which creates a stand-alone DistKV client.
     """
-    async with test_server(mqtt_port=mqtt_port, distkv_port=distkv_port) as s:
+    async with server(mqtt_port=mqtt_port, distkv_port=distkv_port) as s:
         async with s.test_client() as c:
             yield c
