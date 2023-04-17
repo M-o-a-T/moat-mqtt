@@ -22,6 +22,9 @@ class Server(_Server):
         async with open_client(connect=dict(host="127.0.0.1", port=self.distkv_port, name=name)) as client:
             yield client
 
+    async def test_client_scope(self, name=None):
+        return await client_scope(connect=dict(host="127.0.0.1", port=self.distkv_port, name=name))
+
 
 @asynccontextmanager
 async def server(mqtt_port: int = None, distkv_port: int = None):
