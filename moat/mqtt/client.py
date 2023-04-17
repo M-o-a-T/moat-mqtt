@@ -684,7 +684,7 @@ class MQTTClient:
                     self.session.broker_uri,
                     subprotocols=["mqtt"],
                     headers=self.extra_headers,
-                    **kwargs
+                    **kwargs,
                 )
                 adapter = WebSocketsAdapter(websocket)
             else:

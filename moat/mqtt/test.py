@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from functools import partial
 
 import anyio
-from distkv.client import open_client, client_scope
+from distkv.client import client_scope, open_client
 from distkv.server import Server as _Server
 
 from .broker import create_broker
@@ -19,7 +19,9 @@ class Server(_Server):
         An async context manager that returns a client that's connected to
         this server.
         """
-        async with open_client(connect=dict(host="127.0.0.1", port=self.distkv_port, name=name)) as client:
+        async with open_client(
+            connect=dict(host="127.0.0.1", port=self.distkv_port, name=name)
+        ) as client:
             yield client
 
     async def test_client_scope(self, name=None):

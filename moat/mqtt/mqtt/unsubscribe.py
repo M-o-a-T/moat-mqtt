@@ -16,7 +16,6 @@ from .packet import (
 
 
 class UnubscribePayload(MQTTPayload):
-
     __slots__ = ("topics",)
 
     def __init__(self, topics=()):

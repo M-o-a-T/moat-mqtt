@@ -28,7 +28,6 @@ RESERVED_15 = 0x0F
 
 
 class MQTTFixedHeader:
-
     __slots__ = ("packet_type", "remaining_length", "flags")
 
     def __init__(self, packet_type, flags=0, length=0):
@@ -140,7 +139,6 @@ class MQTTVariableHeader:
 
 
 class PacketIdVariableHeader(MQTTVariableHeader):
-
     __slots__ = ("packet_id",)
 
     def __init__(self, packet_id):
@@ -179,7 +177,6 @@ class MQTTPayload:
 
 
 class MQTTPacket:
-
     __slots__ = ("fixed_header", "variable_header", "payload", "protocol_ts")
 
     FIXED_HEADER = MQTTFixedHeader

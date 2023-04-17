@@ -201,7 +201,6 @@ async def pub(obj, **args):
 
 
 async def do_sub(client, args, cfg):
-
     try:
         await client.connect(
             uri=args["url"] or cfg.url,

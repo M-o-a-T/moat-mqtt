@@ -16,7 +16,6 @@ from .packet import (
 
 
 class SubscribePayload(MQTTPayload):
-
     __slots__ = ("topics",)
 
     def __init__(self, topics=()):
