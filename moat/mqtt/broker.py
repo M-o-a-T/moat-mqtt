@@ -418,6 +418,7 @@ class Broker:
 
         Closes all connected session, stop listening on network socket and free resources.
         """
+        self.logger.debug("Broker closing")
         for s in self._sessions.values():
             await s[0].stop()
 
@@ -446,7 +447,6 @@ class Broker:
         for listener_name in self._servers:
             server = self._servers[listener_name]
             await server.close_instance()
-        self.logger.debug("Broker closing")
         self.logger.info("Broker closed")
         await self.plugins_manager.fire_event(EVENT_BROKER_POST_SHUTDOWN)
         self.transitions.stopping_success()
