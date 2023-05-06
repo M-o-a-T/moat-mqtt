@@ -528,7 +528,7 @@ class ProtocolHandler:
                             exc_info=e,
                         )
                         raise
-                tg.cancel_scope.cancel()
+                # tg.cancel_scope.cancel()  # XXX is that needed?
         finally:
             with anyio.fail_after(2, shield=True):
                 self.logger.debug(
