@@ -55,8 +55,12 @@ from ..unsubscribe import UnsubscribePacket
 
 try:
     ClosedResourceError = anyio.exceptions.ClosedResourceError
+    BrokenResourceError = anyio.exceptions.BrokenResourceError
+    EndOfStream = anyio.exceptions.EndOfStream
 except AttributeError:
     ClosedResourceError = anyio.ClosedResourceError
+    BrokenResourceError = anyio.BrokenResourceError
+    EndOfStream = anyio.EndOfStream
 
 EVENT_MQTT_PACKET_SENT = "mqtt_packet_sent"
 EVENT_MQTT_PACKET_RECEIVED = "mqtt_packet_received"
@@ -518,6 +522,14 @@ class ProtocolHandler:
                     except NoDataException:
                         self.logger.debug("%s No data available", self.session.client_id)
                         break  # XXX
+                    except (
+                        anyio.BrokenResourceError,
+                        anyio.ClosedResourceError,
+                        anyio.EndOfStream,
+                    ):
+                        self.logger.debug("%s No data available", self.session.client_id)
+                        break
+
                     except anyio.get_cancelled_exc_class():
                         self.logger.warning("%s CANCEL", type(self).__name__)
                         raise
@@ -567,7 +579,7 @@ class ProtocolHandler:
                     )
                     try:
                         await packet.to_stream(self.stream)
-                    except ClosedResourceError:
+                    except (ClosedResourceError, BrokenResourceError, EndOfStream):
                         return
                     await self.plugins_manager.fire_event(
                         EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session
