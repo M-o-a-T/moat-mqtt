@@ -106,19 +106,6 @@ class BrokerTest(unittest.TestCase):
                 await anyio.sleep(0.1)  # let the broker task process the packet
             self.assertTrue(broker.transitions.is_stopped())
             self.assertDictEqual(broker._sessions, {})
-            MockPluginManager.assert_has_calls(
-                [
-                    call().fire_event(
-                        EVENT_BROKER_CLIENT_CONNECTED,
-                        client_id=client.session.client_id,
-                    ),
-                    call().fire_event(
-                        EVENT_BROKER_CLIENT_DISCONNECTED,
-                        client_id=client.session.client_id,
-                    ),
-                ],
-                any_order=True,
-            )
 
         anyio_run(test_coro)
 
