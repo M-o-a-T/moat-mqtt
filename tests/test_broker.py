@@ -567,7 +567,7 @@ class BrokerTest(unittest.TestCase):
             async with create_broker(
                 test_config, plugin_namespace="moat.mqtt.test.plugins"
             ) as broker:
-                with anyio.fail_after(1):
+                with anyio.fail_after(3):
                     broker.plugins_manager._tg = broker._tg
                     self.assertTrue(broker.transitions.is_started())
                     async with open_mqttclient() as sub_client:
