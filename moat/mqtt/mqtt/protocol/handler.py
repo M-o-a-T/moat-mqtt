@@ -160,7 +160,11 @@ class ProtocolHandler:
         )
         if self._reader_task is None:
             return
-        self._reader_task.start_soon(self._timeout_loop)
+        try:
+            self._reader_task.start_soon(self._timeout_loop)
+        except RuntimeError:
+            # This can happen when stuff overlaps
+            pass
 
     async def stop(self):
         # Stop messages flow waiter
