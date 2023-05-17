@@ -253,14 +253,7 @@ class ProtocolHandler:
         is not completed before ack_timeout second
         :return: ApplicationMessage used during inflight operations
         """
-        if qos in (QOS_1, QOS_2):
-            packet_id = self.session.next_packet_id
-            if packet_id in self.session.inflight_out:
-                raise MoatMQTTException(
-                    "A message with the same packet ID '%d' is already in flight" % packet_id
-                )
-        else:
-            packet_id = None
+        packet_id = self.session.next_packet_id if qos in (QOS_1, QOS_2) else None
 
         message = OutgoingApplicationMessage(packet_id, topic, qos, data, retain)
         await self._handle_message_flow(message)
