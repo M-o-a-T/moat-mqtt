@@ -582,14 +582,15 @@ class BrokerTest(unittest.TestCase):
                         await self._client_publish("/qos1", b"data", QOS_1, retain=True)
                         await self._client_publish("/qos2", b"data", QOS_2, retain=True)
                         await sub_client.reconnect()
+                        seen = set()
                         for qos in [QOS_1, QOS_2]:
                             log.error("TEST QOS: %d", qos)
                             message = await sub_client.deliver_message()
                             log.error("Message: %r", message.publish_packet)
-                            # self.assertIsNotNone(message)
-                            # self.assertEqual(message.topic, "/qos%s" % qos)
-                            # self.assertEqual(message.data, b"data")
-                            # self.assertEqual(message.qos, qos)
+                            assert message.topic == f"/qos{qos}"
+                            assert message.data == b"data"
+                            seen.add(qos)
+                        assert seen == set((1, 2))
             self.assertTrue(broker.transitions.is_stopped())
 
         anyio_run(test_coro)
