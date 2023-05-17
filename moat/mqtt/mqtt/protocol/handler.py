@@ -513,7 +513,6 @@ class ProtocolHandler:
                                 else:
                                     tg.start_soon(fn, packet)
                             except StopAsyncIteration:
-                                self.logger.debug("%s Read Loop break", self.session.client_id)
                                 break
 
                     except MQTTException:
@@ -530,7 +529,7 @@ class ProtocolHandler:
                         break
 
                     except anyio.get_cancelled_exc_class():
-                        self.logger.warning("%s CANCEL", type(self).__name__)
+                        self.logger.debug("%s CANCEL", type(self).__name__)
                         raise
                     except BaseException as e:
                         self.logger.warning(
