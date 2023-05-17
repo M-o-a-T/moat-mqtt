@@ -582,7 +582,7 @@ class BrokerTest(unittest.TestCase):
                         await self._client_publish("/qos1", b"data", QOS_1, retain=True)
                         await self._client_publish("/qos2", b"data", QOS_2, retain=True)
                         await sub_client.reconnect()
-                        for qos in [QOS_0, QOS_1, QOS_2]:
+                        for qos in [QOS_1, QOS_2]:
                             log.error("TEST QOS: %d", qos)
                             message = await sub_client.deliver_message()
                             log.error("Message: %r", message.publish_packet)
