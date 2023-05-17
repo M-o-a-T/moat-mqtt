@@ -158,7 +158,6 @@ class ProtocolHandler:
             "Broker" if "Broker" in type(self).__name__ else "Client",
             self.session.client_id if self.session else "?",
         )
-        await anyio.sleep(0.01)
         if self._reader_task is None:
             return
         self._reader_task.start_soon(self._timeout_loop)

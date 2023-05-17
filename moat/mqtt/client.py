@@ -313,7 +313,6 @@ class MQTTClient:
         reconnect_max_interval = self.config.get("reconnect_max_interval", 10)
         reconnect_retries = self.config.get("reconnect_retries", 5)
         nb_attempt = 1
-        await anyio.sleep(1)
         while True:
             try:
                 self.logger.debug("Reconnect attempt %d ...", nb_attempt)
