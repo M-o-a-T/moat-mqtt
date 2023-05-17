@@ -91,7 +91,7 @@ class BrokerTest(unittest.TestCase):
         anyio_run(test_coro, backend="trio")
 
     @patch("moat.mqtt.broker.PluginManager", new_callable=AsyncMock)
-    def test_client_connect(self, MockPluginManager):
+    def test_client_connect(self, MockPluginManager):  # pylint: disable=unused-argument
         async def test_coro():
             async with create_broker(
                 test_config, plugin_namespace="moat.mqtt.test.plugins"
