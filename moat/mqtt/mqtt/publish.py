@@ -9,7 +9,6 @@ from .packet import PUBLISH, MQTTFixedHeader, MQTTPacket, MQTTPayload, MQTTVaria
 
 
 class PublishVariableHeader(MQTTVariableHeader):
-
     __slots__ = ("topic_name", "packet_id")
 
     def __init__(self, topic_name: str, packet_id: int = None):
@@ -47,7 +46,6 @@ class PublishVariableHeader(MQTTVariableHeader):
 
 
 class PublishPayload(MQTTPayload):
-
     __slots__ = ("data",)
 
     def __init__(self, data: bytes = None):

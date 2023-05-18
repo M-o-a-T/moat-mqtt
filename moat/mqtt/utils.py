@@ -5,7 +5,6 @@ import logging
 
 import anyio
 import attr
-import yaml
 
 from .errors import InvalidStateError
 
@@ -33,16 +32,6 @@ def gen_client_id():
     for _ in range(16):
         gen_id += chr(random.randint(0, 26) + 97)
     return gen_id
-
-
-def read_yaml_config(config_file):
-    config = None
-    try:
-        with open(config_file, "r") as stream:  # pylint: disable=unspecified-encoding
-            config = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        logger.error("Invalid config_file %s: %r", config_file, exc)
-    return config
 
 
 # utility code

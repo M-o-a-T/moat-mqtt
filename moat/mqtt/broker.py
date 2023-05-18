@@ -52,7 +52,6 @@ class BrokerException(Exception):
 
 
 class RetainedApplicationMessage:
-
     __slots__ = ("source_session", "topic", "data", "qos")
 
     def __init__(self, source_session, topic, data, qos=None):
@@ -86,7 +85,6 @@ class Server:
     @asynccontextmanager
     async def _client_limit(self):
         async with self._client_limit_():
-
             self.conn_count += 1
             if self.max_connections > 0:
                 self.logger.info(
@@ -420,6 +418,7 @@ class Broker:
 
         Closes all connected session, stop listening on network socket and free resources.
         """
+        self.logger.debug("Broker closing")
         for s in self._sessions.values():
             await s[0].stop()
 
@@ -448,7 +447,6 @@ class Broker:
         for listener_name in self._servers:
             server = self._servers[listener_name]
             await server.close_instance()
-        self.logger.debug("Broker closing")
         self.logger.info("Broker closed")
         await self.plugins_manager.fire_event(EVENT_BROKER_POST_SHUTDOWN)
         self.transitions.stopping_success()
@@ -849,7 +847,7 @@ class Broker:
                 targets = {}
                 for k_filter, subscriptions in self._subscriptions.items():
                     if match_topic(topic, k_filter):
-                        for (target_session, qos) in subscriptions:
+                        for target_session, qos in subscriptions:
                             qos = max(
                                 qos,
                                 broadcast.get("qos", QOS_0),

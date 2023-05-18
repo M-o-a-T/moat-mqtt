@@ -16,7 +16,6 @@ CLIENT_ERROR = 0x7F
 
 
 class ConnackVariableHeader(MQTTVariableHeader):
-
     __slots__ = ("session_parent", "return_code")
 
     def __init__(self, session_parent=None, return_code=None):

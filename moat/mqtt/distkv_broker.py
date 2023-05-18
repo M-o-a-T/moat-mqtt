@@ -119,21 +119,18 @@ class DistKVbroker(Broker):
                 if "path" not in msg:
                     continue
                 pl(msg)
-                data = msg.get("value", NotGiven)
-                if data is NotGiven:
-                    data = b""
-                elif not isinstance(data, (bytes, bytearray)):
+                data = msg.get("value", b"")
+                if not isinstance(data, (bytes, bytearray)):
                     await err.record_error(
                         "moat.mqtt", msg.path, data={"data": data}, message="non-binary data"
                     )
                     return
-                else:
-                    await super().broadcast_message(
-                        session=None,
-                        topic="/".join(msg["path"]),
-                        data=data,
-                        retain=True,
-                    )
+                await super().broadcast_message(
+                    session=None,
+                    topic="/".join(msg["path"]),
+                    data=data,
+                    retain=True,
+                )
                 await err.record_working("moat.mqtt", msg.path)
 
     async def start(self):

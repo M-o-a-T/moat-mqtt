@@ -89,6 +89,13 @@ class ConnectException(ClientException):
     pass
 
 
+class CodecError(ClientException):
+    def __init__(self, msg):
+        self.msg = msg
+
+    pass
+
+
 class ClientContext(BaseContext):
     """
     ClientContext is used as the context passed to plugins interacting with the client.
@@ -306,7 +313,6 @@ class MQTTClient:
         reconnect_max_interval = self.config.get("reconnect_max_interval", 10)
         reconnect_retries = self.config.get("reconnect_retries", 5)
         nb_attempt = 1
-        await anyio.sleep(1)
         while True:
             try:
                 self.logger.debug("Reconnect attempt %d ...", nb_attempt)
@@ -483,7 +489,10 @@ class MQTTClient:
                 if self._q is None:
                     raise RuntimeError("Overflow. Please resubscribe.")
                 message = await self._q.get()
-                message.data = self.codec.decode(message.publish_packet.data)
+                try:
+                    message.data = self.codec.decode(message.publish_packet.data)
+                except Exception as exc:
+                    raise CodecError(message) from exc
                 return message
 
             async def __len__(self):
@@ -674,7 +683,7 @@ class MQTTClient:
                     self.session.broker_uri,
                     subprotocols=["mqtt"],
                     headers=self.extra_headers,
-                    **kwargs
+                    **kwargs,
                 )
                 adapter = WebSocketsAdapter(websocket)
             else:

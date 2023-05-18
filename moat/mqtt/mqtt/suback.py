@@ -16,7 +16,6 @@ from .packet import (
 
 
 class SubackPayload(MQTTPayload):
-
     __slots__ = ("return_codes",)
 
     RETURN_CODE_00 = 0x00

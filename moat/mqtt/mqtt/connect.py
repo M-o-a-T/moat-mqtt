@@ -18,7 +18,6 @@ from .packet import CONNECT, MQTTFixedHeader, MQTTPacket, MQTTPayload, MQTTVaria
 
 
 class ConnectVariableHeader(MQTTVariableHeader):
-
     __slots__ = ("proto_name", "proto_level", "flags", "keep_alive")
 
     USERNAME_FLAG = 0x80
@@ -141,7 +140,6 @@ class ConnectVariableHeader(MQTTVariableHeader):
 
 
 class ConnectPayload(MQTTPayload):
-
     __slots__ = (
         "client_id",
         "will_topic",

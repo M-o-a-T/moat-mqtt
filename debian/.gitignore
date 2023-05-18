@@ -5,4 +5,5 @@
 /*.substvars
 /debhelper-build-stamp
 /moat-mqtt
+/python3-moat-mqtt
 /*.service

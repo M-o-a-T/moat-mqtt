@@ -13,8 +13,7 @@ from asyncscope import main_scope
 from moat.util import attrdict, combine_dict, yload
 
 from .broker import create_broker
-from .client import ConnectException, _codecs, open_mqttclient
-from .utils import read_yaml_config
+from .client import CodecError, ConnectException, _codecs, open_mqttclient
 from .version import get_version
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,9 @@ logger = logging.getLogger(__name__)
 @click.group(short_help="MQTT client and broker")
 async def cli():
     """
-    Run MQTT commands
+    Run MQTT commands.
+
+    Paths are '/'-separated. Wildcards are '+' and '#'.
     """
     pass
 
@@ -200,7 +201,6 @@ async def pub(obj, **args):
 
 
 async def do_sub(client, args, cfg):
-
     try:
         await client.connect(
             uri=args["url"] or cfg.url,
@@ -229,9 +229,22 @@ async def run_sub(client, topic, args, cfg):
     count = 0
 
     async with client.subscription(topic, qos) as subscr:
-        async for message in subscr:
+        mit = subscr.__aiter__()
+        while True:
+            try:
+                message = await mit.__anext__()
+            except CodecError as exc:
+                message = exc.msg
+                try:
+                    data = message.data.decode("utf-8")
+                except Exception:
+                    data = repr(bytes(message.data))[2:-1]
+                    if data == "":
+                        data = "‹empty›"
+                print("R", message.topic, data, sep="\t")
+            else:
+                print(message.topic, message.data, sep="\t")
             count += 1
-            print(message.topic, message.data, sep="\t")
             if max_count and count >= max_count:
                 break
 

@@ -55,8 +55,12 @@ from ..unsubscribe import UnsubscribePacket
 
 try:
     ClosedResourceError = anyio.exceptions.ClosedResourceError
+    BrokenResourceError = anyio.exceptions.BrokenResourceError
+    EndOfStream = anyio.exceptions.EndOfStream
 except AttributeError:
     ClosedResourceError = anyio.ClosedResourceError
+    BrokenResourceError = anyio.BrokenResourceError
+    EndOfStream = anyio.EndOfStream
 
 EVENT_MQTT_PACKET_SENT = "mqtt_packet_sent"
 EVENT_MQTT_PACKET_RECEIVED = "mqtt_packet_received"
@@ -154,10 +158,13 @@ class ProtocolHandler:
             "Broker" if "Broker" in type(self).__name__ else "Client",
             self.session.client_id if self.session else "?",
         )
-        await anyio.sleep(0.01)
         if self._reader_task is None:
             return
-        self._reader_task.start_soon(self._timeout_loop)
+        try:
+            self._reader_task.start_soon(self._timeout_loop)
+        except RuntimeError:
+            # This can happen when stuff overlaps
+            pass
 
     async def stop(self):
         # Stop messages flow waiter
@@ -246,14 +253,7 @@ class ProtocolHandler:
         is not completed before ack_timeout second
         :return: ApplicationMessage used during inflight operations
         """
-        if qos in (QOS_1, QOS_2):
-            packet_id = self.session.next_packet_id
-            if packet_id in self.session.inflight_out:
-                raise MoatMQTTException(
-                    "A message with the same packet ID '%d' is already in flight" % packet_id
-                )
-        else:
-            packet_id = None
+        packet_id = self.session.next_packet_id if qos in (QOS_1, QOS_2) else None
 
         message = OutgoingApplicationMessage(packet_id, topic, qos, data, retain)
         await self._handle_message_flow(message)
@@ -510,7 +510,6 @@ class ProtocolHandler:
                                 else:
                                     tg.start_soon(fn, packet)
                             except StopAsyncIteration:
-                                self.logger.debug("%s Read Loop break", self.session.client_id)
                                 break
 
                     except MQTTException:
@@ -518,8 +517,16 @@ class ProtocolHandler:
                     except NoDataException:
                         self.logger.debug("%s No data available", self.session.client_id)
                         break  # XXX
+                    except (
+                        anyio.BrokenResourceError,
+                        anyio.ClosedResourceError,
+                        anyio.EndOfStream,
+                    ):
+                        self.logger.debug("%s No data available", self.session.client_id)
+                        break
+
                     except anyio.get_cancelled_exc_class():
-                        self.logger.warning("%s CANCEL", type(self).__name__)
+                        self.logger.debug("%s CANCEL", type(self).__name__)
                         raise
                     except BaseException as e:
                         self.logger.warning(
@@ -528,7 +535,7 @@ class ProtocolHandler:
                             exc_info=e,
                         )
                         raise
-                tg.cancel_scope.cancel()
+                # tg.cancel_scope.cancel()  # XXX is that needed?
         finally:
             with anyio.fail_after(2, shield=True):
                 self.logger.debug(
@@ -567,7 +574,7 @@ class ProtocolHandler:
                     )
                     try:
                         await packet.to_stream(self.stream)
-                    except ClosedResourceError:
+                    except (ClosedResourceError, BrokenResourceError, EndOfStream):
                         return
                     await self.plugins_manager.fire_event(
                         EVENT_MQTT_PACKET_SENT, packet=packet, session=self.session
