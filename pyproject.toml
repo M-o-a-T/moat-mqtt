@@ -23,7 +23,7 @@ dependencies = [
 	"attrs >= 19",
 	"simplejson",
 	"msgpack",
-	"moat-util ~= 0.33.1",
+	"moat-util ~= 0.35.0",
 	"transitions",
 	"wsproto",
 	"asyncscope >= 0.6.0",
