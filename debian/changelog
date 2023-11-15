@@ -1,3 +1,9 @@
+moat-mqtt (0.39.4-3) unstable; urgency=medium
+
+  * Don't hard-require moat-main
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Wed, 15 Nov 2023 15:38:14 +0100
+
 moat-mqtt (0.39.4-2) unstable; urgency=medium
 
   * Renames and such

@@ -13,10 +13,10 @@ Package: moat-mqtt
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends},
   python3-anyio (>= 2.0),
-  moat-main,
   moat-util,
 Recommends:
   moat-kv,
+  moat-main,
   python3-trio (>= 0.22),
 Description: MQTT client/broker using anyio and moat-kv
 
