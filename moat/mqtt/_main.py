@@ -9,7 +9,6 @@ from contextlib import AsyncExitStack
 
 import anyio
 import asyncclick as click
-from asyncscope import main_scope
 from moat.util import attrdict, combine_dict, yload
 
 from .broker import create_broker
@@ -41,7 +40,6 @@ async def broker(obj):
         as_service = None
 
     async with AsyncExitStack() as stack:
-        await stack.enter_async_context(main_scope())
         await stack.enter_async_context(create_broker(obj.cfg.mqtt.broker))
         if as_service is not None:
             evt = await stack.enter_async_context(as_service())
