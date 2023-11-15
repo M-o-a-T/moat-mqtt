@@ -40,18 +40,18 @@ PORT_B = 40000 + (os.getpid() + 6) % 10000
 # Port for moat-kv
 PORT_D = 40000 + (os.getpid() + 7) % 10000
 
-URI = "mqtt://127.0.0.1:%d/" % PORT
-URI_B = "mqtt://127.0.0.1:%d/" % PORT_B
+URI = f"mqtt://127.0.0.1:{PORT}/"
+URI_B = f"mqtt://127.0.0.1:{PORT_B}/"
 
 log.debug("Ports: moat_kv=%d up=%d low=%d", PORT_D, PORT, PORT_B)
 
 broker_config = {
-    "broker": {"uri": "mqtt://127.0.0.1:%d" % PORT_B},
+    "broker": {"uri": f"mqtt://127.0.0.1:{PORT_B}"},
     "kv": {
         "topic": "test_" + "".join(random.choices("abcdefghijklmnopqrstuvwxyz", k=7)),
         "base": ("test", "retain"),
         "transparent": (("test", "vis"),),
-        "connect": {"port": PORT_D},
+        "conn": {"port": PORT_D},
         "server": {
             "backend": "mqtt",
             "mqtt": {"uri": URI_B},
@@ -59,7 +59,7 @@ broker_config = {
         },
     },
     "listeners": {
-        "default": {"type": "tcp", "bind": "127.0.0.1:%d" % (PORT), "max_connections": 10}
+        "default": {"type": "tcp", "bind": f"127.0.0.1:{PORT}", "max_connections": 10}
     },
     "sys_interval": 0,
     "auth": {"allow-anonymous": True},
@@ -68,7 +68,7 @@ broker_config = {
 
 test_config = {
     "listeners": {
-        "default": {"type": "tcp", "bind": "127.0.0.1:%d" % PORT_B, "max_connections": 10}
+        "default": {"type": "tcp", "bind": f"127.0.0.1:{PORT_B}", "max_connections": 10}
     },
     "sys_interval": 0,
     "retain": False,
