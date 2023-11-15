@@ -20,8 +20,8 @@ from moat.mqtt.client import open_mqttclient
 from moat.mqtt.mqtt.constants import QOS_0
 
 try:
-    from distkv.client import open_client
-    from distkv.server import Server
+    from moat.kv.client import open_client
+    from moat.kv.server import Server
 except ImportError:
     pytestmark = pytest.mark.skip
 
@@ -33,21 +33,21 @@ formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(
 logging.basicConfig(level=logging.DEBUG, format=formatter)
 log = logging.getLogger(__name__)
 
-# Port for distkv-based broker
+# Port for moat-kv-based broker
 PORT = 40000 + (os.getpid() + 5) % 10000
 # Port for base broker
 PORT_B = 40000 + (os.getpid() + 6) % 10000
-# Port for distkv
+# Port for moat-kv
 PORT_D = 40000 + (os.getpid() + 7) % 10000
 
 URI = "mqtt://127.0.0.1:%d/" % PORT
 URI_B = "mqtt://127.0.0.1:%d/" % PORT_B
 
-log.debug("Ports: distkv=%d up=%d low=%d", PORT_D, PORT, PORT_B)
+log.debug("Ports: moat_kv=%d up=%d low=%d", PORT_D, PORT, PORT_B)
 
 broker_config = {
     "broker": {"uri": "mqtt://127.0.0.1:%d" % PORT_B},
-    "distkv": {
+    "kv": {
         "topic": "test_" + "".join(random.choices("abcdefghijklmnopqrstuvwxyz", k=7)),
         "base": ("test", "retain"),
         "transparent": (("test", "vis"),),
@@ -77,22 +77,22 @@ test_config = {
 
 
 @asynccontextmanager
-async def distkv_server(n):
+async def moat_kv_server(n):
     msgs = []
     async with anyio.create_task_group() as tg:
         async with create_broker(test_config, plugin_namespace="moat.mqtt.test.plugins"):
-            s = Server("test", cfg=broker_config["distkv"], init="test")
+            s = Server("test", cfg=broker_config["kv"], init="test")
             evt = anyio.Event()
             tg.start_soon(partial(s.serve, ready_evt=evt))
             await evt.wait()
 
-            async with open_client(**broker_config["distkv"]) as cl:
+            async with open_client(**broker_config["kv"]) as cl:
 
                 async def msglog(evt):
                     try:
                         async with cl._stream(
                             "msg_monitor", topic="*"
-                        ) as mon:  # , topic=broker_config['distkv']['topic']) as mon:
+                        ) as mon:  # , topic=broker_config['kv']['topic']) as mon:
                             log.info("Monitor Start")
                             evt.set()
                             async for m in mon:
@@ -117,7 +117,7 @@ class MQTTClientTest(unittest.TestCase):
         data = b"data 123 a"
 
         async def test_coro():
-            async with distkv_server(1):
+            async with moat_kv_server(1):
                 async with create_broker(broker_config, plugin_namespace="moat.mqtt.test.plugins"):
                     async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
@@ -141,7 +141,7 @@ class MQTTClientTest(unittest.TestCase):
         data = b"data 123 t"
 
         async def test_coro():
-            async with distkv_server(1):
+            async with moat_kv_server(1):
                 async with create_broker(broker_config, plugin_namespace="moat.mqtt.test.plugins"):
                     async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
@@ -165,7 +165,7 @@ class MQTTClientTest(unittest.TestCase):
         data = b"data 123 b"
 
         async def test_coro():
-            async with distkv_server(0):
+            async with moat_kv_server(0):
                 async with create_broker(broker_config, plugin_namespace="moat.mqtt.test.plugins"):
                     async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)
@@ -183,7 +183,7 @@ class MQTTClientTest(unittest.TestCase):
 
     def test_deliver_timeout(self):
         async def test_coro():
-            async with distkv_server(0):
+            async with moat_kv_server(0):
                 async with create_broker(broker_config, plugin_namespace="moat.mqtt.test.plugins"):
                     async with open_mqttclient(config=broker_config["broker"]) as client:
                         self.assertIsNotNone(client.session)

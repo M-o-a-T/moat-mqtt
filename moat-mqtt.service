@@ -1,16 +1,16 @@
 [Unit]
 Description=MoaT-MQTT broker
-After=distkv.service
-Wants=distkv.service
+After=moat-kv.service
+Wants=moat-kv.service
 
-ConditionFileNotEmpty=/etc/moat/mqtt.cfg
+ConditionFileNotEmpty=/etc/moat/moat.cfg
 
 [Install]
 WantedBy=multi-user.target
 
 [Service]
 Type=notify
-ExecStart=/usr/bin/moat -c /etc/moat/mqtt.cfg mqtt broker
+ExecStart=/usr/bin/moat -c /etc/moat/moat.cfg mqtt broker
 
 User=moat
 Group=moat

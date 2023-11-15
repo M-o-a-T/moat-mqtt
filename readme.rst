@@ -2,13 +2,13 @@ MoaT-MQTT
 ======
 
 ``MoaT-MQTT`` is an open source `MQTT`_ client and broker implementation. It
-is a fork of `hbmqtt`_ with support for `anyio`_ and `DistKV`_.
+is a fork of `hbmqtt`_ with support for `anyio`_ and `MoaT-KV`_.
 
 MoaT-MQTT provides a straightforward API based on coroutines, making it easy
 to write highly concurrent applications.
 
 .. _anyio: https://github.com/agronholm/anyio
-.. _DistKV: https://github.com/smurfix/distkv
+.. _MoaT-KV: https://github.com/M-o-a-T/moat-kv
 .. _hbmqtt: https://github.com/beerfactory/hbmqtt
 
 Features
@@ -23,7 +23,7 @@ MoaT-MQTT implements the full set of `MQTT 3.1.1`_ protocol specifications and p
 - TCP and websocket support
 - SSL support over TCP and websocket
 - Plugin system
-- Optional: Storage of retained messages in DistKV
+- Optional: Storage of retained messages in MoaT-KV
 
 Build status
 ------------

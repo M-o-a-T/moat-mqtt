@@ -1,13 +1,13 @@
 """
-This module contains code that helps with DistKV testing.
+This module contains code that helps with MoaT-KV testing.
 """
 import os
 from contextlib import asynccontextmanager
 from functools import partial
 
 import anyio
-from distkv.client import client_scope, open_client
-from distkv.server import Server as _Server
+from moat.kv.client import client_scope, open_client
+from moat.kv.server import Server as _Server
 
 from .broker import create_broker
 
@@ -20,18 +20,18 @@ class Server(_Server):
         this server.
         """
         async with open_client(
-            connect=dict(host="127.0.0.1", port=self.distkv_port, name=name)
+            connect=dict(host="127.0.0.1", port=self.moat_kv_port, name=name)
         ) as c:
             yield c
 
     async def test_client_scope(self, name=None):
-        return await client_scope(connect=dict(host="127.0.0.1", port=self.distkv_port, name=name))
+        return await client_scope(connect=dict(host="127.0.0.1", port=self.moat_kv_port, name=name))
 
 
 @asynccontextmanager
-async def server(mqtt_port: int = None, distkv_port: int = None):
+async def server(mqtt_port: int = None, moat_kv_port: int = None):
     """
-    An async context manager which creates a stand-alone DistKV server.
+    An async context manager which creates a stand-alone MoaT-KV server.
 
     The server has a `test_client` method: an async context manager that
     returns a client taht's connected to this server.
@@ -40,8 +40,8 @@ async def server(mqtt_port: int = None, distkv_port: int = None):
     """
     if mqtt_port is None:
         mqtt_port = 40000 + os.getpid() % 10000
-    if distkv_port is None:
-        distkv_port = 40000 + (os.getpid() + 1) % 10000
+    if moat_kv_port is None:
+        moat_kv_port = 40000 + (os.getpid() + 1) % 10000
 
     broker_cfg = {
         "listeners": {"default": {"type": "tcp", "bind": "127.0.0.1:%d" % mqtt_port}},
@@ -50,7 +50,7 @@ async def server(mqtt_port: int = None, distkv_port: int = None):
     }
     server_cfg = {
         "server": {
-            "bind_default": {"host": "127.0.0.1", "port": distkv_port},
+            "bind_default": {"host": "127.0.0.1", "port": moat_kv_port},
             "backend": "mqtt",
             "mqtt": {"uri": "mqtt://127.0.0.1:%d/" % mqtt_port},
         }
@@ -62,15 +62,15 @@ async def server(mqtt_port: int = None, distkv_port: int = None):
         broker._tg.start_soon(partial(s.serve, ready_evt=evt))
         await evt.wait()
 
-        s.distkv_port = distkv_port  # pylint: disable=attribute-defined-outside-init
+        s.moat_kv_port = moat_kv_port  # pylint: disable=attribute-defined-outside-init
         yield s
 
 
 @asynccontextmanager
-async def client(mqtt_port: int = None, distkv_port: int = None):
+async def client(mqtt_port: int = None, moat_kv_port: int = None):
     """
-    An async context manager which creates a stand-alone DistKV client.
+    An async context manager which creates a stand-alone MoaT-KV client.
     """
-    async with server(mqtt_port=mqtt_port, distkv_port=distkv_port) as s:
+    async with server(mqtt_port=mqtt_port, moat_kv_port=moat_kv_port) as s:
         async with s.test_client() as c:
             yield c
