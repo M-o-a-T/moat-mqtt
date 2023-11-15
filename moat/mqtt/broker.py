@@ -162,10 +162,10 @@ async def create_broker(config=None, plugin_namespace=None):
     """
 
     async with anyio.create_task_group() as tg:
-        if "distkv" in (config or {}):
-            from .distkv_broker import DistKVbroker
+        if "kv" in (config or {}):
+            from .moat_kv_broker import MoatKVbroker
 
-            B = DistKVbroker
+            B = MoatKVbroker
         else:
             B = Broker
         b = B(tg, config, plugin_namespace)

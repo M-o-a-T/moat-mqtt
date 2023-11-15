@@ -8,29 +8,29 @@ import anyio
 from .broker import Broker
 
 try:
-    from distkv.client import client_scope as distkv_client_scope
-    from distkv.errors import ErrorRoot
+    from moat.kv.client import client_scope as moat_kv_client_scope
+    from moat.kv.errors import ErrorRoot
     from moat.util import NotGiven, PathLongener
 except ImportError:
     pass
 
 
-class DistKVbroker(Broker):
+class MoatKVbroker(Broker):
     """
-    A Broker that routes messages through DistKV / MQTT.
+    A Broker that routes messages through MoaT-KV / MQTT.
     """
 
     __slots__ = (
-        "_distkv_broker__client",
-        "_distkv_broker__topic",
-        "_distkv_broker__tranparent",
-        "_distkv_broker__base",
+        "_moat_kv_broker__client",
+        "_moat_kv_broker__topic",
+        "_moat_kv_broker__tranparent",
+        "_moat_kv_broker__base",
     )
 
     def __init__(self, tg: anyio.abc.TaskGroup, config=None, plugin_namespace=None):
         self.__client = None
         super().__init__(tg, config=config, plugin_namespace=plugin_namespace)
-        cfg = self.config["distkv"]
+        cfg = self.config["kv"]
 
         def spl(x, from_cfg=True):
             if from_cfg:
@@ -84,7 +84,7 @@ class DistKVbroker(Broker):
         Connect to the real server, read messages, forward them
         """
         try:
-            self.__client = client = await distkv_client_scope(connect=cfg["connect"])
+            self.__client = client = await moat_kv_client_scope(connect=cfg["conn"])
             async with anyio.create_task_group() as tg:
 
                 async def start(p, *a):
@@ -108,7 +108,7 @@ class DistKVbroker(Broker):
         self, cfg: dict, evt: Optional[anyio.abc.Event] = None
     ):  # pylint: disable=unused-argument
         """
-        Read changes from DistKV and broadcast them
+        Read changes from MoaT-KV and broadcast them
         """
 
         pl = PathLongener(self.__base)
@@ -134,7 +134,7 @@ class DistKVbroker(Broker):
                 await err.record_working("moat.mqtt", msg.path)
 
     async def start(self):
-        cfg = self.config["distkv"]
+        cfg = self.config["kv"]
 
         await super().start()
 
@@ -160,12 +160,12 @@ class DistKVbroker(Broker):
             return  # can't do anything
 
         if topic[0] == "$":
-            # $SYS and whatever-else-dollar messages are not DistKV's problem.
+            # $SYS and whatever-else-dollar messages are not MoaT-KV's problem.
             await super().broadcast_message(session, topic, data, retain=retain)
             return
 
         if ts[: len(self.__base)] == self.__base:
-            # All messages on "base" get stored in DistKV, retained or not.
+            # All messages on "base" get stored in MoaT-KV, retained or not.
             await self.__client.set(ts, value=data)
             return
 

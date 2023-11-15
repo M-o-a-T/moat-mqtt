@@ -215,10 +215,10 @@ class MsgPackCodec(BaseCodec):
         # bytestring input has been marked as such.
 
 
-class DistKVcodec(BaseCodec):
-    """A msgpack codec that understands DistKV extensions"""
+class MoaTKVcodec(BaseCodec):
+    """A msgpack codec that understands MoaT-KV extensions"""
 
-    name = "distkv"
+    name = "moat_kv"
 
     def encode(self, data):
         return dkv_packer(data)

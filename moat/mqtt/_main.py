@@ -33,7 +33,7 @@ async def cli():
 @click.pass_obj
 async def broker(obj):
     """
-    A basic MQTT broker that supports plug-ins and can use distkv as backend.
+    A basic MQTT broker that supports plug-ins and can use MoaT-KV as backend.
     """
     try:
         from moat.util import as_service

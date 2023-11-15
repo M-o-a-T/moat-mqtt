@@ -1,3 +1,9 @@
+moat-mqtt (0.39.5-1) unstable; urgency=medium
+
+  * Merge
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Wed, 15 Nov 2023 21:32:20 +0100
+
 moat-mqtt (0.39.4-5) unstable; urgency=medium
 
   * Rebuild
