@@ -1,3 +1,9 @@
+moat-mqtt (0.39.4-5) unstable; urgency=medium
+
+  * Rebuild
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Wed, 15 Nov 2023 15:48:54 +0100
+
 moat-mqtt (0.39.4-4) unstable; urgency=medium
 
   * Missing conflict
