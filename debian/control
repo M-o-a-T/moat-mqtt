@@ -4,18 +4,19 @@ Section: python
 Priority: optional
 Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9),
   python3-setuptools-scm,
-  python3-anyio (>= 3.0),
-  python3-trio (>= 0.21),
+  python3-anyio (>= 4.0),
+  python3-trio (>= 0.22),
 Standards-Version: 3.9.6
 Homepage: https://github.com/M-o-a-T/moat-mqtt
 
-Package: python3-moat-mqtt
+Package: moat-mqtt
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends},
   python3-anyio (>= 2.0),
-  python3-moat-main,
+  moat-main,
+  moat-util,
 Recommends:
-  distkv (>= 0.32),
-  python3-trio (>= 0.17),
+  moat-kv,
+  python3-trio (>= 0.22),
 Description: MQTT client/broker using anyio and moat-kv
 
