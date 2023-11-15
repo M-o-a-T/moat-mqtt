@@ -20,12 +20,12 @@ class Server(_Server):
         this server.
         """
         async with open_client(
-            connect=dict(host="127.0.0.1", port=self.moat_kv_port, name=name)
+            conn=dict(host="127.0.0.1", port=self.moat_kv_port, name=name)
         ) as c:
             yield c
 
     async def test_client_scope(self, name=None):
-        return await client_scope(connect=dict(host="127.0.0.1", port=self.moat_kv_port, name=name))
+        return await client_scope(conn=dict(host="127.0.0.1", port=self.moat_kv_port, name=name))
 
 
 @asynccontextmanager
@@ -34,7 +34,7 @@ async def server(mqtt_port: int = None, moat_kv_port: int = None):
     An async context manager which creates a stand-alone MoaT-KV server.
 
     The server has a `test_client` method: an async context manager that
-    returns a client taht's connected to this server.
+    returns a client that's connected to this server.
 
     Ports are allocated based on the current process's PID.
     """

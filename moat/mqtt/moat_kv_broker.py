@@ -15,7 +15,7 @@ except ImportError:
     pass
 
 
-class MoaTKVbroker(Broker):
+class MoatKVbroker(Broker):
     """
     A Broker that routes messages through MoaT-KV / MQTT.
     """
@@ -84,7 +84,7 @@ class MoaTKVbroker(Broker):
         Connect to the real server, read messages, forward them
         """
         try:
-            self.__client = client = await moat_kv_client_scope(connect=cfg["connect"])
+            self.__client = client = await moat_kv_client_scope(connect=cfg["conn"])
             async with anyio.create_task_group() as tg:
 
                 async def start(p, *a):
