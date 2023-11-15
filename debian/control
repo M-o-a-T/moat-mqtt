@@ -18,5 +18,7 @@ Recommends:
   moat-kv,
   moat-main,
   python3-trio (>= 0.22),
+Conflicts: python3-moat-mqtt
+Replaces: python3-moat-mqtt
 Description: MQTT client/broker using anyio and moat-kv
 
