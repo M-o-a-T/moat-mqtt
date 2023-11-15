@@ -13,3 +13,9 @@ else
 	@exit 1
 endif
 
+install:
+	mkdir -p $(PREFIX)/usr/lib/moat/mqtt
+	mkdir -p $(PREFIX)/usr/lib/sysusers.d
+	cp systemd/*.service $(PREFIX)/lib/systemd/system/
+	cp systemd/sysusers $(PREFIX)/usr/lib/sysusers.d/moat-mqtt.conf
+

@@ -12,8 +12,8 @@ WantedBy=multi-user.target
 Type=notify
 ExecStart=/usr/bin/moat -c /etc/moat/moat.cfg mqtt broker
 
-User=moat
-Group=moat
+User=MoaT-MQTT
+Group=MoaT
 
 TimeoutSec=30
 WatchdogSec=10

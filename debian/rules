@@ -6,11 +6,9 @@ export PYBUILD_NAME=moat-mqtt
 %:
 	dh $@ --with python3 --buildsystem=pybuild
 
-debian/moat-mqtt.service: moat-mqtt.service
-	cp $< $@
-
-override_dh_auto_install: debian/moat-mqtt.service
-	dh_auto_install
+override_dh_install:
+	dh_install
+	$(MAKE) install PREFIX=debian/moat-mqtt
 
 override_dh_auto_test: 
 	: no test
