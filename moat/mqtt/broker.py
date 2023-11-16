@@ -341,7 +341,7 @@ class Broker:
                                 % (listener["certfile"], listener["keyfile"], fnfe)
                             )
 
-                    address, s_port = listener["bind"].split(":")
+                    address, s_port = listener["bind"].rsplit(":",1)
                     port = 0
                     try:
                         port = int(s_port)
