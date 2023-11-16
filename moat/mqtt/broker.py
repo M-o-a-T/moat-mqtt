@@ -245,6 +245,8 @@ class Broker:
             listeners_config = broker_config["listeners"]
             defaults = listeners_config.get("default", {})
             for listener in listeners_config:
+                if listener == "default" and len(listeners_config) > 1:
+                    continue
                 config = dict(defaults)
                 config.update(listeners_config[listener])
                 self.listeners_config[listener] = config
@@ -341,7 +343,7 @@ class Broker:
                                 % (listener["certfile"], listener["keyfile"], fnfe)
                             )
 
-                    address, s_port = listener["bind"].split(":")
+                    address, s_port = listener["bind"].rsplit(":",1)
                     port = 0
                     try:
                         port = int(s_port)
@@ -933,7 +935,7 @@ class Broker:
         async with anyio.create_task_group() as tg:
             for d_topic in self._retained_messages:
                 topic = d_topic.split("/")
-                self.logger.debug("matching : %s %s", d_topic, subscription[0])
+                # self.logger.debug("matching : %s %s", d_topic, subscription[0])
                 if match_topic(topic, sub):
                     self.logger.debug("%s and %s match", d_topic, subscription[0])
                     retained = self._retained_messages[d_topic]

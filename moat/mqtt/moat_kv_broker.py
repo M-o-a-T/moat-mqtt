@@ -84,7 +84,7 @@ class MoatKVbroker(Broker):
         Connect to the real server, read messages, forward them
         """
         try:
-            self.__client = client = await moat_kv_client_scope(connect=cfg["conn"])
+            self.__client = client = await moat_kv_client_scope(**cfg)
             async with anyio.create_task_group() as tg:
 
                 async def start(p, *a):
@@ -124,7 +124,7 @@ class MoatKVbroker(Broker):
                     await err.record_error(
                         "moat.mqtt", msg.path, data={"data": data}, message="non-binary data"
                     )
-                    return
+                    continue
                 await super().broadcast_message(
                     session=None,
                     topic="/".join(msg["path"]),
