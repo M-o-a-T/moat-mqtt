@@ -935,7 +935,7 @@ class Broker:
         async with anyio.create_task_group() as tg:
             for d_topic in self._retained_messages:
                 topic = d_topic.split("/")
-                self.logger.debug("matching : %s %s", d_topic, subscription[0])
+                # self.logger.debug("matching : %s %s", d_topic, subscription[0])
                 if match_topic(topic, sub):
                     self.logger.debug("%s and %s match", d_topic, subscription[0])
                     retained = self._retained_messages[d_topic]
