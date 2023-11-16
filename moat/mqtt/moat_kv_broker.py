@@ -124,7 +124,7 @@ class MoatKVbroker(Broker):
                     await err.record_error(
                         "moat.mqtt", msg.path, data={"data": data}, message="non-binary data"
                     )
-                    return
+                    continue
                 await super().broadcast_message(
                     session=None,
                     topic="/".join(msg["path"]),
