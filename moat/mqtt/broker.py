@@ -245,6 +245,8 @@ class Broker:
             listeners_config = broker_config["listeners"]
             defaults = listeners_config.get("default", {})
             for listener in listeners_config:
+                if listener == "default" and len(listeners_config) > 1:
+                    continue
                 config = dict(defaults)
                 config.update(listeners_config[listener])
                 self.listeners_config[listener] = config
