@@ -331,9 +331,6 @@ class MQTTClient:
                 self.logger.debug("Waiting %d second before next attempt", delay)
                 await anyio.sleep(delay)
                 nb_attempt += 1
-            except Exception as e:
-                self.logger.error("Unknown error while reconnecting: %r", e)
-                raise
 
     async def _do_connect(self):
         return_code = await self._connect_coro()
