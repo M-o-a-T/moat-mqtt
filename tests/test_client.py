@@ -9,6 +9,7 @@ import anyio
 import pytest
 
 from moat.mqtt.broker import create_broker
+from moat.util import ungroup
 from moat.mqtt.client import ConnectException, open_mqttclient
 from moat.mqtt.mqtt.constants import QOS_0, QOS_1, QOS_2
 
@@ -23,7 +24,7 @@ URI = "mqtt://127.0.0.1:%d/" % PORT
 
 broker_config = {
     "listeners": {
-        "default": {"type": "tcp", "bind": "127.0.0.1:%d" % PORT, "max_connections": 10},
+        "mqtt": {"type": "tcp", "bind": "127.0.0.1:%d" % PORT, "max_connections": 10},
         "ws": {"type": "ws", "bind": "127.0.0.1:8080", "max_connections": 10},
         "wss": {"type": "ws", "bind": "127.0.0.1:8081", "max_connections": 10},
     },
@@ -52,13 +53,14 @@ class MQTTClientTest(unittest.TestCase):
                 self.assertIsNotNone(client.session)
 
         try:
-            anyio_run(test_coro)
+            with ungroup:
+                anyio_run(test_coro)
         except ConnectException:
             log.error("Broken by server")
 
     def test_connect_tcp_failure(self):
         async def test_coro():
-            with pytest.raises(ConnectException):
+            with pytest.raises(ConnectException), ungroup:
                 config = {"auto_reconnect": False}
                 async with open_mqttclient(config=config) as client:
                     await client.connect(URI)

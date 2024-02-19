@@ -15,7 +15,7 @@ classifiers = [
 	"Topic :: Internet",
 	]
 dependencies = [
-	"anyio ~= 3.0",
+	"anyio ~= 4.0",
 	"transitions",
 	"asyncwebsockets >= 0.9.2",
 	"passlib",

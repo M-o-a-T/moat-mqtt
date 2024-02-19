@@ -58,9 +58,7 @@ broker_config = {
             "bind": [{"host": "localhost", "port": PORT_D, "ssl": False}],
         },
     },
-    "listeners": {
-        "default": {"type": "tcp", "bind": f"127.0.0.1:{PORT}", "max_connections": 10}
-    },
+    "listeners": {"default": {"type": "tcp", "bind": f"127.0.0.1:{PORT}", "max_connections": 10}},
     "sys_interval": 0,
     "auth": {"allow-anonymous": True},
 }
