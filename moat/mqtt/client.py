@@ -253,8 +253,8 @@ class MQTTClient:
 
         try:
             return await self._do_connect()
-        except SyntaxError as be:
-            self.logger.warning("Connection failed: %r", be)
+        except ConnectException as e:
+            self.logger.warning("Connection failed: %r", e)
             auto_reconnect = self.config.get("auto_reconnect", False)
             if not auto_reconnect:
                 raise
@@ -317,7 +317,7 @@ class MQTTClient:
             try:
                 self.logger.debug("Reconnect attempt %d ...", nb_attempt)
                 return await self._do_connect()
-            except SyntaxError as e:  # no you can't reconnect on every exception
+            except ConnectException as e:
                 self.logger.warning("Reconnection attempt failed: %r", e)
                 if reconnect_retries >= 0 and nb_attempt > reconnect_retries:
                     self.logger.error(
