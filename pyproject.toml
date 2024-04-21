@@ -15,7 +15,7 @@ classifiers = [
 	"Topic :: Internet",
 	]
 dependencies = [
-	"anyio ~= 4.0",
+	"anyio ~= 4.2",
 	"transitions",
 	"asyncwebsockets >= 0.9.2",
 	"passlib",
@@ -23,7 +23,7 @@ dependencies = [
 	"attrs >= 19",
 	"simplejson",
 	"msgpack",
-	"moat-util ~= 0.35.0",
+	"moat-util ~= 0.35",
 	"transitions",
 	"wsproto",
 	"asyncscope >= 0.6.0",
