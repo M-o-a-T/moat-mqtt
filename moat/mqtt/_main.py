@@ -93,10 +93,10 @@ def _get_message(args):
 
 async def do_pub(client, args, cfg):
     logger.info("%s Connecting to broker", client.client_id)
-    url = args["url"] or cfg.url
+    uri = args["uri"] or cfg.uri
 
     await client.connect(
-        uri=url,
+        uri=uri,
         cleansession=args["clean_session"],
         cafile=args["ca_file"] or cfg.ca.file,
         capath=args["ca_path"] or cfg.ca.path,
@@ -118,7 +118,7 @@ async def do_pub(client, args, cfg):
     except KeyboardInterrupt:
         logger.info("%s Disconnected from broker", client.client_id)
     except ConnectException as ce:
-        logger.fatal("connection to '%s' failed: %r", url, ce)
+        logger.fatal("connection to '%s' failed: %r", uri, ce)
     finally:
         with anyio.fail_after(2, shield=True):
             await client.disconnect()
@@ -139,7 +139,7 @@ def fix_will(args, cfg):
 
 
 @cli.command()
-@click.option("--url", help="Broker connection URL (musr conform to MQTT URI scheme")
+@click.option("--uri", help="Broker connection URL (musr conform to MQTT URI scheme")
 @click.option("-i", "--client_id", help="string to use as client ID")
 @click.option("-q", "--qos", type=click.IntRange(0, 2), help="Quality of service to use (0-2)")
 @click.option("-r", "--retain", "retain", flag_value=True, help="Set the Retain flag")
@@ -201,7 +201,7 @@ async def pub(obj, **args):
 async def do_sub(client, args, cfg):
     try:
         await client.connect(
-            uri=args["url"] or cfg.url,
+            uri=args["uri"] or cfg.uri,
             cleansession=args["clean_session"],
             cafile=args["ca_file"] or cfg.ca.file,
             capath=args["ca_path"] or cfg.ca.path,
@@ -215,7 +215,7 @@ async def do_sub(client, args, cfg):
     except KeyboardInterrupt:
         pass
     except ConnectException as ce:
-        logger.fatal("connection to '%s' failed: %r", args["url"], ce)
+        logger.fatal("connection to '%s' failed: %r", args["uri"], ce)
     finally:
         with anyio.fail_after(2, shield=True):
             await client.disconnect()
@@ -248,7 +248,7 @@ async def run_sub(client, topic, args, cfg):
 
 
 @cli.command()
-@click.option("--url", help="Broker connection URL (musr conform to MQTT URI scheme")
+@click.option("--uri", help="Broker connection URL (musr conform to MQTT URI scheme")
 @click.option("-i", "--client_id", help="string to use as client ID")
 @click.option("-q", "--qos", type=click.IntRange(0, 2), help="Quality of service to use (0-2)")
 @click.option(

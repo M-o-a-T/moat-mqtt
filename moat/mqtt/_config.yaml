@@ -15,7 +15,7 @@ mqtt:
   
   client:
     # id: "fufu_123"
-    url: "mqtt://localhost:1883/"
+    uri: "mqtt://localhost:1883/"
     keep_alive: 10
     ping_delay: 1
     default_qos: 0
