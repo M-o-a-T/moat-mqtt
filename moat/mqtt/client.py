@@ -162,6 +162,8 @@ async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
 
     """
     async with anyio.create_task_group() as tg:
+        if codec is None:
+            codec = config.get("codec", None)
         C = MQTTClient(tg, client_id, config=config, codec=codec)
         try:
             if uri is not None:
