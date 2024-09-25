@@ -156,6 +156,11 @@ class NoopCodec(BaseCodec):
         return data
 
 
+class BinaryCodec(NoopCodec):
+    "alternate name for no-op codec"
+    name = "binary"
+
+
 class UTF8Codec(BaseCodec):
     """A codec that translates to UTF-8 strings.
 
