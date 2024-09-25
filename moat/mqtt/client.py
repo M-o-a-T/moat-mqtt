@@ -152,14 +152,13 @@ async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
     Example usage::
 
         async with open_mqttclient(config=dict(uri="mqtt://my-broker.example")) as client:
-            # await client.connect("mqtt://my-broker.example")  # alternate use
-            await C.subscribe([
-                    ('$SYS/broker/uptime', QOS_1),
-                    ('$SYS/broker/load/#', QOS_2),
-                ])
-            async for msg in client:
-                packet = message.publish_packet
-                print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
+            async with client.subscription([
+                        ('$SYS/broker/uptime', QOS_1),
+                        ('$SYS/broker/load/#', QOS_2),
+                    ]) as sub:
+                async for msg in sub:
+                    packet = message.publish_packet
+                    print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
 
     """
     async with anyio.create_task_group() as tg:
