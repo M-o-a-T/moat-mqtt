@@ -36,7 +36,7 @@ class ClientProtocolHandler(ProtocolHandler):
                 t, self._ping_task = self._ping_task, None
                 if t:
                     self.logger.debug("Cancel ping task")
-                    await t.cancel()
+                    t.cancel()
 
     def _build_connect_packet(self):
         vh = ConnectVariableHeader()

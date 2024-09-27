@@ -148,12 +148,17 @@ class NoopCodec(BaseCodec):
 
     @staticmethod
     def encode(data):
-        assert isinstance(data, (bytearray, bytes))
+        assert isinstance(data, (bytearray, bytes, memoryview))
         return data
 
     @staticmethod
     def decode(data):
         return data
+
+
+class BinaryCodec(NoopCodec):
+    "alternate name for no-op codec"
+    name = "binary"
 
 
 class UTF8Codec(BaseCodec):

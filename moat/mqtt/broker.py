@@ -16,7 +16,6 @@ except ImportError:
 
 from functools import partial
 
-from asyncwebsockets import create_websocket_server
 from transitions import Machine, MachineError
 
 from .adapters import BaseAdapter, StreamAdapter, WebSocketsAdapter
@@ -457,6 +456,8 @@ class Broker:
         return await self.broadcast_message(None, topic, data, qos=qos, retain=retain)
 
     async def ws_connected(self, conn, listener_name):
+        from asyncwebsockets import create_websocket_server
+
         async def subpro(req):
             if "mqtt" not in req.subprotocols:
                 return False

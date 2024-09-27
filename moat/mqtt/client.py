@@ -146,23 +146,24 @@ async def open_mqttclient(uri=None, client_id=None, config={}, codec=None):
 
     :param client_id: MQTT client ID to use when connecting to the broker. If none, it will generated randomly by :func:`moat.mqtt.utils.gen_client_id`
     :param config: Client configuration
-    :param codec: Codec to default to, the config or "no-op" if not given.
+    :param codec: Codec to default to. Uses the codec from the config if not given. Defaults to "binary".
     :return: async context manager returning a class instance
 
     Example usage::
 
         async with open_mqttclient(config=dict(uri="mqtt://my-broker.example")) as client:
-            # await client.connect("mqtt://my-broker.example")  # alternate use
-            await C.subscribe([
-                    ('$SYS/broker/uptime', QOS_1),
-                    ('$SYS/broker/load/#', QOS_2),
-                ])
-            async for msg in client:
-                packet = message.publish_packet
-                print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
+            async with client.subscription([
+                        ('$SYS/broker/uptime', QOS_1),
+                        ('$SYS/broker/load/#', QOS_2),
+                    ]) as sub:
+                async for msg in sub:
+                    packet = message.publish_packet
+                    print("%d:  %s => %s" % (i, packet.variable_header.topic_name, str(packet.payload.data)))
 
     """
     async with anyio.create_task_group() as tg:
+        if codec is None:
+            codec = config.get("codec", None)
         C = MQTTClient(tg, client_id, config=config, codec=codec)
         try:
             if uri is not None:
