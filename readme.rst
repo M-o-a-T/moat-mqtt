@@ -1,8 +1,9 @@
 MoaT-MQTT
-======
+=========
 
-``MoaT-MQTT`` is an open source `MQTT`_ client and broker implementation. It
-is a fork of `hbmqtt`_ with support for `anyio`_ and `MoaT-KV`_.
+``MoaT-MQTT`` is an open source `MQTT`_ 3.1.1 client and broker
+implementation. It is a fork of `hbmqtt`_ with support for `anyio`_ and
+`MoaT-KV`_.
 
 MoaT-MQTT provides a straightforward API based on coroutines, making it easy
 to write highly concurrent applications.
@@ -10,6 +11,14 @@ to write highly concurrent applications.
 .. _anyio: https://github.com/agronholm/anyio
 .. _MoaT-KV: https://github.com/M-o-a-T/moat-kv
 .. _hbmqtt: https://github.com/beerfactory/hbmqtt
+
+Deprecation Notice
+------------------
+
+``MoaT-MQTT`` will be retired because by now, broker support for MQTT 5 is
+nearly universal.
+
+The designated replacement is `mqttproto`_.
 
 Features
 --------
@@ -53,6 +62,7 @@ Bug reports, patches and suggestions welcome! Just `open an issue`_.
 
 .. _MQTT: http://www.mqtt.org
 .. _MQTT 3.1.1: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+.. _mqttproto: https://github.com/agronholm/mqttproto/
 .. _Read the Docs: http://moat-mqtt.readthedocs.org/
 .. _open an issue: https://github.com/M-o-a-T/moat-mqtt/issues/new
 
